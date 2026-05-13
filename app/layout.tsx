@@ -1,22 +1,22 @@
 import type { Metadata } from 'next'
-import { Montserrat } from 'next/font/google'
+import { Outfit } from 'next/font/google'
 import './globals.css'
 
-const montserrat = Montserrat({
+const outfit = Outfit({
   subsets: ['latin'],
-  weight: ['300','400','500','600','700','800'],
+  weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'Noirem CRM — Luxury Car Care',
+  title: 'Noirem CRM — Luxury Car Care Dubai',
   description: 'Luxury CRM for Noirem Car Care Dubai',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={montserrat.className} style={{ height:'100%', overflow:'hidden' }}>
-      <body style={{ height:'100%', overflow:'hidden' }}>{children}</body>
+    <html lang="en" className={outfit.className} style={{ height: '100%' }}>
+      <body style={{ height: '100%' }}>{children}</body>
     </html>
   )
 }

@@ -1,58 +1,125 @@
-export const dynamic = 'force-dynamic'
-import { createClient } from '@/lib/supabase/server'
-import type { Deal } from '@/types'
-import { DollarSign, TrendingUp, TrendingDown, BarChart2 } from 'lucide-react'
+'use client'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import KpiCard from '@/components/ui/KpiCard'
+import StatusBadge from '@/components/ui/StatusBadge'
+import { SkeletonTable } from '@/components/ui/SkeletonLoader'
+import { DollarSign, TrendingUp, TrendingDown, Clock, Send, CheckCircle } from 'lucide-react'
 
-export default async function FinancePage() {
-  const supabase = await createClient()
-  const { data: deals } = await supabase.from('deals').select('*, stage:deal_stages(name)').order('created_at', { ascending:false })
-  const allDeals = (deals ?? []) as (Deal & { stage?: { name: string } })[]
-  const wonDeals = allDeals.filter(d => d.stage?.name === 'Won')
-  const totalRevenue = wonDeals.reduce((s, d) => s + (d.value ?? 0), 0)
-  const pipeline = allDeals.filter(d => !['Won','Lost'].includes(d.stage?.name ?? '')).reduce((s,d) => s + (d.value ?? 0), 0)
-  const avgDeal = wonDeals.length > 0 ? totalRevenue / wonDeals.length : 0
-  const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits:0 })}`
+const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
+
+const STATUS_TABS = ['All', 'Draft', 'Sent', 'Paid', 'Overdue']
+
+export default function FinancePage() {
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState('All')
+
+  function fetchInvoices() {
+    const supabase = createClient()
+    supabase
+      .from('invoices')
+      .select('*, contacts(name), bookings(price)')
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        setInvoices(data ?? [])
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => { fetchInvoices() }, [])
+
+  async function updateStatus(id: string, status: string) {
+    const supabase = createClient()
+    await supabase.from('invoices').update({ status }).eq('id', id)
+    fetchInvoices()
+  }
+
+  const paidInvoices = invoices.filter((i) => i.status === 'Paid')
+  const totalRevenue = paidInvoices.reduce((s, i) => s + (i.amount ?? 0), 0)
+  const totalExpenses = totalRevenue * 0.35
+  const netProfit = totalRevenue - totalExpenses
+  const pendingCount = invoices.filter((i) => i.status !== 'Paid').length
+
+  const displayed = statusFilter === 'All'
+    ? invoices
+    : invoices.filter((i) => i.status === statusFilter)
 
   return (
-    <div className="scroll" style={{ height:'100%', padding:'22px 26px' }}>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:14, marginBottom:24 }}>
-        {[
-          { l:'Won Revenue', v:fmt(totalRevenue), icon:DollarSign, color:'#22C55E' },
-          { l:'Active Pipeline', v:fmt(pipeline), icon:TrendingUp, color:'#D4AF37' },
-          { l:'Avg. Deal Size', v:fmt(avgDeal), icon:BarChart2, color:'#00D4FF' },
-          { l:'Won Deals', v:String(wonDeals.length), icon:TrendingDown, color:'#A78BFA' },
-        ].map(k => (
-          <div key={k.l} className="glass" style={{ padding:'20px 22px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-              <div style={{ fontSize:11, color:'#8A8A9A' }}>{k.l}</div>
-              <div style={{ width:28, height:28, borderRadius:8, background:`${k.color}18`, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                <k.icon size={14} color={k.color} strokeWidth={2} />
-              </div>
-            </div>
-            <div style={{ fontSize:24, fontWeight:800, color:k.color }}>{k.v}</div>
-          </div>
+    <div style={{ padding: 24 }}>
+      {/* KPI row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 24 }}>
+        <KpiCard label="Total Revenue" value={fmt(totalRevenue)} color="var(--cyan)" icon={DollarSign} sub="Paid invoices" />
+        <KpiCard label="Total Expenses" value={fmt(totalExpenses)} color="var(--red)" icon={TrendingDown} sub="Est. 35% costs" />
+        <KpiCard label="Net Profit" value={fmt(netProfit)} color="var(--gold)" icon={TrendingUp} sub="Revenue − Expenses" />
+        <KpiCard label="Pending Invoices" value={pendingCount} color="#888580" icon={Clock} sub="Unpaid" />
+      </div>
+
+      {/* Status filter tabs */}
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: 16 }}>
+        {STATUS_TABS.map((s) => (
+          <button
+            key={s}
+            className={`tab-btn${statusFilter === s ? ' tab-active' : ''}`}
+            onClick={() => setStatusFilter(s)}
+          >
+            {s}
+          </button>
         ))}
       </div>
 
-      <div className="glass" style={{ padding:22 }}>
-        <div style={{ fontSize:14, fontWeight:700, marginBottom:16 }}>Won Deals — Revenue Log</div>
-        {wonDeals.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'48px 0', color:'#4A4A5A', fontSize:12 }}>No won deals yet</div>
-        ) : (
-          <div>
-            <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:8, padding:'9px 18px', borderBottom:'1px solid rgba(212,175,55,.08)' }}>
-              {['Deal','Value','Probability','Close Date'].map(h => <div key={h} className="field-label" style={{ margin:0 }}>{h}</div>)}
-            </div>
-            {wonDeals.map((d, i) => (
-              <div key={d.id} style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr 1fr', gap:8, alignItems:'center', padding:'12px 18px', borderBottom: i < wonDeals.length-1 ? '1px solid rgba(212,175,55,.04)' : 'none' }}>
-                <div style={{ fontSize:12, fontWeight:600 }}>{d.title}</div>
-                <div style={{ fontSize:12, fontWeight:700, color:'#22C55E' }}>{fmt(d.value)}</div>
-                <div style={{ fontSize:12 }}>{d.probability}%</div>
-                <div style={{ fontSize:11, color:'#8A8A9A' }}>{d.close_date ? new Date(d.close_date).toLocaleDateString('en-AE') : '—'}</div>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* Invoices table */}
+      <div className="glass" style={{ overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              {['Invoice #', 'Client', 'Amount', 'Status', 'Date', 'Actions'].map((h) => (
+                <th key={h} style={{ padding: '12px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={6}><SkeletonTable rows={6} cols={6} /></td></tr>
+            ) : displayed.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--text2)', fontSize: 13 }}>
+                  No invoices found
+                </td>
+              </tr>
+            ) : (
+              displayed.map((inv) => (
+                <tr key={inv.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: 'var(--gold)' }}>
+                    {inv.invoice_number ?? `INV-${inv.id?.slice(-6)?.toUpperCase()}`}
+                  </td>
+                  <td style={{ padding: '12px 16px', fontSize: 13 }}>{inv.contacts?.name ?? '—'}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{fmt(inv.amount ?? 0)}</td>
+                  <td style={{ padding: '12px 16px' }}><StatusBadge status={inv.status ?? 'Draft'} /></td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>
+                    {new Date(inv.created_at).toLocaleDateString('en-AE')}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {inv.status === 'Draft' && (
+                        <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(inv.id, 'Sent')}>
+                          <Send size={11} /> Send
+                        </button>
+                      )}
+                      {(inv.status === 'Sent' || inv.status === 'Overdue') && (
+                        <button className="btn btn-cyan btn-sm" onClick={() => updateStatus(inv.id, 'Paid')}>
+                          <CheckCircle size={11} /> Mark Paid
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   )
