@@ -1,59 +1,159 @@
 'use client'
 import { usePathname } from 'next/navigation'
-import { Bell, Settings, Search } from 'lucide-react'
+import { Bell, Settings } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { useLanguage } from '@/contexts/LanguageContext'
+import type { TranslationKey } from '@/contexts/LanguageContext'
 
-const PAGE_LABELS: Record<string, string> = {
-  '/':         'Dashboard',
-  '/contacts': 'Contacts',
-  '/services': 'Services & Inventory',
-  '/vehicles': 'Vehicles',
-  '/bookings': 'Bookings',
-  '/finance':  'Finance',
-  '/reports':  'Reports',
-  '/settings': 'Settings',
+const PAGE_KEY: Record<string, string> = {
+  '/':         'dashboard',
+  '/contacts': 'contacts',
+  '/services': 'servicesInventory',
+  '/vehicles': 'vehicles',
+  '/bookings': 'bookings',
+  '/finance':  'finance',
+  '/reports':  'reports',
+  '/settings': 'settings',
 }
+
+const CURRENCIES = ['AED', 'USD', 'EUR']
 
 export default function TopBar() {
   const pathname = usePathname()
-  const pageLabel = Object.entries(PAGE_LABELS).find(([key]) =>
+  const { lang, setLang, t } = useLanguage()
+  const [currency, setCurrency] = useState('AED')
+  const [showCurrency, setShowCurrency] = useState(false)
+  const [hasAlert] = useState(true)
+  const currRef = useRef<HTMLDivElement>(null)
+
+  const pageKey = Object.entries(PAGE_KEY).find(([key]) =>
     key === '/' ? pathname === '/' : pathname.startsWith(key)
-  )?.[1] ?? 'Dashboard'
+  )?.[1] ?? 'dashboard'
+
+  const pageLabel = t(pageKey as TranslationKey)
+
+  const todayStr = new Date().toLocaleDateString(lang === 'es' ? 'es-AE' : 'en-AE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  })
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (currRef.current && !currRef.current.contains(e.target as Node)) setShowCurrency(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [])
 
   return (
     <div style={{
-      height: 52, flexShrink: 0,
+      height: 64, flexShrink: 0,
       background: 'var(--bg2)',
       borderBottom: '1px solid var(--border)',
       display: 'flex', alignItems: 'center',
-      padding: '0 20px', gap: 16,
+      padding: '0 24px', gap: 16,
     }}>
-      <div style={{ fontSize: 11, color: 'var(--text2)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-        <span style={{ color: 'var(--gold)', fontWeight: 600 }}>Noirem</span>
-        <span style={{ margin: '0 6px' }}>›</span>
-        <span style={{ color: 'var(--text)' }}>{pageLabel}</span>
+      {/* Left: title + date */}
+      <div style={{ flexShrink: 0 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{pageLabel}</div>
+        <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, textTransform: 'capitalize' }}>{todayStr}</div>
       </div>
 
-      <div style={{ flex: 1, maxWidth: 340, position: 'relative' }}>
-        <Search size={12} color="var(--text2)" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-        <input className="inp" placeholder="Search contacts, bookings..." style={{ paddingLeft: 28, fontSize: 11, height: 32, padding: '0 10px 0 28px' }} />
-      </div>
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginLeft: 'auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, fontWeight: 700, color: '#22c55e' }}>
+      {/* Right controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+        {/* LIVE badge */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'rgba(0,212,170,0.1)',
+          border: '1px solid rgba(0,212,170,0.25)',
+          borderRadius: 20, padding: '4px 10px',
+          fontSize: 10, fontWeight: 700, color: 'var(--cyan)',
+        }}>
           <span className="live-dot" />
           LIVE
         </div>
 
-        <select className="inp" style={{ width: 'auto', height: 28, padding: '0 8px', fontSize: 10, cursor: 'pointer' }}>
-          <option>EN</option><option>ES</option>
-        </select>
+        {/* Language toggle */}
+        <div style={{
+          display: 'flex', background: 'var(--bg3)',
+          borderRadius: 8, padding: 3, gap: 2,
+        }}>
+          {(['en', 'es'] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              style={{
+                padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 600,
+                background: lang === l ? 'var(--gold)' : 'transparent',
+                color: lang === l ? '#0d0d0f' : 'var(--text2)',
+                fontFamily: 'Outfit, sans-serif',
+                transition: 'all 0.15s',
+              }}
+            >
+              {l.toUpperCase()}
+            </button>
+          ))}
+        </div>
 
-        <select className="inp" style={{ width: 'auto', height: 28, padding: '0 8px', fontSize: 10, cursor: 'pointer' }}>
-          <option>AED</option><option>USD</option>
-        </select>
+        {/* Currency selector */}
+        <div ref={currRef} style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowCurrency(!showCurrency)}
+            style={{
+              background: 'var(--bg3)', border: 'none', borderRadius: 8,
+              padding: '5px 10px', cursor: 'pointer',
+              fontSize: 11, fontWeight: 700, color: 'var(--gold)',
+              fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {currency} <span style={{ fontSize: 8 }}>▾</span>
+          </button>
+          {showCurrency && (
+            <div style={{
+              position: 'absolute', top: '110%', right: 0, zIndex: 200,
+              background: 'var(--bg3)', border: '1px solid var(--border)',
+              borderRadius: 8, padding: 4, minWidth: 70,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}>
+              {CURRENCIES.map(c => (
+                <button
+                  key={c}
+                  onClick={() => { setCurrency(c); setShowCurrency(false) }}
+                  style={{
+                    display: 'block', width: '100%', padding: '6px 12px',
+                    background: c === currency ? 'var(--gold-dim)' : 'transparent',
+                    border: 'none', cursor: 'pointer', textAlign: 'left',
+                    fontSize: 11, fontWeight: 600,
+                    color: c === currency ? 'var(--gold)' : 'var(--text2)',
+                    borderRadius: 6, fontFamily: 'Outfit, sans-serif',
+                  }}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
-        <Bell size={15} color="var(--text2)" style={{ cursor: 'pointer' }} />
-        <Settings size={15} color="var(--text2)" style={{ cursor: 'pointer' }} />
+        {/* Notification bell */}
+        <div style={{ position: 'relative', cursor: 'pointer' }}>
+          <Bell size={16} color="var(--text2)" />
+          {hasAlert && (
+            <div style={{
+              position: 'absolute', top: -3, right: -3,
+              width: 7, height: 7, borderRadius: '50%',
+              background: 'var(--red)',
+              border: '1px solid var(--bg2)',
+            }} />
+          )}
+        </div>
+
+        {/* Settings */}
+        <Settings size={16} color="var(--text2)" style={{ cursor: 'pointer' }} />
       </div>
     </div>
   )
