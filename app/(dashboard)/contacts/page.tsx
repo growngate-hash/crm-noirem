@@ -182,8 +182,8 @@ export default function ContactsPage() {
     setLoading(true)
     const sb = createClient()
     let q = sb.from('contacts').select('*, vehicles(*), bookings(id,price,status,created_at)').order('created_at', { ascending: false })
-    if (t === 'Clientes')    q = (q as any).or('tipo.is.null,tipo.eq.cliente')
-    if (t === 'Proveedores') q = (q as any).eq('tipo', 'proveedor')
+    if (t === 'Clientes')    q = q.eq('tipo', 'cliente')
+    if (t === 'Proveedores') q = q.eq('tipo', 'proveedor')
     const { data } = await q
     setContacts(data ?? [])
     setLoading(false)
