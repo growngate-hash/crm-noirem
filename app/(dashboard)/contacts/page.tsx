@@ -351,7 +351,9 @@ export default function ContactsPage() {
                 <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
                   <td style={{ padding:'14px 16px' }}>
                     <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
-                    <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?'reserva':'reservas'}</div>
+                    {activeTab !== 'Proveedores' && (
+                      <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?'reserva':'reservas'}</div>
+                    )}
                   </td>
                   <td style={{ padding:'14px 16px' }}>
                     {activeTab === 'Proveedores'
