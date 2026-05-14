@@ -236,25 +236,39 @@ export default function ServicesPage() {
 
   function fetchServices()  { createClient().from('services').select('*').order('name').then(({data})=>{setServices(data??[]);setLoadingS(false)}) }
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
-  useEffect(()=>{ fetchServices(); fetchInventory() },[])
+
+  async function seedServicesIfEmpty() {
+    const sb = createClient()
+    const { data } = await sb.from('services').select('id').limit(1)
+    if (data && data.length === 0) {
+      await sb.from('services').insert([
+        { name:'Ceramic Coating',  code:'CC-PRO',   category:'Protección', price_min:3500,  price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     is_active:true },
+        { name:'PPF Full Wrap',    code:'PPF-FULL',  category:'Protección', price_min:12000, price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', is_active:true },
+        { name:'Full Restoration', code:'REST-360',  category:'Detailing',  price_min:8000,  price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    is_active:true },
+        { name:'Interior Detail',  code:'INT-LUX',   category:'Detailing',  price_min:1500,  price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  is_active:true },
+      ])
+    }
+  }
+
+  useEffect(()=>{
+    async function init() {
+      await seedServicesIfEmpty()
+      fetchServices()
+      fetchInventory()
+    }
+    init()
+  },[])
 
   async function openMaterials(svc: any) {
     setSelectedSvc(svc)
     setLoadingMat(true)
-    const isDemo = String(svc.id).startsWith('s')
-    if (isDemo) {
-      setSvcMaterials(DEMO_MATERIALS[svc.id] ?? [])
-      setAllInv(DEMO_INVENTORY)
-      setLoadingMat(false)
-    } else {
-      const [matRes, invRes] = await Promise.all([
-        createClient().from('service_materials').select('*').eq('service_id', svc.id),
-        createClient().from('inventory_items').select('*'),
-      ])
-      setSvcMaterials(matRes.data ?? [])
-      setAllInv(invRes.data ?? [])
-      setLoadingMat(false)
-    }
+    const [matRes, invRes] = await Promise.all([
+      createClient().from('service_materials').select('*').eq('service_id', svc.id),
+      createClient().from('inventory_items').select('*'),
+    ])
+    setSvcMaterials(matRes.data ?? [])
+    setAllInv(invRes.data ?? [])
+    setLoadingMat(false)
   }
 
   function getInvItem(matName: string) {
@@ -278,7 +292,6 @@ export default function ServicesPage() {
 
   async function saveEditMat() {
     if (!editMat || !editMatForm.material_name.trim()) return
-    const isDemo = String(editMat.id).startsWith('m')
 
     const updatedFields = {
       material_name: editMatForm.material_name,
@@ -288,18 +301,15 @@ export default function ServicesPage() {
       unit_cost:     Number(editMatForm.unit_cost) || 0,
     }
 
-    if (!isDemo) {
-      setEditMatSaving(true)
-      const {error} = await createClient().from('service_materials').update(updatedFields).eq('id', editMat.id)
-      if (error) { setEditMatSaving(false); addToast(error.message,'error'); return }
-      // update stock in inventory_items if provided
-      if (editMatForm.stock_qty !== '') {
-        await createClient().from('inventory_items')
-          .update({ stock_qty: Number(editMatForm.stock_qty) })
-          .ilike('name', `%${editMatForm.material_name}%`)
-      }
-      setEditMatSaving(false)
+    setEditMatSaving(true)
+    const {error} = await createClient().from('service_materials').update(updatedFields).eq('id', editMat.id)
+    if (error) { setEditMatSaving(false); addToast(error.message,'error'); return }
+    if (editMatForm.stock_qty !== '') {
+      await createClient().from('inventory_items')
+        .update({ stock_qty: Number(editMatForm.stock_qty) })
+        .ilike('name', `%${editMatForm.material_name}%`)
     }
+    setEditMatSaving(false)
 
     // update local svcMaterials state
     setSvcMaterials(prev => prev.map(m => m.id === editMat.id ? {...m, ...updatedFields} : m))
@@ -319,11 +329,8 @@ export default function ServicesPage() {
 
   async function deleteMatItem() {
     if (!editMat) return
-    const isDemo = String(editMat.id).startsWith('m')
-    if (!isDemo) {
-      const {error} = await createClient().from('service_materials').delete().eq('id', editMat.id)
-      if (error) { addToast(error.message,'error'); return }
-    }
+    const {error} = await createClient().from('service_materials').delete().eq('id', editMat.id)
+    if (error) { addToast(error.message,'error'); return }
     setSvcMaterials(prev => prev.filter(m => m.id !== editMat.id))
     closeEditMat()
     addToast('Material eliminado','success')
@@ -369,8 +376,6 @@ export default function ServicesPage() {
 
   async function saveItem() {
     if (!newItem.material_name.trim() || !selectedSvc) return
-    const isDemo = String(selectedSvc.id).startsWith('s')
-    if (isDemo) { addToast('No se puede guardar en datos de ejemplo','error'); return }
     setSavingItem(true)
     const {error} = await createClient().from('service_materials').insert({
       service_id: selectedSvc.id, material_name: newItem.material_name,
