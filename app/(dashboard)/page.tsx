@@ -254,7 +254,7 @@ export default function DashboardPage() {
   const totalRevenue = completed.reduce((s, b) => s + (b.price ?? 0), 0)
   const totalProfit  = totalRevenue * 0.65
   const totalExpenses= totalRevenue * 0.35
-  const lowStock     = inventory.filter(i => (i.stock_current ?? 0) <= (i.stock_minimum ?? 0)).length
+  const lowStock     = inventory.filter(i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0)).length
   const now          = new Date()
   const mtd          = completed.filter(b => { const d = new Date(b.created_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() })
   const revenueMTD   = mtd.reduce((s, b) => s + (b.price ?? 0), 0)

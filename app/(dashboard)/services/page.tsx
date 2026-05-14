@@ -146,11 +146,11 @@ const DEMO_SERVICES = [
   {id:'s4',name:'Interior Detail', code:'INT·LUX', price_min:1500, price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  variants:'Express,Signature,Black Diamond'},
 ]
 const DEMO_INVENTORY = [
-  {id:'i1',name:'Ceramic Pro 9H',              brand:'Ceramic Pro',stock_current:340,stock_minimum:100,unit:'mL'},
-  {id:'i2',name:'Gtechniq Crystal Serum Ultra',brand:'Gtechniq',  stock_current:175,stock_minimum:100,unit:'mL'},
-  {id:'i3',name:'Gyeon Q2 Mohs+',              brand:'Gyeon',     stock_current:85, stock_minimum:100,unit:'mL'},
-  {id:'i4',name:'Koch Chemie',                 brand:'Koch',      stock_current:520,stock_minimum:100,unit:'mL'},
-  {id:'i5',name:'Carpro Cquartz',              brand:'Carpro',    stock_current:210,stock_minimum:100,unit:'mL'},
+  {id:'i1',name:'Ceramic Pro 9H',              brand:'Ceramic Pro',stock_qty:340,min_stock:100,unit:'mL'},
+  {id:'i2',name:'Gtechniq Crystal Serum Ultra',brand:'Gtechniq',  stock_qty:175,min_stock:100,unit:'mL'},
+  {id:'i3',name:'Gyeon Q2 Mohs+',              brand:'Gyeon',     stock_qty:85, min_stock:100,unit:'mL'},
+  {id:'i4',name:'Koch Chemie',                 brand:'Koch',      stock_qty:520,min_stock:100,unit:'mL'},
+  {id:'i5',name:'Carpro Cquartz',              brand:'Carpro',    stock_qty:210,min_stock:100,unit:'mL'},
 ]
 const DEMO_MATERIALS: Record<string, any[]> = {
   s1: [
@@ -180,7 +180,7 @@ const UNITS  = ['unit','mL','L','kg','g']
 const MAT_CATS = ['Consumible','Químico','Herramienta']
 
 const EMPTY_SERVICE = { name:'', category:'Lavado', base_price:'', description:'', duration_hrs:'', technician_count:'1', technician_level:'Junior' }
-const EMPTY_INVENTORY_FORM = { name:'', brand:'', stock_current:'', stock_minimum:'', unit:'mL', unit_price:'', supplier:'' }
+const EMPTY_INVENTORY_FORM = { name:'', brand:'', stock_qty:'', min_stock:'', unit:'mL', unit_cost:'', supplier:'' }
 const EMPTY_ITEM = { material_name:'', quantity:'', unit:'unit', unit_cost:'', category:'Consumible' }
 const SUBMIT_STYLE: React.CSSProperties = { width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer' }
 
@@ -290,9 +290,9 @@ export default function ServicesPage() {
     const {error} = await createClient().from('inventory_items').insert({
       name:invForm.name, brand:invForm.brand, unit:invForm.unit,
       supplier:invForm.supplier,
-      stock_current: invForm.stock_current ? Number(invForm.stock_current) : 0,
-      stock_minimum: invForm.stock_minimum ? Number(invForm.stock_minimum) : 0,
-      unit_price:    invForm.unit_price    ? Number(invForm.unit_price)    : 0,
+      stock_qty: invForm.stock_qty ? Number(invForm.stock_qty) : 0,
+      min_stock: invForm.min_stock ? Number(invForm.min_stock) : 0,
+      unit_cost:    invForm.unit_cost    ? Number(invForm.unit_cost)    : 0,
     })
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
@@ -323,7 +323,7 @@ export default function ServicesPage() {
   // KPIs for materials panel
   const totalArticulos = svcMaterials.length
   const costoTotal     = svcMaterials.reduce((s,m)=>(s + (m.quantity??0)*(m.unit_cost??0)),0)
-  const alertas        = svcMaterials.filter(m=>{ const inv=getInvItem(m.material_name); return inv && (inv.stock_current??0)<=(inv.stock_minimum??0) }).length
+  const alertas        = svcMaterials.filter(m=>{ const inv=getInvItem(m.material_name); return inv && (inv.stock_qty??0)<=(inv.min_stock??0) }).length
 
   const BTN_OUTLINE: React.CSSProperties = {padding:'8px 16px',borderRadius:8,cursor:'pointer',background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.3)',color:'#c9a84c',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
   const BTN_GOLD:    React.CSSProperties = {padding:'8px 16px',borderRadius:8,border:'none',cursor:'pointer',background:'#c9a84c',color:'#0d0d0f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
@@ -378,19 +378,19 @@ export default function ServicesPage() {
               {loadingI ? (
                 <tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
               ) : srcInventory.map((item:any)=>{
-                const isLow = (item.stock_current??0)<=(item.stock_minimum??0)
+                const isLow = (item.stock_qty??0)<=(item.min_stock??0)
                 return (
                   <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
                     <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{item.name}</td>
                     <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.brand||'—'}</td>
                     <td style={{padding:'14px 16px'}}>
                       <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#f0ede8'}}>{item.stock_current??0}</span>
+                        <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#f0ede8'}}>{item.stock_qty??0}</span>
                         {isLow && <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:99,background:'rgba(255,79,79,0.12)',border:'1px solid rgba(255,79,79,0.3)',color:'#ff4f4f'}}>▲ BAJO</span>}
                       </div>
                     </td>
                     <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
-                    <td style={{padding:'14px 16px'}}><StockBar current={item.stock_current??0} minimum={item.stock_minimum??0}/></td>
+                    <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
                   </tr>
                 )
               })}
@@ -458,10 +458,10 @@ export default function ServicesPage() {
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
             <div><MLabel>Nombre *</MLabel><MInput placeholder="Ceramic Pro 9H" value={invForm.name} onChange={e=>setInvForm({...invForm,name:e.target.value})}/></div>
             <div><MLabel>Marca</MLabel><MInput placeholder="Ceramic Pro" value={invForm.brand} onChange={e=>setInvForm({...invForm,brand:e.target.value})}/></div>
-            <div><MLabel>Stock Actual *</MLabel><MInput type="number" min={0} placeholder="340" value={invForm.stock_current} onChange={e=>setInvForm({...invForm,stock_current:e.target.value})}/></div>
-            <div><MLabel>Stock Mínimo</MLabel><MInput type="number" min={0} placeholder="100" value={invForm.stock_minimum} onChange={e=>setInvForm({...invForm,stock_minimum:e.target.value})}/></div>
+            <div><MLabel>Stock Actual *</MLabel><MInput type="number" min={0} placeholder="340" value={invForm.stock_qty} onChange={e=>setInvForm({...invForm,stock_qty:e.target.value})}/></div>
+            <div><MLabel>Stock Mínimo</MLabel><MInput type="number" min={0} placeholder="100" value={invForm.min_stock} onChange={e=>setInvForm({...invForm,min_stock:e.target.value})}/></div>
             <div><MLabel>Unidad</MLabel><MSelect value={invForm.unit} onChange={e=>setInvForm({...invForm,unit:e.target.value})}>{UNITS.map(u=><option key={u} value={u}>{u}</option>)}</MSelect></div>
-            <div><MLabel>Precio Unitario AED</MLabel><MInput type="number" min={0} placeholder="0" value={invForm.unit_price} onChange={e=>setInvForm({...invForm,unit_price:e.target.value})}/></div>
+            <div><MLabel>Precio Unitario AED</MLabel><MInput type="number" min={0} placeholder="0" value={invForm.unit_cost} onChange={e=>setInvForm({...invForm,unit_cost:e.target.value})}/></div>
             <div style={{gridColumn:'1 / -1'}}><MLabel>Proveedor</MLabel><MInput placeholder="Al Noor Supplies" value={invForm.supplier} onChange={e=>setInvForm({...invForm,supplier:e.target.value})}/></div>
           </div>
           <button onClick={saveInventory} disabled={saving||!invForm.name.trim()} style={{...SUBMIT_STYLE,opacity:invForm.name.trim()?1:0.5,cursor:invForm.name.trim()?'pointer':'not-allowed'}}>
@@ -538,8 +538,8 @@ export default function ServicesPage() {
                     <tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'#888580',fontSize:13}}>Sin materiales registrados</td></tr>
                   ) : svcMaterials.map((m:any)=>{
                     const inv = getInvItem(m.material_name)
-                    const stock = inv?.stock_current ?? '—'
-                    const minimum = inv?.stock_minimum ?? 0
+                    const stock = inv?.stock_qty ?? '—'
+                    const minimum = inv?.min_stock ?? 0
                     const stockNum = typeof stock === 'number' ? stock : -1
                     const estado = stockNum < 0 ? null : stockNum===0 ? 'sin' : stockNum<=minimum ? 'bajo' : 'ok'
                     return (
