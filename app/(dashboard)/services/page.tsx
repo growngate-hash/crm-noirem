@@ -106,12 +106,9 @@ function ServiceCard({ s, onEdit }: { s: any; onEdit: () => void }) {
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{position:'relative',background:'#141416',border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s'}}
     >
-      {/* Edit button */}
       <div style={{position:'absolute',top:12,right:12}} onClick={e=>e.stopPropagation()}>
         <ABtn onClick={onEdit} size={28}><Pencil size={12}/></ABtn>
       </div>
-
-      {/* Header */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4,paddingRight:36}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <span style={{color:'#c9a84c',fontSize:18,lineHeight:1,flexShrink:0}}>◈</span>
@@ -119,14 +116,11 @@ function ServiceCard({ s, onEdit }: { s: any; onEdit: () => void }) {
         </div>
         <span style={{fontSize:13,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',marginLeft:12}}>{priceStr}</span>
       </div>
-      {/* Code + duration */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginLeft:26,marginBottom:14}}>
         <span style={{fontSize:11,color:'#888580'}}>{s.code ?? s.category ?? ''}</span>
         {(s.duration || s.duration_hrs) && <span style={{fontSize:11,color:'#888580'}}>⏱ {s.duration || s.duration_hrs}</span>}
       </div>
-      {/* Description */}
       {s.description && <div style={{fontSize:13,color:'#888580',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
-      {/* Pills */}
       {pills.length > 0 && (
         <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
           {pills.map((p: string, i: number) => (
@@ -174,14 +168,14 @@ const DEMO_MATERIALS: Record<string, any[]> = {
   ],
 }
 
-const CATS   = ['Lavado','Pulido','Protección','Detailing']
-const LEVELS = ['Junior','Senior','Master']
-const UNITS  = ['unit','mL','L','kg','g']
+const CATS    = ['Lavado','Pulido','Protección','Detailing']
+const LEVELS  = ['Junior','Senior','Master']
+const UNITS   = ['unit','mL','L','kg','g']
 const MAT_CATS = ['Consumible','Químico','Herramienta']
 
-const EMPTY_SERVICE = { name:'', category:'Lavado', base_price:'', description:'', duration_hrs:'', technician_count:'1', technician_level:'Junior' }
+const EMPTY_SERVICE        = { name:'', category:'Lavado', base_price:'', description:'', duration_hrs:'', technician_count:'1', technician_level:'Junior' }
 const EMPTY_INVENTORY_FORM = { name:'', brand:'', stock_qty:'', min_stock:'', unit:'mL', unit_cost:'', supplier:'' }
-const EMPTY_ITEM = { material_name:'', quantity:'', unit:'unit', unit_cost:'', category:'Consumible' }
+const EMPTY_ITEM           = { material_name:'', quantity:'', unit:'unit', unit_cost:'', category:'Consumible' }
 const SUBMIT_STYLE: React.CSSProperties = { width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer' }
 
 type MatRow = { name: string; qty: string; unit: string }
@@ -201,13 +195,19 @@ export default function ServicesPage() {
   const [saving,      setSaving]      = useState(false)
 
   // materials panel
-  const [selectedSvc,    setSelectedSvc]    = useState<any|null>(null)
-  const [svcMaterials,   setSvcMaterials]   = useState<any[]>([])
-  const [allInv,         setAllInv]         = useState<any[]>([])
-  const [loadingMat,     setLoadingMat]     = useState(false)
-  const [showAddItem,    setShowAddItem]    = useState(false)
-  const [newItem,        setNewItem]        = useState({...EMPTY_ITEM})
-  const [savingItem,     setSavingItem]     = useState(false)
+  const [selectedSvc,  setSelectedSvc]  = useState<any|null>(null)
+  const [svcMaterials, setSvcMaterials] = useState<any[]>([])
+  const [allInv,       setAllInv]       = useState<any[]>([])
+  const [loadingMat,   setLoadingMat]   = useState(false)
+  const [showAddItem,  setShowAddItem]  = useState(false)
+  const [newItem,      setNewItem]      = useState({...EMPTY_ITEM})
+  const [savingItem,   setSavingItem]   = useState(false)
+
+  // edit material modal
+  const [editMat,              setEditMat]              = useState<any|null>(null)
+  const [editMatForm,          setEditMatForm]          = useState<any>({})
+  const [editMatSaving,        setEditMatSaving]        = useState(false)
+  const [showMatDeleteConfirm, setShowMatDeleteConfirm] = useState(false)
 
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
@@ -217,26 +217,27 @@ export default function ServicesPage() {
     setTimeout(()=>setToasts(prev=>prev.filter(t=>t.id!==id)),3000)
   }
 
-  function closeService() { setShowService(false); setServiceForm({...EMPTY_SERVICE}); setMatRows([{name:'',qty:'',unit:'unit'}]) }
-  function closeInv()     { setShowInv(false); setInvForm({...EMPTY_INVENTORY_FORM}) }
-  function closeMaterials(){ setSelectedSvc(null); setSvcMaterials([]); setShowAddItem(false); setNewItem({...EMPTY_ITEM}) }
+  function closeService()  { setShowService(false); setServiceForm({...EMPTY_SERVICE}); setMatRows([{name:'',qty:'',unit:'unit'}]) }
+  function closeInv()      { setShowInv(false); setInvForm({...EMPTY_INVENTORY_FORM}) }
+  function closeEditMat()  { setEditMat(null); setEditMatForm({}); setShowMatDeleteConfirm(false) }
+  function closeMaterials(){ setSelectedSvc(null); setSvcMaterials([]); setAllInv([]); setShowAddItem(false); setNewItem({...EMPTY_ITEM}); closeEditMat() }
 
   useEffect(()=>{
     function onKey(e: KeyboardEvent){
       if(e.key!=='Escape') return
+      if(editMat)      { closeEditMat();   return }
       if(selectedSvc)  { closeMaterials(); return }
       if(showService)  { closeService();   return }
       if(showInv)      { closeInv();       return }
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc])
+  },[showService,showInv,selectedSvc,editMat])
 
   function fetchServices()  { createClient().from('services').select('*').order('name').then(({data})=>{setServices(data??[]);setLoadingS(false)}) }
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
   useEffect(()=>{ fetchServices(); fetchInventory() },[])
 
-  // open materials panel for a service
   async function openMaterials(svc: any) {
     setSelectedSvc(svc)
     setLoadingMat(true)
@@ -261,6 +262,73 @@ export default function ServicesPage() {
     return allInv.find(i => i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()??''))
   }
 
+  function openEditMat(m: any) {
+    const inv = getInvItem(m.material_name)
+    setEditMatForm({
+      material_name: m.material_name ?? '',
+      category:      m.category      ?? 'Consumible',
+      quantity:      String(m.quantity  ?? ''),
+      unit:          m.unit           ?? 'unit',
+      unit_cost:     String(m.unit_cost ?? ''),
+      stock_qty:     String(inv?.stock_qty ?? ''),
+    })
+    setShowMatDeleteConfirm(false)
+    setEditMat(m)
+  }
+
+  async function saveEditMat() {
+    if (!editMat || !editMatForm.material_name.trim()) return
+    const isDemo = String(editMat.id).startsWith('m')
+
+    const updatedFields = {
+      material_name: editMatForm.material_name,
+      category:      editMatForm.category,
+      quantity:      Number(editMatForm.quantity) || 0,
+      unit:          editMatForm.unit,
+      unit_cost:     Number(editMatForm.unit_cost) || 0,
+    }
+
+    if (!isDemo) {
+      setEditMatSaving(true)
+      const {error} = await createClient().from('service_materials').update(updatedFields).eq('id', editMat.id)
+      if (error) { setEditMatSaving(false); addToast(error.message,'error'); return }
+      // update stock in inventory_items if provided
+      if (editMatForm.stock_qty !== '') {
+        await createClient().from('inventory_items')
+          .update({ stock_qty: Number(editMatForm.stock_qty) })
+          .ilike('name', `%${editMatForm.material_name}%`)
+      }
+      setEditMatSaving(false)
+    }
+
+    // update local svcMaterials state
+    setSvcMaterials(prev => prev.map(m => m.id === editMat.id ? {...m, ...updatedFields} : m))
+
+    // update local allInv state so KPIs recalculate immediately
+    if (editMatForm.stock_qty !== '') {
+      setAllInv(prev => prev.map(i => {
+        const lower = editMatForm.material_name.toLowerCase()
+        const match = i.name?.toLowerCase().includes(lower) || lower.includes(i.name?.toLowerCase()??'')
+        return match ? {...i, stock_qty: Number(editMatForm.stock_qty)} : i
+      }))
+    }
+
+    closeEditMat()
+    addToast('Material actualizado correctamente','success')
+  }
+
+  async function deleteMatItem() {
+    if (!editMat) return
+    const isDemo = String(editMat.id).startsWith('m')
+    if (!isDemo) {
+      const {error} = await createClient().from('service_materials').delete().eq('id', editMat.id)
+      if (error) { addToast(error.message,'error'); return }
+    }
+    setSvcMaterials(prev => prev.filter(m => m.id !== editMat.id))
+    closeEditMat()
+    addToast('Material eliminado','success')
+  }
+
   async function saveService() {
     if (!serviceForm.name.trim()) return
     setSaving(true)
@@ -272,7 +340,6 @@ export default function ServicesPage() {
       technician_level: serviceForm.technician_level, is_active: true,
     }).select('id').single()
     if (error) { setSaving(false); addToast(error.message,'error'); return }
-    // save materials
     const validMats = matRows.filter(r=>r.name.trim())
     if (validMats.length > 0 && data?.id) {
       await createClient().from('service_materials').insert(
@@ -291,8 +358,8 @@ export default function ServicesPage() {
       name:invForm.name, brand:invForm.brand, unit:invForm.unit,
       supplier:invForm.supplier,
       stock_qty: invForm.stock_qty ? Number(invForm.stock_qty) : 0,
-      min_stock: invForm.min_stock ? Number(invForm.min_stock) : 0,
-      unit_cost:    invForm.unit_cost    ? Number(invForm.unit_cost)    : 0,
+      min_stock:  invForm.min_stock  ? Number(invForm.min_stock)  : 0,
+      unit_cost:  invForm.unit_cost  ? Number(invForm.unit_cost)  : 0,
     })
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
@@ -320,7 +387,7 @@ export default function ServicesPage() {
   const srcServices  = services.length  > 0 && !loadingS ? services  : (!loadingS ? DEMO_SERVICES  : [])
   const srcInventory = inventory.length > 0 && !loadingI ? inventory : (!loadingI ? DEMO_INVENTORY : [])
 
-  // KPIs for materials panel
+  // KPIs — recalculate from current svcMaterials + allInv
   const totalArticulos = svcMaterials.length
   const costoTotal     = svcMaterials.reduce((s,m)=>(s + (m.quantity??0)*(m.unit_cost??0)),0)
   const alertas        = svcMaterials.filter(m=>{ const inv=getInvItem(m.material_name); return inv && (inv.stock_qty??0)<=(inv.min_stock??0) }).length
@@ -403,9 +470,7 @@ export default function ServicesPage() {
       {showService && (
         <SModal title="Agregar Nuevo Servicio" onClose={closeService} maxWidth={560}>
           <div style={{display:'flex',flexDirection:'column',gap:16}}>
-            {/* Nombre */}
             <div><MLabel>Nombre del Servicio *</MLabel><MInput placeholder="ej. Corrección de Pintura" value={serviceForm.name} onChange={e=>setServiceForm({...serviceForm,name:e.target.value})}/></div>
-            {/* Categoría + Precio */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div>
                 <MLabel>Categoría *</MLabel>
@@ -413,19 +478,15 @@ export default function ServicesPage() {
               </div>
               <div><MLabel>Precio (AED) *</MLabel><MInput type="number" min={0} placeholder="0" value={serviceForm.base_price} onChange={e=>setServiceForm({...serviceForm,base_price:e.target.value})}/></div>
             </div>
-            {/* Descripción */}
             <div><MLabel>Descripción</MLabel><MTextarea rows={2} placeholder="Breve descripción del servicio..." value={serviceForm.description} onChange={e=>setServiceForm({...serviceForm,description:e.target.value})}/></div>
-            {/* Tiempo + Técnicos */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div><MLabel>Tiempo Estimado</MLabel><MInput placeholder="ej. 2-4 Horas" value={serviceForm.duration_hrs} onChange={e=>setServiceForm({...serviceForm,duration_hrs:e.target.value})}/></div>
               <div><MLabel>Cantidad de Técnicos *</MLabel><MInput type="number" min={1} placeholder="1" value={serviceForm.technician_count} onChange={e=>setServiceForm({...serviceForm,technician_count:e.target.value})}/></div>
             </div>
-            {/* Nivel */}
             <div>
               <MLabel>Nivel de Técnicos *</MLabel>
               <PillSelector options={LEVELS} value={serviceForm.technician_level} onChange={v=>setServiceForm({...serviceForm,technician_level:v})}/>
             </div>
-            {/* Materiales */}
             <div>
               <MLabel sub="(para control de inventario)">Materiales e Insumos</MLabel>
               <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -490,9 +551,9 @@ export default function ServicesPage() {
             {/* KPI row */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:20}}>
               {[
-                {label:'Total Artículos',  value:String(totalArticulos),  color:'#f0ede8'},
+                {label:'Total Artículos',   value:String(totalArticulos), color:'#f0ede8'},
                 {label:'Costo Est. / Serv.',value:`AED ${costoTotal.toLocaleString('en-AE')}`, color:'#c9a84c'},
-                {label:'Alertas',           value:String(alertas),         color: alertas>0?'#ff4f4f':'#f0ede8'},
+                {label:'Alertas',           value:String(alertas),        color:alertas>0?'#ff4f4f':'#f0ede8'},
               ].map(k=>(
                 <div key={k.label} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
                   <div style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
@@ -537,8 +598,8 @@ export default function ServicesPage() {
                   ) : svcMaterials.length===0 ? (
                     <tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'#888580',fontSize:13}}>Sin materiales registrados</td></tr>
                   ) : svcMaterials.map((m:any)=>{
-                    const inv = getInvItem(m.material_name)
-                    const stock = inv?.stock_qty ?? '—'
+                    const inv     = getInvItem(m.material_name)
+                    const stock   = inv?.stock_qty ?? '—'
                     const minimum = inv?.min_stock ?? 0
                     const stockNum = typeof stock === 'number' ? stock : -1
                     const estado = stockNum < 0 ? null : stockNum===0 ? 'sin' : stockNum<=minimum ? 'bajo' : 'ok'
@@ -550,17 +611,93 @@ export default function ServicesPage() {
                         <td style={{padding:'12px 14px',fontSize:13,color:'#f0ede8'}}>{typeof stock==='number'?stock:'—'}</td>
                         <td style={{padding:'12px 14px',fontSize:13,color:'#c9a84c',fontWeight:600}}>{m.unit_cost?`AED ${m.unit_cost}`:'—'}</td>
                         <td style={{padding:'12px 14px'}}>
-                          {estado==='ok'  && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#34d399'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>OK</span>}
+                          {estado==='ok'   && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#34d399'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>OK</span>}
                           {estado==='bajo' && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#fbbf24'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#fbbf24',display:'inline-block'}}/>Bajo</span>}
                           {estado==='sin'  && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#ff4f4f'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#ff4f4f',display:'inline-block'}}/>Sin Stock</span>}
                           {!estado && <span style={{fontSize:12,color:'#888580'}}>—</span>}
                         </td>
-                        <td style={{padding:'12px 14px'}}><ABtn size={26}><Pencil size={10}/></ABtn></td>
+                        <td style={{padding:'12px 14px'}}>
+                          <ABtn size={26} onClick={()=>openEditMat(m)}><Pencil size={10}/></ABtn>
+                        </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Editar Material ── */}
+      {editMat && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:700,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={closeEditMat}>
+          <div style={{background:'#141416',border:'1px solid rgba(201,168,76,0.25)',borderRadius:12,padding:20,width:'100%',maxWidth:480}} onClick={e=>e.stopPropagation()}>
+
+            {/* Header */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <span style={{fontSize:15,fontWeight:700,color:'#f0ede8'}}>Editar Material</span>
+              <button onClick={closeEditMat} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex',alignItems:'center'}}><X size={16}/></button>
+            </div>
+
+            {/* Fields */}
+            <div style={{display:'flex',flexDirection:'column',gap:14}}>
+              <div>
+                <MLabel>Ítem</MLabel>
+                <MInput placeholder="Nombre del material" value={editMatForm.material_name} onChange={e=>setEditMatForm({...editMatForm,material_name:e.target.value})}/>
+              </div>
+              <div>
+                <MLabel>Categoría</MLabel>
+                <PillSelector options={MAT_CATS} value={editMatForm.category} onChange={v=>setEditMatForm({...editMatForm,category:v})}/>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 110px',gap:8}}>
+                <div>
+                  <MLabel>Cant. x Servicio</MLabel>
+                  <MInput type="number" min={0} placeholder="0" value={editMatForm.quantity} onChange={e=>setEditMatForm({...editMatForm,quantity:e.target.value})}/>
+                </div>
+                <div>
+                  <MLabel>Unidad</MLabel>
+                  <MSelect value={editMatForm.unit} onChange={e=>setEditMatForm({...editMatForm,unit:e.target.value})}>
+                    {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+                  </MSelect>
+                </div>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+                <div>
+                  <MLabel>Stock</MLabel>
+                  <MInput type="number" min={0} placeholder="—" value={editMatForm.stock_qty} onChange={e=>setEditMatForm({...editMatForm,stock_qty:e.target.value})}/>
+                </div>
+                <div>
+                  <MLabel>Costo Unit. (AED)</MLabel>
+                  <MInput type="number" min={0} placeholder="0" value={editMatForm.unit_cost} onChange={e=>setEditMatForm({...editMatForm,unit_cost:e.target.value})}/>
+                </div>
+              </div>
+            </div>
+
+            {/* Delete confirm */}
+            {showMatDeleteConfirm && (
+              <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <span style={{fontSize:12,color:'#ff4f4f'}}>¿Eliminar este material?</span>
+                <div style={{display:'flex',gap:6}}>
+                  <button onClick={()=>setShowMatDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
+                  <button onClick={deleteMatItem} style={{padding:'5px 12px',borderRadius:6,border:'none',background:'#ff4f4f',color:'#fff',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Sí, eliminar</button>
+                </div>
+              </div>
+            )}
+
+            {/* Buttons */}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:20}}>
+              <button onClick={()=>setShowMatDeleteConfirm(true)} style={{padding:'8px 14px',borderRadius:8,border:'1px solid rgba(255,79,79,0.3)',background:'transparent',color:'#ff4f4f',fontSize:12,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                Eliminar material
+              </button>
+              <div style={{display:'flex',gap:8}}>
+                <button onClick={closeEditMat} style={{padding:'8px 16px',borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                  Cancelar
+                </button>
+                <button onClick={saveEditMat} disabled={editMatSaving||!editMatForm.material_name?.trim()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer',opacity:editMatForm.material_name?.trim()?1:0.5}}>
+                  {editMatSaving?'Guardando…':'Guardar'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
