@@ -233,7 +233,7 @@ export default function ServicesPage() {
   },[showService,showInv,selectedSvc])
 
   function fetchServices()  { createClient().from('services').select('*').order('name').then(({data})=>{setServices(data??[]);setLoadingS(false)}) }
-  function fetchInventory() { createClient().from('inventory').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
+  function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
   useEffect(()=>{ fetchServices(); fetchInventory() },[])
 
   // open materials panel for a service
@@ -248,7 +248,7 @@ export default function ServicesPage() {
     } else {
       const [matRes, invRes] = await Promise.all([
         createClient().from('service_materials').select('*').eq('service_id', svc.id),
-        createClient().from('inventory').select('*'),
+        createClient().from('inventory_items').select('*'),
       ])
       setSvcMaterials(matRes.data ?? [])
       setAllInv(invRes.data ?? [])
@@ -287,7 +287,7 @@ export default function ServicesPage() {
   async function saveInventory() {
     if (!invForm.name.trim()) return
     setSaving(true)
-    const {error} = await createClient().from('inventory').insert({
+    const {error} = await createClient().from('inventory_items').insert({
       name:invForm.name, brand:invForm.brand, unit:invForm.unit,
       supplier:invForm.supplier,
       stock_current: invForm.stock_current ? Number(invForm.stock_current) : 0,

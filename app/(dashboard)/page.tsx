@@ -194,7 +194,7 @@ export default function DashboardPage() {
     const supabase = createClient()
     Promise.all([
       supabase.from('bookings').select('*, contacts(*), vehicles(*), services(*)').order('created_at', { ascending: false }),
-      supabase.from('inventory').select('*'),
+      supabase.from('inventory_items').select('*'),
     ]).then(([{ data: b }, { data: inv }]) => {
       setBookings(b ?? [])
       setInventory(inv ?? [])
