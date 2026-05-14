@@ -109,7 +109,7 @@ const DEMO_CONTACTS = [
   { id:'d4', name:'Fatima Al Zaabi',     tier:'VIP',           tipo:'cliente', bookings:[{},{}],                              vehicles:[{ make:'Porsche',      model:'Cayenne', license_plate:'SHJ·9012', id:'v4', year:2021 }], total:18700  },
 ]
 
-const TABS       = ['Todos','Clientes','Proveedores']
+const TABS       = ['Clientes','Proveedores']
 const TIER_PILLS = ['All','Black Diamond','Platinum','VIP']
 const COL_HEADS  = ['Cliente','Categoría','Vehículo Principal','Matrícula','Gasto Total','Acciones']
 
@@ -123,7 +123,7 @@ export default function ContactsPage() {
   const [loading,    setLoading]    = useState(true)
   const [search,     setSearch]     = useState('')
   const [tierFilter, setTierFilter] = useState('All')
-  const [activeTab,  setActiveTab]  = useState('Todos')
+  const [activeTab,  setActiveTab]  = useState('Clientes')
   const [drawer,     setDrawer]     = useState<any | null>(null)
 
   // add modals
@@ -245,7 +245,7 @@ export default function ContactsPage() {
   }
 
   // ── display data ───────────────────────────────────────────────────────────
-  const isDemo = contacts.length === 0 && activeTab === 'Todos' && !loading
+  const isDemo = contacts.length === 0 && activeTab === 'Clientes' && !loading
   const source = isDemo ? DEMO_CONTACTS : contacts
 
   const filtered = source.filter(c => {
