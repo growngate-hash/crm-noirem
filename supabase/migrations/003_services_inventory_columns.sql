@@ -1,0 +1,11 @@
+ALTER TABLE services
+ADD COLUMN IF NOT EXISTS code text,
+ADD COLUMN IF NOT EXISTS price_min numeric,
+ADD COLUMN IF NOT EXISTS price_max numeric,
+ADD COLUMN IF NOT EXISTS duration text,
+ADD COLUMN IF NOT EXISTS variants text;
+
+ALTER TABLE inventory
+ADD COLUMN IF NOT EXISTS brand text,
+ADD COLUMN IF NOT EXISTS unit text DEFAULT 'mL',
+ADD COLUMN IF NOT EXISTS supplier text;
