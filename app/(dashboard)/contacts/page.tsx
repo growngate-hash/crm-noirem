@@ -113,7 +113,7 @@ const TABS       = ['Clientes','Proveedores']
 const TIER_PILLS = ['All','Black Diamond','Platinum','VIP']
 const COL_HEADS  = ['Cliente','Categoría','Vehículo Principal','Matrícula','Gasto Total','Acciones']
 
-const EMPTY_CLIENT   = { name:'', phone:'', email:'', vehicle_type:'', tier:'VIP', address:'', notes:'' }
+const EMPTY_CLIENT   = { name:'', phone:'', email:'', vehicle_type:'', license_plate:'', tier:'VIP', address:'', notes:'' }
 const EMPTY_PROVIDER = { name:'', phone:'', email:'', supplier_type:'', address:'', notes:'' }
 
 const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', transition:'opacity 0.15s', cursor:'pointer' }
@@ -158,7 +158,7 @@ export default function ContactsPage() {
     if (c.tipo === 'proveedor') {
       setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', supplier_type: c.supplier_type ?? '', address: c.address ?? '', notes: c.notes ?? '' })
     } else {
-      setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', vehicle_type: c.vehicle_type ?? '', tier: c.tier ?? 'VIP', address: c.address ?? '', notes: c.notes ?? '' })
+      setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', vehicle_type: c.vehicle_type ?? '', license_plate: c.license_plate ?? '', tier: c.tier ?? 'VIP', address: c.address ?? '', notes: c.notes ?? '' })
     }
   }
 
@@ -195,7 +195,7 @@ export default function ContactsPage() {
   async function saveClient() {
     if (!clientForm.name.trim()) return
     setSaving(true)
-    const { error } = await createClient().from('contacts').insert({ name:clientForm.name, phone:clientForm.phone, email:clientForm.email, tier:clientForm.tier, address:clientForm.address, notes:clientForm.notes, vehicle_type:clientForm.vehicle_type, tipo:'cliente' })
+    const { error } = await createClient().from('contacts').insert({ name:clientForm.name, phone:clientForm.phone, email:clientForm.email, tier:clientForm.tier, address:clientForm.address, notes:clientForm.notes, vehicle_type:clientForm.vehicle_type, license_plate:clientForm.license_plate, tipo:'cliente' })
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
     addToast('Cliente agregado correctamente', 'success')
@@ -222,6 +222,7 @@ export default function ContactsPage() {
       payload.supplier_type = editForm.supplier_type
     } else {
       payload.vehicle_type = editForm.vehicle_type
+      payload.license_plate = editForm.license_plate
       payload.tier = editForm.tier
     }
     const { error } = await createClient().from('contacts').update(payload).eq('id', editContact.id)
@@ -342,10 +343,9 @@ export default function ContactsPage() {
                 </td>
               </tr>
             ) : filtered.map(c => {
-              const pv         = (c.vehicles ?? [])[0]
-              const vehicleName = pv ? `${pv.make} ${pv.model}` : '—'
-              const plate      = pv?.license_plate ?? '—'
-              const bkCount    = (c.bookings ?? []).length
+              const vehicleName = c.vehicle_type || '—'
+              const plate       = c.license_plate || '—'
+              const bkCount     = (c.bookings ?? []).length
               const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
               return (
                 <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
@@ -368,9 +368,9 @@ export default function ContactsPage() {
                     </>
                   ) : (
                     <>
-                      <td style={{ padding:'14px 16px', fontSize:13, color:'#888580' }}>{vehicleName}</td>
+                      <td style={{ padding:'14px 16px', fontSize:13, color: c.vehicle_type ? '#888580' : '#3a3836' }}>{vehicleName}</td>
                       <td style={{ padding:'14px 16px' }}>
-                        <span style={{ fontFamily:'monospace', fontSize:12, color:'#c9a84c', fontWeight:600 }}>{plate}</span>
+                        <span style={{ fontFamily:'monospace', fontSize:12, color: c.license_plate ? '#c9a84c' : '#3a3836', fontWeight:600 }}>{plate}</span>
                       </td>
                     </>
                   )}
@@ -460,8 +460,9 @@ export default function ContactsPage() {
             <div><MLabel>Nombre *</MLabel><MInput placeholder="Ahmed Al Rashid" value={clientForm.name} onChange={e => setClientForm({...clientForm, name:e.target.value})} /></div>
             <div><MLabel>Teléfono</MLabel><MInput placeholder="+971 50 000 0000" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone:e.target.value})} /></div>
             <div><MLabel>Correo</MLabel><MInput type="email" placeholder="ahmed@example.ae" value={clientForm.email} onChange={e => setClientForm({...clientForm, email:e.target.value})} /></div>
-            <div><MLabel>Tipo de Vehículo</MLabel><MInput placeholder="ej. Toyota Camry" value={clientForm.vehicle_type} onChange={e => setClientForm({...clientForm, vehicle_type:e.target.value})} /></div>
-            <div style={{ gridColumn:'1 / -1' }}><MLabel>Categoría</MLabel><TierPicker value={clientForm.tier} onChange={v => setClientForm({...clientForm, tier:v})} /></div>
+            <div><MLabel>Tipo de Vehículo</MLabel><MInput placeholder="ej. Bugatti Chiron" value={clientForm.vehicle_type} onChange={e => setClientForm({...clientForm, vehicle_type:e.target.value})} /></div>
+            <div><MLabel>Matrícula</MLabel><MInput placeholder="ej. M-00007" value={clientForm.license_plate} onChange={e => setClientForm({...clientForm, license_plate:e.target.value})} /></div>
+            <div><MLabel>Categoría</MLabel><TierPicker value={clientForm.tier} onChange={v => setClientForm({...clientForm, tier:v})} /></div>
             <div style={{ gridColumn:'1 / -1' }}><MLabel>Dirección</MLabel><MInput placeholder="Dubai, UAE" value={clientForm.address} onChange={e => setClientForm({...clientForm, address:e.target.value})} /></div>
             <div style={{ gridColumn:'1 / -1' }}><MLabel>Notas</MLabel><MTextarea rows={3} placeholder="Detalles importantes sobre este cliente..." value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes:e.target.value})} /></div>
           </div>
@@ -506,7 +507,8 @@ export default function ContactsPage() {
               <div><MLabel>Teléfono</MLabel><MInput value={editForm.phone ?? ''} onChange={e => setEditForm({...editForm, phone:e.target.value})} /></div>
               <div><MLabel>Correo</MLabel><MInput type="email" value={editForm.email ?? ''} onChange={e => setEditForm({...editForm, email:e.target.value})} /></div>
               <div><MLabel>Tipo de Vehículo</MLabel><MInput value={editForm.vehicle_type ?? ''} onChange={e => setEditForm({...editForm, vehicle_type:e.target.value})} /></div>
-              <div style={{ gridColumn:'1 / -1' }}><MLabel>Categoría</MLabel><TierPicker value={editForm.tier ?? 'VIP'} onChange={v => setEditForm({...editForm, tier:v})} /></div>
+              <div><MLabel>Matrícula</MLabel><MInput placeholder="ej. M-00007" value={editForm.license_plate ?? ''} onChange={e => setEditForm({...editForm, license_plate:e.target.value})} /></div>
+              <div><MLabel>Categoría</MLabel><TierPicker value={editForm.tier ?? 'VIP'} onChange={v => setEditForm({...editForm, tier:v})} /></div>
               <div style={{ gridColumn:'1 / -1' }}><MLabel>Dirección</MLabel><MInput value={editForm.address ?? ''} onChange={e => setEditForm({...editForm, address:e.target.value})} /></div>
               <div style={{ gridColumn:'1 / -1' }}><MLabel>Notas</MLabel><MTextarea rows={3} value={editForm.notes ?? ''} onChange={e => setEditForm({...editForm, notes:e.target.value})} /></div>
             </div>
