@@ -234,30 +234,33 @@ export default function ServicesPage() {
     return ()=>document.removeEventListener('keydown',onKey)
   },[showService,showInv,selectedSvc,editMat])
 
-  function fetchServices()  { createClient().from('services').select('*').order('name').then(({data})=>{setServices(data??[]);setLoadingS(false)}) }
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
 
-  async function seedServicesIfEmpty() {
+  // Fetch services; if table is empty, seed with real rows and set state from returned UUIDs
+  async function fetchServices() {
+    setLoadingS(true)
     const sb = createClient()
-    const { data } = await sb.from('services').select('id').limit(1)
-    if (data && data.length === 0) {
-      await sb.from('services').insert([
-        { name:'Ceramic Coating',  code:'CC-PRO',   category:'Protección', price_min:3500,  price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     is_active:true },
-        { name:'PPF Full Wrap',    code:'PPF-FULL',  category:'Protección', price_min:12000, price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', is_active:true },
-        { name:'Full Restoration', code:'REST-360',  category:'Detailing',  price_min:8000,  price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    is_active:true },
-        { name:'Interior Detail',  code:'INT-LUX',   category:'Detailing',  price_min:1500,  price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  is_active:true },
-      ])
+    const { data: existing } = await sb.from('services').select('*').order('name')
+
+    if (existing && existing.length > 0) {
+      setServices(existing)
+      setLoadingS(false)
+      return
     }
+
+    // Table empty — seed and capture the real UUIDs returned by Supabase
+    const { data: seeded } = await sb.from('services').insert([
+      { name:'Ceramic Coating',  code:'CC-PRO',   category:'Protección', price_min:3500,  price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     is_active:true },
+      { name:'PPF Full Wrap',    code:'PPF-FULL',  category:'Protección', price_min:12000, price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', is_active:true },
+      { name:'Full Restoration', code:'REST-360',  category:'Detailing',  price_min:8000,  price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    is_active:true },
+      { name:'Interior Detail',  code:'INT-LUX',   category:'Detailing',  price_min:1500,  price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  is_active:true },
+    ]).select()  // .select() makes Supabase return the inserted rows with their real UUIDs
+
+    setServices(seeded ?? [])
+    setLoadingS(false)
   }
 
-  useEffect(()=>{
-    async function init() {
-      await seedServicesIfEmpty()
-      fetchServices()
-      fetchInventory()
-    }
-    init()
-  },[])
+  useEffect(()=>{ fetchServices(); fetchInventory() },[])
 
   async function openMaterials(svc: any) {
     setSelectedSvc(svc)
@@ -389,7 +392,7 @@ export default function ServicesPage() {
     openMaterials(selectedSvc)
   }
 
-  const srcServices  = services.length  > 0 && !loadingS ? services  : (!loadingS ? DEMO_SERVICES  : [])
+  const srcServices  = services   // always real Supabase UUIDs after fetchServices()
   const srcInventory = inventory.length > 0 && !loadingI ? inventory : (!loadingI ? DEMO_INVENTORY : [])
 
   // KPIs — recalculate from current svcMaterials + allInv
