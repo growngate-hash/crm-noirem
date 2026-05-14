@@ -282,7 +282,7 @@ export default function ContactsPage() {
           <input className="inp" style={{ paddingLeft:30, fontSize:12 }} placeholder="Buscar…" value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          {TIER_PILLS.map(pill => {
+          {(activeTab === 'Proveedores' ? ['All'] : TIER_PILLS).map(pill => {
             const isActive = tierFilter === pill
             return (
               <button key={pill} onClick={() => setTierFilter(pill)}
@@ -312,7 +312,21 @@ export default function ContactsPage() {
         <table style={{ width:'100%', borderCollapse:'collapse' }}>
           <thead>
             <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-              {COL_HEADS.map(h => (
+              {['Cliente','Categoría'].map(h => (
+                <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+              ))}
+              {activeTab === 'Proveedores' ? (
+                <>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Tipo de Proveedor</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Teléfono</th>
+                </>
+              ) : (
+                <>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Vehículo Principal</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Matrícula</th>
+                </>
+              )}
+              {['Gasto Total','Acciones'].map(h => (
                 <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -340,15 +354,24 @@ export default function ContactsPage() {
                     <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?'reserva':'reservas'}</div>
                   </td>
                   <td style={{ padding:'14px 16px' }}>
-                    {c.tipo === 'proveedor'
-                      ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', color:'#888580' }}>PROVEEDOR</span>
+                    {activeTab === 'Proveedores'
+                      ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>PROVEEDOR</span>
                       : <CategoryBadge tier={c.tier ?? 'VIP'} />
                     }
                   </td>
-                  <td style={{ padding:'14px 16px', fontSize:13, color:'#888580' }}>{vehicleName}</td>
-                  <td style={{ padding:'14px 16px' }}>
-                    <span style={{ fontFamily:'monospace', fontSize:12, color:'#c9a84c', fontWeight:600 }}>{plate}</span>
-                  </td>
+                  {activeTab === 'Proveedores' ? (
+                    <>
+                      <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#f0ede8' : '#3a3836' }}>{c.supplier_type || '—'}</td>
+                      <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#f0ede8' : '#3a3836' }}>{c.phone || '—'}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ padding:'14px 16px', fontSize:13, color:'#888580' }}>{vehicleName}</td>
+                      <td style={{ padding:'14px 16px' }}>
+                        <span style={{ fontFamily:'monospace', fontSize:12, color:'#c9a84c', fontWeight:600 }}>{plate}</span>
+                      </td>
+                    </>
+                  )}
                   <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{fmt(totalSpent)}</td>
                   <td style={{ padding:'14px 16px' }} onClick={e => e.stopPropagation()}>
                     <div style={{ display:'flex', gap:6 }}>
