@@ -185,47 +185,89 @@ function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
 }
 
 // ─── vehicle agenda (today + tomorrow bookings) ───────────────────────────────
+function esMismaFechaDubai(utcDate: string, fecha: Date): boolean {
+  const date = new Date(utcDate)
+  const dubaiOffset = 4 * 60
+  const localOffset = date.getTimezoneOffset()
+  const dubaiDate = new Date(date.getTime() + (dubaiOffset + localOffset) * 60 * 1000)
+  return (
+    dubaiDate.getFullYear() === fecha.getFullYear() &&
+    dubaiDate.getMonth()    === fecha.getMonth() &&
+    dubaiDate.getDate()     === fecha.getDate()
+  )
+}
+
+const STATUS_DOT: Record<string, string> = {
+  confirmed:   '#34d399',
+  in_progress: '#c9a84c',
+  pending:     '#888580',
+}
+
 function VehicleAgenda({ bookings }: { bookings: any[] }) {
   if (!bookings.length) return null
-  const today    = getDubaiToday()
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
-  const byDay: Record<string, any[]> = {}
-  bookings.forEach(b => {
-    if (!b.scheduled_at) return
-    const d     = toDubaiTime(b.scheduled_at)
-    const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-    const label = key === todayStr ? 'HOY' : 'MAÑANA'
-    if (!byDay[label]) byDay[label] = []
-    byDay[label].push(b)
-  })
-  const sections = (['HOY','MAÑANA'] as const).filter(k => byDay[k])
-  if (!sections.length) return null
-  return (
-    <div style={{borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:10,marginTop:2,display:'flex',flexDirection:'column',gap:8}}>
-      <div style={{fontSize:9,fontWeight:700,color:'#888580',letterSpacing:'0.12em',textTransform:'uppercase'}}>Agenda</div>
-      {sections.map(label => (
-        <div key={label} style={{display:'flex',flexDirection:'column',gap:4}}>
-          <div style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:label==='HOY'?'#c9a84c':'#888580',textTransform:'uppercase'}}>
-            {label}
+
+  const ahoraDubai  = new Date(new Date().getTime() + (4 * 60 + new Date().getTimezoneOffset()) * 60 * 1000)
+  const hoyDubai    = new Date(ahoraDubai)
+  const mananaDubai = new Date(ahoraDubai)
+  mananaDubai.setDate(mananaDubai.getDate() + 1)
+
+  const serviciosHoy    = bookings.filter(b => b.scheduled_at && esMismaFechaDubai(b.scheduled_at, hoyDubai))
+  const serviciosManana = bookings.filter(b => b.scheduled_at && esMismaFechaDubai(b.scheduled_at, mananaDubai))
+
+  if (!serviciosHoy.length && !serviciosManana.length) return null
+
+  function AgendaRow({ b }: { b: any }) {
+    const dot = STATUS_DOT[b.status] ?? '#888580'
+    return (
+      <div style={{display:'flex',gap:8,alignItems:'center',padding:'6px 8px',
+        borderRadius:7,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.05)'}}>
+        <span style={{fontSize:11,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
+          {formatHoraDubai(b.scheduled_at)}
+        </span>
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontSize:11,fontWeight:600,color:'#f0ede8',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            {b.contacts?.name ?? '—'}
           </div>
-          {byDay[label].map((b:any) => (
-            <div key={b.id} style={{display:'flex',gap:7,alignItems:'flex-start',padding:'5px 8px',
-              borderRadius:6,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.04)'}}>
-              <span style={{fontSize:10,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',flexShrink:0,marginTop:1}}>
-                {formatHoraDubai(b.scheduled_at)}
-              </span>
-              <div style={{minWidth:0,flex:1}}>
-                <div style={{fontSize:11,fontWeight:600,color:'#f0ede8',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                  {b.contacts?.name ?? '—'}
-                </div>
-                <div style={{fontSize:10,color:'#888580',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                  {b.services?.name ?? '—'}
-                </div>
-              </div>
-            </div>
-          ))}
+          <div style={{fontSize:10,color:'#888580',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+            {b.services?.name ?? '—'}
+          </div>
         </div>
-      ))}
+        <span style={{width:6,height:6,borderRadius:'50%',background:dot,flexShrink:0}}/>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:10,marginTop:2,display:'flex',flexDirection:'column',gap:6}}>
+      <div style={{fontSize:9,fontWeight:700,color:'#888580',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:2}}>
+        Agenda
+      </div>
+
+      {serviciosHoy.length > 0 && (
+        <div style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#c9a84c',textTransform:'uppercase'}}>HOY</span>
+            <span style={{flex:1,height:1,background:'rgba(201,168,76,0.15)'}}/>
+            <span style={{fontSize:9,fontWeight:600,color:'#c9a84c',background:'rgba(201,168,76,0.1)',borderRadius:99,padding:'1px 6px'}}>
+              {serviciosHoy.length}
+            </span>
+          </div>
+          {serviciosHoy.map((b: any) => <AgendaRow key={b.id} b={b}/>)}
+        </div>
+      )}
+
+      {serviciosManana.length > 0 && (
+        <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:serviciosHoy.length?4:0}}>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#888580',textTransform:'uppercase'}}>MAÑANA</span>
+            <span style={{flex:1,height:1,background:'rgba(255,255,255,0.06)'}}/>
+            <span style={{fontSize:9,fontWeight:600,color:'#888580',background:'rgba(255,255,255,0.05)',borderRadius:99,padding:'1px 6px'}}>
+              {serviciosManana.length}
+            </span>
+          </div>
+          {serviciosManana.map((b: any) => <AgendaRow key={b.id} b={b}/>)}
+        </div>
+      )}
     </div>
   )
 }
@@ -282,34 +324,6 @@ function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInven
               <span style={{fontSize:11,color:'#c9a84c'}}>{v.progress??0}%</span>
             </div>
             <ProgBar pct={v.progress??0}/>
-          </div>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end'}}>
-            <div style={{display:'flex',gap:12}}>
-              <div>
-                <div style={{fontSize:10,color:'#888580'}}>Departed</div>
-                <div style={{fontSize:12,fontWeight:600,color:'#f0ede8'}}>{v.departed_at||'—'}</div>
-              </div>
-              <div>
-                <div style={{fontSize:10,color:'#888580'}}>ETA</div>
-                <div style={{fontSize:12,fontWeight:600,color:'#f0ede8'}}>{v.eta||'—'}</div>
-              </div>
-            </div>
-            {(()=>{
-              const techs: string[] = Array.isArray(v.technicians) && v.technicians.length > 0
-                ? v.technicians
-                : v.technician ? [v.technician] : []
-              const first = techs[0] || '—'
-              const extra = techs.length > 1 ? `+${techs.length-1}` : ''
-              return (
-                <div style={{textAlign:'right',cursor:techs.length>1?'default':'default'}} title={techs.join(', ')}>
-                  <div style={{fontSize:10,color:'#888580'}}>Tech</div>
-                  <div style={{fontSize:11,fontWeight:500,color:'#f0ede8'}}>
-                    {first}
-                    {extra && <span style={{marginLeft:4,color:'#c9a84c',fontWeight:700}}>{extra}</span>}
-                  </div>
-                </div>
-              )
-            })()}
           </div>
         </>
       ) : (
