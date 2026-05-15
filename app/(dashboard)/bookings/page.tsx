@@ -2,6 +2,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
+  dubaiToUTC, getDubaiToday, dubaiDayRange,
+} from '@/utils/timezone'
 
 // ── shared UI ─────────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -94,30 +98,20 @@ const HOURS        = Array.from({length:TOTAL_HORAS},(_,i)=>HORA_INICIO+i) // [7
 
 const DAYS_ABBR = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB']
 
-// ── Gantt position helpers ────────────────────────────────────────────────────
+// ── Gantt position helpers (Dubai UTC+4) ─────────────────────────────────────
 function calcLeft(scheduled_at: string): string {
-  const d = new Date(scheduled_at)
-  const h = d.getHours() + d.getMinutes()/60
+  const h = getHoraDecimalDubai(scheduled_at)
   const pct = ((h - HORA_INICIO) / TOTAL_HORAS) * 100
   return `${Math.max(0, pct).toFixed(3)}%`
 }
 function calcWidth(scheduled_at: string, end_at: string | null): string {
-  const start = new Date(scheduled_at)
-  const sh = start.getHours() + start.getMinutes()/60
-  let eh: number
-  if (end_at) {
-    const end = new Date(end_at)
-    eh = end.getHours() + end.getMinutes()/60
-  } else {
-    eh = sh + 2 // default 2 hours
-  }
+  const sh = getHoraDecimalDubai(scheduled_at)
+  const eh = end_at ? getHoraDecimalDubai(end_at) : sh + 2
   const pct = ((eh - sh) / TOTAL_HORAS) * 100
   return `${Math.max(0.5, pct).toFixed(3)}%`
 }
 function formatHora(iso: string | null): string {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+  return formatHoraDubai(iso)
 }
 
 // ── Demo data (shown when DB has no bookings) ─────────────────────────────────
@@ -199,9 +193,9 @@ export default function BookingsPage() {
   const [services,    setServices]    = useState<any[]>([])
   const [loadingB,    setLoadingB]    = useState(true)
   const [loadingV,    setLoadingV]    = useState(true)
-  const [nowDate,     setNowDate]     = useState(new Date())
-  const [selectedDay, setSelectedDay] = useState<Date>(new Date())
-  const [weekRef,     setWeekRef]     = useState<Date>(new Date())
+  const [nowDate,     setNowDate]     = useState(()=>getDubaiToday())
+  const [selectedDay, setSelectedDay] = useState<Date>(()=>getDubaiToday())
+  const [weekRef,     setWeekRef]     = useState<Date>(()=>getDubaiToday())
 
   const [showNew,       setShowNew]       = useState(false)
   const [editId,        setEditId]        = useState<string|null>(null)
@@ -228,15 +222,14 @@ export default function BookingsPage() {
     setLoadingB(true)
     const sb = createClient()
 
-    // Build day range in local time → ISO strings
-    const startOfDay = new Date(day); startOfDay.setHours(0,0,0,0)
-    const endOfDay   = new Date(day); endOfDay.setHours(23,59,59,999)
+    // Use Dubai midnight → UTC range so the server-side filter is correct
+    const { start: startISO, end: endISO } = dubaiDayRange(day)
 
     const { data, error } = await sb
       .from('bookings')
       .select('*, contacts(name), vehicles(name,license_plate), services(name)')
-      .gte('scheduled_at', startOfDay.toISOString())
-      .lte('scheduled_at', endOfDay.toISOString())
+      .gte('scheduled_at', startISO)
+      .lte('scheduled_at', endISO)
       .order('scheduled_at', {ascending:true})
 
     if (error) {
@@ -289,7 +282,7 @@ export default function BookingsPage() {
   },[selectedDay, fetchBookings])
 
   // ── clock ─────────────────────────────────────────────────────────────────
-  useEffect(()=>{const t=setInterval(()=>setNowDate(new Date()),60000);return()=>clearInterval(t)},[])
+  useEffect(()=>{const t=setInterval(()=>setNowDate(getDubaiToday()),60000);return()=>clearInterval(t)},[])
 
   // ── week nav ───────────────────────────────────────────────────────────────
   const weekDays = getWeekDays(weekRef)
@@ -320,8 +313,9 @@ export default function BookingsPage() {
   async function saveBooking(){
     if(!newForm.contact_id||!newForm.date||!newForm.start_time) return
     setSaving(true)
-    const scheduled_at=`${newForm.date}T${newForm.start_time}:00`
-    const end_at=newForm.end_time?`${newForm.date}T${newForm.end_time}:00`:null
+    // Input times are Dubai local — store as UTC using +04:00 offset
+    const scheduled_at = dubaiToUTC(newForm.date, newForm.start_time)
+    const end_at       = newForm.end_time ? dubaiToUTC(newForm.date, newForm.end_time) : null
     const payload:any={
       contact_id:newForm.contact_id,scheduled_at,end_at,
       technician:newTechs.join(', '),
@@ -347,8 +341,9 @@ export default function BookingsPage() {
   }
 
   function openEdit(b:any){
-    const s=b.scheduled_at?new Date(b.scheduled_at):null
-    const e=b.end_at?new Date(b.end_at):null
+    // Convert stored UTC times back to Dubai local for the form inputs
+    const s=b.scheduled_at?toDubaiTime(b.scheduled_at):null
+    const e=b.end_at?toDubaiTime(b.end_at):null
     setNewForm({
       contact_id:b.contact_id??'',vehicle_id:b.vehicle_id??'',service_id:b.service_id??'',
       date:s?toDateStr(s):'',start_time:s?toTimeStr(s):'09:00',end_time:e?toTimeStr(e):'11:00',
@@ -367,7 +362,7 @@ export default function BookingsPage() {
   }
 
   const loading = loadingB||loadingV
-  const todayStr = new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
+  const todayStr = getDubaiToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -398,7 +393,7 @@ export default function BookingsPage() {
           justifyContent:'center',flexShrink:0}}><ChevronLeft size={14}/></button>
         <div style={{display:'flex',gap:6,flex:1,justifyContent:'center'}}>
           {weekDays.map(d=>{
-            const active=sameDay(d,selectedDay), isNow=sameDay(d,new Date())
+            const active=sameDay(d,selectedDay), isNow=sameDay(d,getDubaiToday())
             return (
               <button key={d.toISOString()} onClick={()=>setSelectedDay(d)}
                 style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'10px 14px',
@@ -641,10 +636,8 @@ export default function BookingsPage() {
               {detailBooking.scheduled_at&&(
                 <DetailRow label="Horario">
                   {(()=>{
-                    const s=new Date(detailBooking.scheduled_at)
-                    const e=detailBooking.end_at?new Date(detailBooking.end_at):null
-                    const ds=s.toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
-                    return <span style={{textTransform:'capitalize'}}>{ds} · {toTimeStr(s)}{e?` — ${toTimeStr(e)}`:''}</span>
+                    const ds=toDubaiTime(detailBooking.scheduled_at).toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
+                    return <span style={{textTransform:'capitalize'}}>{ds} · {formatHoraDubai(detailBooking.scheduled_at)}{detailBooking.end_at?` — ${formatHoraDubai(detailBooking.end_at)}`:''}</span>
                   })()}
                 </DetailRow>
               )}
