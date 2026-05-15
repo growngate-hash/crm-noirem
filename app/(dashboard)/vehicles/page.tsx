@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Package } from 'lucide-react'
+import { getDubaiToday, dubaiDayRange, formatHoraDubai, toDubaiTime } from '@/utils/timezone'
 
 // ─── shared inputs ────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -183,9 +184,55 @@ function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
   )
 }
 
+// ─── vehicle agenda (today + tomorrow bookings) ───────────────────────────────
+function VehicleAgenda({ bookings }: { bookings: any[] }) {
+  if (!bookings.length) return null
+  const today    = getDubaiToday()
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const byDay: Record<string, any[]> = {}
+  bookings.forEach(b => {
+    if (!b.scheduled_at) return
+    const d     = toDubaiTime(b.scheduled_at)
+    const key   = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+    const label = key === todayStr ? 'HOY' : 'MAÑANA'
+    if (!byDay[label]) byDay[label] = []
+    byDay[label].push(b)
+  })
+  const sections = (['HOY','MAÑANA'] as const).filter(k => byDay[k])
+  if (!sections.length) return null
+  return (
+    <div style={{borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:10,marginTop:2,display:'flex',flexDirection:'column',gap:8}}>
+      <div style={{fontSize:9,fontWeight:700,color:'#888580',letterSpacing:'0.12em',textTransform:'uppercase'}}>Agenda</div>
+      {sections.map(label => (
+        <div key={label} style={{display:'flex',flexDirection:'column',gap:4}}>
+          <div style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:label==='HOY'?'#c9a84c':'#888580',textTransform:'uppercase'}}>
+            {label}
+          </div>
+          {byDay[label].map((b:any) => (
+            <div key={b.id} style={{display:'flex',gap:7,alignItems:'flex-start',padding:'5px 8px',
+              borderRadius:6,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.04)'}}>
+              <span style={{fontSize:10,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',flexShrink:0,marginTop:1}}>
+                {formatHoraDubai(b.scheduled_at)}
+              </span>
+              <div style={{minWidth:0,flex:1}}>
+                <div style={{fontSize:11,fontWeight:600,color:'#f0ede8',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                  {b.contacts?.name ?? '—'}
+                </div>
+                <div style={{fontSize:10,color:'#888580',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                  {b.services?.name ?? '—'}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── vehicle card ─────────────────────────────────────────────────────────────
-function VehicleCard({ v, alertCount, onEdit, onClear, onAssign, onInventory }: {
-  v: any; alertCount: number;
+function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory }: {
+  v: any; alertCount: number; agenda: any[];
   onEdit: ()=>void; onClear: ()=>void; onAssign: ()=>void; onInventory: ()=>void
 }) {
   const [confirmClear,setConfirmClear] = useState(false)
@@ -277,6 +324,9 @@ function VehicleCard({ v, alertCount, onEdit, onClear, onAssign, onInventory }: 
         </>
       )}
 
+      {/* agenda: today + tomorrow bookings */}
+      <VehicleAgenda bookings={agenda}/>
+
       {/* 📦 inventory button */}
       <div style={{position:'relative'}}>
         {hasAlert && (
@@ -339,7 +389,9 @@ export default function VehiclesPage() {
   const [loading,   setLoading]   = useState(true)
 
   // alert counts per vehicle: { vehicleId -> alertCount }
-  const [vehAlerts, setVehAlerts] = useState<Record<string,number>>({})
+  const [vehAlerts,   setVehAlerts]   = useState<Record<string,number>>({})
+  // agenda bookings per vehicle: { vehicleId -> booking[] }
+  const [vehBookings, setVehBookings] = useState<Record<string,any[]>>({})
 
   // vehicle CRUD modals
   const [showAdd,           setShowAdd]           = useState(false)
@@ -407,8 +459,34 @@ export default function VehiclesPage() {
     setVehAlerts(counts)
   }
 
+  async function fetchVehicleBookings() {
+    // Fetch today + tomorrow in Dubai time
+    const today    = getDubaiToday()
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
+    const { start } = dubaiDayRange(today)
+    const { end }   = dubaiDayRange(tomorrow)
+
+    const { data } = await createClient()
+      .from('bookings')
+      .select('id, vehicle_id, scheduled_at, end_at, contacts(name), services(name), status')
+      .gte('scheduled_at', start)
+      .lte('scheduled_at', end)
+      .in('status', ['confirmed','in_progress','pending'])
+      .order('scheduled_at', {ascending:true})
+
+    if (!data) return
+    const byVehicle: Record<string,any[]> = {}
+    data.forEach(b => {
+      if (!b.vehicle_id) return
+      if (!byVehicle[b.vehicle_id]) byVehicle[b.vehicle_id] = []
+      byVehicle[b.vehicle_id].push(b)
+    })
+    setVehBookings(byVehicle)
+  }
+
   useEffect(()=>{
     fetchVehicles()
+    fetchVehicleBookings()
     const sb = createClient()
     sb.from('contacts').select('id, name').then(({data})=>setContacts(data??[]))
     sb.from('services').select('id, name').then(({data})=>setServices(data??[]))
@@ -636,6 +714,7 @@ export default function VehiclesPage() {
           {vehicles.map(v=>(
             <VehicleCard key={v.id} v={v}
               alertCount={vehAlerts[v.id]??0}
+              agenda={vehBookings[v.id]??[]}
               onEdit={()=>openEdit(v)}
               onClear={()=>clearVehicle(v)}
               onAssign={()=>{ setAssignVeh(v); setAssignForm({...EMPTY_ASSIGN}) }}
