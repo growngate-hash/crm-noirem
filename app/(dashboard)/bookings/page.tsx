@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -34,7 +34,7 @@ function TechTag({ name, onRemove }: { name:string; onRemove:()=>void }) {
   return (
     <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:99,
       background:'rgba(201,168,76,0.12)',border:`1px solid ${hov?'rgba(255,79,79,0.45)':'rgba(201,168,76,0.35)'}`,
-      color:'#c9a84c',fontSize:11,fontWeight:600,transition:'border-color 0.15s'}}>
+      color:'#c9a84c',fontSize:11,fontWeight:600}}>
       {name}
       <button type="button" onClick={onRemove} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',
@@ -47,7 +47,7 @@ function TechDropRow({ name, onPick }: { name:string; onPick:()=>void }) {
   const [hov,setHov] = useState(false)
   return <div onClick={onPick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
     style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#f0ede8',fontFamily:'Outfit,sans-serif',
-      background:hov?'rgba(201,168,76,0.1)':'transparent',transition:'background 0.1s'}}>{name}</div>
+      background:hov?'rgba(201,168,76,0.1)':'transparent'}}>{name}</div>
 }
 function TechPicker({ selected, onChange, pool }: { selected:string[]; onChange:(v:string[])=>void; pool:string[] }) {
   const [query,setQuery] = useState('')
@@ -56,51 +56,71 @@ function TechPicker({ selected, onChange, pool }: { selected:string[]; onChange:
   const src      = pool.length>0 ? pool : FALLBACK_TECHS
   const filtered = src.filter(t=>t.toLowerCase().includes(query.toLowerCase())&&!selected.includes(t))
   const canAdd   = query.trim()&&!src.includes(query.trim())&&!selected.includes(query.trim())
-  function add(name:string) { if(!name.trim()||selected.includes(name)) return; onChange([...selected,name]); setQuery(''); setOpen(false) }
-  function remove(name:string) { onChange(selected.filter(t=>t!==name)) }
+  function add(n:string) { if(!n.trim()||selected.includes(n)) return; onChange([...selected,n]); setQuery(''); setOpen(false) }
+  function remove(n:string) { onChange(selected.filter(t=>t!==n)) }
   useEffect(()=>{
     function outside(e:MouseEvent) { if(wrapRef.current&&!wrapRef.current.contains(e.target as Node)) setOpen(false) }
     document.addEventListener('mousedown',outside); return ()=>document.removeEventListener('mousedown',outside)
   },[])
   return (
     <div ref={wrapRef} style={{position:'relative'}}>
-      {selected.length>0&&(
-        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:8}}>
-          {selected.map(t=><TechTag key={t} name={t} onRemove={()=>remove(t)}/>)}
-        </div>
-      )}
+      {selected.length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:8}}>
+        {selected.map(t=><TechTag key={t} name={t} onRemove={()=>remove(t)}/>)}
+      </div>}
       <div style={{position:'relative'}}>
         <MInput placeholder="Buscar técnico…" value={query}
           onChange={e=>{setQuery(e.target.value);setOpen(true)}} onFocus={()=>setOpen(true)}/>
-        {canAdd&&(
-          <button type="button" onClick={()=>add(query.trim())}
-            style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'#c9a84c',
-              border:'none',borderRadius:6,color:'#0d0d0f',fontSize:11,fontWeight:700,padding:'3px 8px',
-              cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>+ Agregar</button>
-        )}
+        {canAdd&&<button type="button" onClick={()=>add(query.trim())}
+          style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'#c9a84c',
+            border:'none',borderRadius:6,color:'#0d0d0f',fontSize:11,fontWeight:700,padding:'3px 8px',
+            cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>+ Agregar</button>}
       </div>
-      {open&&filtered.length>0&&(
-        <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,background:'#1a1a1e',
-          border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,zIndex:810,overflow:'hidden',
-          boxShadow:'0 8px 24px rgba(0,0,0,0.5)'}}>
-          {filtered.map(t=><TechDropRow key={t} name={t} onPick={()=>add(t)}/>)}
-        </div>
-      )}
+      {open&&filtered.length>0&&<div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,
+        background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,zIndex:810,
+        overflow:'hidden',boxShadow:'0 8px 24px rgba(0,0,0,0.5)'}}>
+        {filtered.map(t=><TechDropRow key={t} name={t} onPick={()=>add(t)}/>)}
+      </div>}
     </div>
   )
 }
 
 // ── Gantt constants ───────────────────────────────────────────────────────────
-const HOUR_START = 7
-const HOUR_END   = 20
-const HOUR_W     = 80
-const VEH_COL_W  = 180
-const ROW_H      = 68
-const HOURS      = Array.from({length:HOUR_END-HOUR_START},(_, i)=>HOUR_START+i) // [7..19]
+const HORA_INICIO  = 7
+const HORA_FIN     = 20
+const TOTAL_HORAS  = HORA_FIN - HORA_INICIO   // 13
+const VEH_COL_W    = 180
+const ROW_H        = 68
+const HOURS        = Array.from({length:TOTAL_HORAS},(_,i)=>HORA_INICIO+i) // [7..19]
 
 const DAYS_ABBR = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB']
 
-// ── Demo data ─────────────────────────────────────────────────────────────────
+// ── Gantt position helpers ────────────────────────────────────────────────────
+function calcLeft(scheduled_at: string): string {
+  const d = new Date(scheduled_at)
+  const h = d.getHours() + d.getMinutes()/60
+  const pct = ((h - HORA_INICIO) / TOTAL_HORAS) * 100
+  return `${Math.max(0, pct).toFixed(3)}%`
+}
+function calcWidth(scheduled_at: string, end_at: string | null): string {
+  const start = new Date(scheduled_at)
+  const sh = start.getHours() + start.getMinutes()/60
+  let eh: number
+  if (end_at) {
+    const end = new Date(end_at)
+    eh = end.getHours() + end.getMinutes()/60
+  } else {
+    eh = sh + 2 // default 2 hours
+  }
+  const pct = ((eh - sh) / TOTAL_HORAS) * 100
+  return `${Math.max(0.5, pct).toFixed(3)}%`
+}
+function formatHora(iso: string | null): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
+
+// ── Demo data (shown when DB has no bookings) ─────────────────────────────────
 const DEMO_BOOKINGS = [
   { _demo:true, id:'d1', vehicle_name:'Van 01', start_hour:9,  end_hour:12, client:'Tariq Al Sayed',     service:'Stage 2 Correction', status:'confirmed' },
   { _demo:true, id:'d2', vehicle_name:'Van 02', start_hour:15, end_hour:17, client:'Khalid Al Mansoori', service:'Ceramic Coating',     status:'confirmed' },
@@ -108,65 +128,52 @@ const DEMO_BOOKINGS = [
 ]
 
 // ── Week helpers ──────────────────────────────────────────────────────────────
-function getWeekDays(ref: Date): Date[] {
-  const d = new Date(ref)
-  const day = d.getDay()
-  const mon = new Date(d)
-  mon.setDate(d.getDate()-(day===0?6:day-1))
-  return Array.from({length:7},(_,i)=>{ const x=new Date(mon); x.setDate(mon.getDate()+i); return x })
+function getWeekDays(ref:Date):Date[] {
+  const day=ref.getDay(); const mon=new Date(ref)
+  mon.setDate(ref.getDate()-(day===0?6:day-1))
+  return Array.from({length:7},(_,i)=>{const x=new Date(mon);x.setDate(mon.getDate()+i);return x})
 }
-function sameDay(a:Date, b:Date) {
-  return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()
-}
-function toDateStr(d:Date) {
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
-}
-function toTimeStr(d:Date) {
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
-}
+function sameDay(a:Date,b:Date){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate()}
+function toDateStr(d:Date){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
+function toTimeStr(d:Date){return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`}
 
 // ── Status badge ──────────────────────────────────────────────────────────────
-function BookingBadge({ status }: { status:string }) {
-  const MAP: Record<string,{bg:string;color:string;border:string}> = {
-    confirmed:   {bg:'rgba(79,163,255,0.1)',  color:'#4fa3ff', border:'rgba(79,163,255,0.3)'},
-    pending:     {bg:'rgba(251,191,36,0.1)',  color:'#fbbf24', border:'rgba(251,191,36,0.3)'},
-    completed:   {bg:'rgba(52,211,153,0.1)',  color:'#34d399', border:'rgba(52,211,153,0.3)'},
-    cancelled:   {bg:'rgba(255,79,79,0.1)',   color:'#ff4f4f', border:'rgba(255,79,79,0.3)'},
-    in_progress: {bg:'rgba(201,168,76,0.1)',  color:'#c9a84c', border:'rgba(201,168,76,0.3)'},
+function BookingBadge({status}:{status:string}) {
+  const M:Record<string,{bg:string;color:string;border:string}>={
+    confirmed:  {bg:'rgba(79,163,255,0.1)', color:'#4fa3ff',border:'rgba(79,163,255,0.3)'},
+    pending:    {bg:'rgba(251,191,36,0.1)', color:'#fbbf24',border:'rgba(251,191,36,0.3)'},
+    completed:  {bg:'rgba(52,211,153,0.1)', color:'#34d399',border:'rgba(52,211,153,0.3)'},
+    cancelled:  {bg:'rgba(255,79,79,0.1)',  color:'#ff4f4f',border:'rgba(255,79,79,0.3)'},
+    in_progress:{bg:'rgba(201,168,76,0.1)', color:'#c9a84c',border:'rgba(201,168,76,0.3)'},
   }
-  const s = MAP[status?.toLowerCase()] ?? MAP['pending']
-  return <span style={{padding:'2px 10px',borderRadius:99,fontSize:10,fontWeight:700,letterSpacing:'0.06em',
-    background:s.bg,color:s.color,border:`1px solid ${s.border}`,textTransform:'uppercase'}}>{status}</span>
+  const s=M[status?.toLowerCase()]??M['pending']
+  return <span style={{padding:'2px 10px',borderRadius:99,fontSize:10,fontWeight:700,
+    letterSpacing:'0.06em',background:s.bg,color:s.color,border:`1px solid ${s.border}`,textTransform:'uppercase'}}>
+    {status}
+  </span>
+}
+function DetailRow({label,children}:{label:string;children:React.ReactNode}) {
+  return <div>
+    <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:4}}>{label}</div>
+    <div style={{fontSize:13,color:'#f0ede8'}}>{children}</div>
+  </div>
 }
 
-// ── Detail row ────────────────────────────────────────────────────────────────
-function DetailRow({ label, children }: { label:string; children:React.ReactNode }) {
-  return (
-    <div>
-      <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:4}}>{label}</div>
-      <div style={{fontSize:13,color:'#f0ede8'}}>{children}</div>
-    </div>
-  )
-}
-
-// ── Gantt block ───────────────────────────────────────────────────────────────
-function GanttBlock({ left, width, timeLabel, client, service, status, onClick }: {
-  left:number; width:number; timeLabel:string; client:string; service:string; status:string; onClick:()=>void
+// ── GanttBlock (percentage positioned) ───────────────────────────────────────
+function GanttBlock({leftPct,widthPct,timeLabel,client,service,status,onClick}:{
+  leftPct:string;widthPct:string;timeLabel:string;client:string;service:string;status:string;onClick:()=>void
 }) {
   const [hov,setHov] = useState(false)
-  const BG: Record<string,string> = {
-    confirmed:   'rgba(201,168,76,0.85)',
-    pending:     'rgba(251,191,36,0.75)',
-    completed:   'rgba(52,211,153,0.78)',
-    cancelled:   'rgba(255,79,79,0.65)',
-    in_progress: 'rgba(79,163,255,0.82)',
+  const BG:Record<string,string>={
+    confirmed:'rgba(201,168,76,0.87)',pending:'rgba(251,191,36,0.78)',
+    completed:'rgba(52,211,153,0.80)',cancelled:'rgba(255,79,79,0.68)',in_progress:'rgba(79,163,255,0.85)',
   }
-  const bg = BG[status?.toLowerCase()] ?? BG['confirmed']
+  const bg=BG[status?.toLowerCase()]??BG['confirmed']
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{position:'absolute',left,top:6,height:ROW_H-12,width:Math.max(width-2,18),
+      style={{position:'absolute',left:leftPct,width:widthPct,top:4,bottom:4,
         background:bg,borderRadius:6,padding:'4px 8px',cursor:'pointer',overflow:'hidden',
-        transition:'filter 0.15s, box-shadow 0.15s',
+        transition:'filter 0.15s,box-shadow 0.15s',minWidth:20,
         filter:hov?'brightness(1.12)':'brightness(1)',
         boxShadow:hov?'0 4px 14px rgba(0,0,0,0.45)':'0 2px 6px rgba(0,0,0,0.3)'}}>
       <div style={{fontSize:10,fontWeight:600,color:'rgba(0,0,0,0.65)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
@@ -175,16 +182,14 @@ function GanttBlock({ left, width, timeLabel, client, service, status, onClick }
       <div style={{fontSize:12,fontWeight:700,color:'#0d0d0f',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
         {client}
       </div>
-      {width>64&&(
-        <div style={{fontSize:11,color:'rgba(0,0,0,0.6)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-          {service}
-        </div>
-      )}
+      <div style={{fontSize:11,color:'rgba(0,0,0,0.6)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+        {service}
+      </div>
     </div>
   )
 }
 
-type Toast = { id:number; msg:string; type:'success'|'error'|'warn' }
+type Toast={id:number;msg:string;type:'success'|'error'|'warn'}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
@@ -192,7 +197,8 @@ export default function BookingsPage() {
   const [contacts,    setContacts]    = useState<any[]>([])
   const [vehicles,    setVehicles]    = useState<any[]>([])
   const [services,    setServices]    = useState<any[]>([])
-  const [loading,     setLoading]     = useState(true)
+  const [loadingB,    setLoadingB]    = useState(true)
+  const [loadingV,    setLoadingV]    = useState(true)
   const [nowDate,     setNowDate]     = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<Date>(new Date())
   const [weekRef,     setWeekRef]     = useState<Date>(new Date())
@@ -203,135 +209,173 @@ export default function BookingsPage() {
   const [saving,        setSaving]        = useState(false)
 
   const [newForm, setNewForm] = useState({
-    contact_id:'', vehicle_id:'', service_id:'',
-    date:'', start_time:'09:00', end_time:'11:00',
-    address:'', price:'', discount:'', notes:'',
+    contact_id:'',vehicle_id:'',service_id:'',
+    date:'',start_time:'09:00',end_time:'11:00',
+    address:'',price:'',discount:'',notes:'',
   })
   const [newTechs, setNewTechs] = useState<string[]>([])
-
-  const [toasts, setToasts] = useState<Toast[]>([])
+  const [toasts,   setToasts]   = useState<Toast[]>([])
   const toastId = useRef(0)
-  function addToast(msg:string, type:'success'|'error'|'warn'='success') {
+
+  function addToast(msg:string,type:'success'|'error'|'warn'='success'){
     const id=++toastId.current
-    setToasts(prev=>[...prev,{id,msg,type}])
-    setTimeout(()=>setToasts(prev=>prev.filter(t=>t.id!==id)),3500)
+    setToasts(p=>[...p,{id,msg,type}])
+    setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3500)
   }
 
-  // ── fetch ──────────────────────────────────────────────────────────────────
-  async function fetchAll() {
-    setLoading(true)
+  // ── fetch bookings filtered by selected day ────────────────────────────────
+  const fetchBookings = useCallback(async (day:Date) => {
+    setLoadingB(true)
     const sb = createClient()
-    const [bRes,cRes,vRes,sRes] = await Promise.all([
-      sb.from('bookings').select('*, contacts(name), vehicles(name,license_plate), services(name)').order('scheduled_at'),
+
+    // Build day range in local time → ISO strings
+    const startOfDay = new Date(day); startOfDay.setHours(0,0,0,0)
+    const endOfDay   = new Date(day); endOfDay.setHours(23,59,59,999)
+
+    const { data, error } = await sb
+      .from('bookings')
+      .select('*, contacts(name), vehicles(name,license_plate), services(name)')
+      .gte('scheduled_at', startOfDay.toISOString())
+      .lte('scheduled_at', endOfDay.toISOString())
+      .order('scheduled_at', {ascending:true})
+
+    if (error) {
+      console.error('[bookings] fetch error:', error)
+    }
+
+    const result = data ?? []
+    console.log('[bookings] día seleccionado:', toDateStr(day))
+    console.log('[bookings] cargados:', result.length, result)
+    result.forEach(b => console.log('  booking:', {
+      id: b.id, vehicle_id: b.vehicle_id,
+      scheduled_at: b.scheduled_at, end_at: b.end_at,
+      cliente: b.contacts?.name, servicio: b.services?.name,
+    }))
+
+    setBookings(result)
+    setLoadingB(false)
+  }, [])
+
+  // ── fetch static refs (contacts, vehicles, services) ──────────────────────
+  async function fetchRefs() {
+    setLoadingV(true)
+    const sb = createClient()
+    const [cRes,vRes,sRes] = await Promise.all([
       sb.from('contacts').select('id, name'),
       sb.from('vehicles').select('id, name, license_plate, status, technician, technicians').order('created_at'),
       sb.from('services').select('id, name, price'),
     ])
-    setBookings(bRes.data??[])
+    console.log('[vehicles] cargados:', vRes.data?.length, vRes.data?.map(v=>({id:v.id,name:v.name})))
     setContacts(cRes.data??[])
     setVehicles(vRes.data??[])
     setServices(sRes.data??[])
-    setLoading(false)
+    setLoadingV(false)
   }
 
-  useEffect(()=>{ fetchAll() },[])
-  useEffect(()=>{ const t=setInterval(()=>setNowDate(new Date()),60000); return ()=>clearInterval(t) },[])
+  // ── initial load + re-fetch when day changes ───────────────────────────────
+  useEffect(()=>{ fetchRefs() },[])
+  useEffect(()=>{ fetchBookings(selectedDay) },[selectedDay, fetchBookings])
 
-  // ── week navigation ────────────────────────────────────────────────────────
+  // ── realtime subscription ──────────────────────────────────────────────────
+  useEffect(()=>{
+    const sb = createClient()
+    const channel = sb.channel('bookings-realtime')
+      .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
+        console.log('[realtime] cambio detectado en bookings, recargando…')
+        fetchBookings(selectedDay)
+      })
+      .subscribe()
+    return ()=>{ sb.removeChannel(channel) }
+  },[selectedDay, fetchBookings])
+
+  // ── clock ─────────────────────────────────────────────────────────────────
+  useEffect(()=>{const t=setInterval(()=>setNowDate(new Date()),60000);return()=>clearInterval(t)},[])
+
+  // ── week nav ───────────────────────────────────────────────────────────────
   const weekDays = getWeekDays(weekRef)
-  function prevWeek() { const d=new Date(weekRef); d.setDate(d.getDate()-7); setWeekRef(d) }
-  function nextWeek() { const d=new Date(weekRef); d.setDate(d.getDate()+7); setWeekRef(d) }
+  function prevWeek(){const d=new Date(weekRef);d.setDate(d.getDate()-7);setWeekRef(d)}
+  function nextWeek(){const d=new Date(weekRef);d.setDate(d.getDate()+7);setWeekRef(d)}
 
-  // ── bookings helpers ───────────────────────────────────────────────────────
-  function getBookingsForVehicle(vehicleId:string): any[] {
-    return bookings.filter(b=>{
-      if(b.vehicle_id!==vehicleId||!b.scheduled_at) return false
-      return sameDay(new Date(b.scheduled_at), selectedDay)
-    })
+  // ── helpers ────────────────────────────────────────────────────────────────
+  function getBookingsForVehicle(vehicleId:string):any[] {
+    // bookings already filtered by day server-side; just match vehicle
+    return bookings.filter(b=>b.vehicle_id===vehicleId && b.scheduled_at)
   }
-  function getDemoForVehicle(vName:string): any[] {
+  function getDemoForVehicle(vName:string):any[] {
     if(bookings.length>0) return []
     return DEMO_BOOKINGS.filter(d=>vName.includes(d.vehicle_name))
   }
 
-  // ── current time ───────────────────────────────────────────────────────────
+  // ── current time line ──────────────────────────────────────────────────────
   const isToday     = sameDay(selectedDay, nowDate)
-  const nowLeft     = ((nowDate.getHours()-HOUR_START)+nowDate.getMinutes()/60)*HOUR_W
-  const showNowLine = isToday&&nowDate.getHours()>=HOUR_START&&nowDate.getHours()<HOUR_END
+  const nowPct      = ((nowDate.getHours()-HORA_INICIO+nowDate.getMinutes()/60)/TOTAL_HORAS)*100
+  const showNowLine = isToday&&nowDate.getHours()>=HORA_INICIO&&nowDate.getHours()<HORA_FIN
 
   // ── save / update booking ──────────────────────────────────────────────────
-  function resetForm() {
+  function resetForm(){
     setNewForm({contact_id:'',vehicle_id:'',service_id:'',date:'',start_time:'09:00',end_time:'11:00',address:'',price:'',discount:'',notes:''})
-    setNewTechs([]); setEditId(null)
+    setNewTechs([]);setEditId(null)
   }
 
-  async function saveBooking() {
+  async function saveBooking(){
     if(!newForm.contact_id||!newForm.date||!newForm.start_time) return
     setSaving(true)
-    const scheduled_at = `${newForm.date}T${newForm.start_time}:00`
-    const end_at       = newForm.end_time ? `${newForm.date}T${newForm.end_time}:00` : null
-    const payload: any = {
-      contact_id:   newForm.contact_id,
-      scheduled_at, end_at,
-      technician:   newTechs.join(', '),
-      price:        newForm.price ? Number(newForm.price) : null,
-      discount:     newForm.discount ? Number(newForm.discount) : null,
-      address:      newForm.address||null,
-      notes:        newForm.notes||null,
-      status:       'confirmed',
+    const scheduled_at=`${newForm.date}T${newForm.start_time}:00`
+    const end_at=newForm.end_time?`${newForm.date}T${newForm.end_time}:00`:null
+    const payload:any={
+      contact_id:newForm.contact_id,scheduled_at,end_at,
+      technician:newTechs.join(', '),
+      price:newForm.price?Number(newForm.price):null,
+      discount:newForm.discount?Number(newForm.discount):null,
+      address:newForm.address||null,notes:newForm.notes||null,
+      status:'confirmed',
     }
-    if(newForm.vehicle_id) payload.vehicle_id = newForm.vehicle_id
-    if(newForm.service_id) payload.service_id = newForm.service_id
+    if(newForm.vehicle_id) payload.vehicle_id=newForm.vehicle_id
+    if(newForm.service_id) payload.service_id=newForm.service_id
 
-    let error: any
-    if(editId) {
-      ;({error} = await createClient().from('bookings').update(payload).eq('id',editId))
+    let error:any
+    if(editId){
+      ;({error}=await createClient().from('bookings').update(payload).eq('id',editId))
     } else {
-      ;({error} = await createClient().from('bookings').insert(payload))
+      ;({error}=await createClient().from('bookings').insert(payload))
     }
     setSaving(false)
-    if(error) { addToast(error.message,'error'); return }
+    if(error){addToast(error.message,'error');return}
     addToast(editId?'Reserva actualizada':'Reserva creada','success')
-    setShowNew(false); resetForm(); fetchAll()
+    setShowNew(false);resetForm()
+    await fetchBookings(selectedDay) // reload immediately
   }
 
-  function openEdit(b:any) {
-    const s = b.scheduled_at ? new Date(b.scheduled_at) : null
-    const e = b.end_at ? new Date(b.end_at) : null
+  function openEdit(b:any){
+    const s=b.scheduled_at?new Date(b.scheduled_at):null
+    const e=b.end_at?new Date(b.end_at):null
     setNewForm({
-      contact_id: b.contact_id??'',
-      vehicle_id: b.vehicle_id??'',
-      service_id: b.service_id??'',
-      date:       s ? toDateStr(s) : '',
-      start_time: s ? toTimeStr(s) : '09:00',
-      end_time:   e ? toTimeStr(e) : '11:00',
-      address:    b.address??'',
-      price:      b.price!=null ? String(b.price) : '',
-      discount:   b.discount!=null ? String(b.discount) : '',
-      notes:      b.notes??'',
+      contact_id:b.contact_id??'',vehicle_id:b.vehicle_id??'',service_id:b.service_id??'',
+      date:s?toDateStr(s):'',start_time:s?toTimeStr(s):'09:00',end_time:e?toTimeStr(e):'11:00',
+      address:b.address??'',price:b.price!=null?String(b.price):'',
+      discount:b.discount!=null?String(b.discount):'',notes:b.notes??'',
     })
-    setNewTechs(b.technician ? b.technician.split(', ').filter(Boolean) : [])
-    setEditId(b.id); setDetailBooking(null); setShowNew(true)
+    setNewTechs(b.technician?b.technician.split(', ').filter(Boolean):[])
+    setEditId(b.id);setDetailBooking(null);setShowNew(true)
   }
 
-  async function updateStatus(id:string, status:string) {
-    const {error} = await createClient().from('bookings').update({status}).eq('id',id)
-    if(error) { addToast(error.message,'error'); return }
-    addToast(status==='completed'?'Reserva completada':'Reserva cancelada', status==='completed'?'success':'warn')
-    setDetailBooking(null); fetchAll()
+  async function updateStatus(id:string,status:string){
+    const{error}=await createClient().from('bookings').update({status}).eq('id',id)
+    if(error){addToast(error.message,'error');return}
+    addToast(status==='completed'?'Reserva completada':'Reserva cancelada',status==='completed'?'success':'warn')
+    setDetailBooking(null);fetchBookings(selectedDay)
   }
 
+  const loading = loadingB||loadingV
   const todayStr = new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
     <div style={{padding:24,fontFamily:'Outfit,sans-serif'}}>
-
-      {/* custom scrollbar for webkit */}
       <style>{`
-        .gantt-scroll::-webkit-scrollbar { height: 4px; }
-        .gantt-scroll::-webkit-scrollbar-track { background: #1a1a1e; }
-        .gantt-scroll::-webkit-scrollbar-thumb { background: #c9a84c; border-radius: 2px; }
+        .gantt-scroll::-webkit-scrollbar{height:4px}
+        .gantt-scroll::-webkit-scrollbar-track{background:#1a1a1e}
+        .gantt-scroll::-webkit-scrollbar-thumb{background:#c9a84c;border-radius:2px}
       `}</style>
 
       {/* ── Header ── */}
@@ -340,7 +384,7 @@ export default function BookingsPage() {
           <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>Reservas — Calendario</div>
           <div style={{fontSize:12,color:'#888580',marginTop:3,textTransform:'capitalize'}}>{todayStr}</div>
         </div>
-        <button onClick={()=>{ setNewForm(f=>({...f,date:toDateStr(selectedDay)})); setShowNew(true) }}
+        <button onClick={()=>{setNewForm(f=>({...f,date:toDateStr(selectedDay)}));setShowNew(true)}}
           style={{padding:'8px 20px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',
             fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
           + Nueva Reserva
@@ -349,16 +393,12 @@ export default function BookingsPage() {
 
       {/* ── Week selector ── */}
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
-        <button onClick={prevWeek}
-          style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
-            background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
-            justifyContent:'center',flexShrink:0}}>
-          <ChevronLeft size={14}/>
-        </button>
+        <button onClick={prevWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
+          background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
+          justifyContent:'center',flexShrink:0}}><ChevronLeft size={14}/></button>
         <div style={{display:'flex',gap:6,flex:1,justifyContent:'center'}}>
           {weekDays.map(d=>{
-            const active  = sameDay(d,selectedDay)
-            const todayD  = sameDay(d,new Date())
+            const active=sameDay(d,selectedDay), isNow=sameDay(d,new Date())
             return (
               <button key={d.toISOString()} onClick={()=>setSelectedDay(d)}
                 style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'10px 14px',
@@ -367,66 +407,71 @@ export default function BookingsPage() {
                   border:active?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.06)',
                   color:active?'#0d0d0f':'#888580'}}>
                 <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em'}}>{DAYS_ABBR[d.getDay()]}</span>
-                <span style={{fontSize:16,fontWeight:700,color:active?'#0d0d0f':todayD?'#c9a84c':'#f0ede8'}}>
+                <span style={{fontSize:16,fontWeight:700,color:active?'#0d0d0f':isNow?'#c9a84c':'#f0ede8'}}>
                   {d.getDate()}
                 </span>
               </button>
             )
           })}
         </div>
-        <button onClick={nextWeek}
-          style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
-            background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
-            justifyContent:'center',flexShrink:0}}>
-          <ChevronRight size={14}/>
-        </button>
+        <button onClick={nextWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
+          background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
+          justifyContent:'center',flexShrink:0}}><ChevronRight size={14}/></button>
       </div>
 
       {/* ── Gantt Calendar ── */}
       <div style={{overflow:'hidden',borderRadius:12,border:'1px solid rgba(255,255,255,0.06)',background:'#141416'}}>
         <div className="gantt-scroll" style={{overflowX:'auto',scrollbarWidth:'thin',scrollbarColor:'#c9a84c #1a1a1e'}}>
-          <div style={{minWidth:VEH_COL_W+HOUR_W*HOURS.length,position:'relative'}}>
+          {/* Minimum width: vehicle col + enough for readability */}
+          <div style={{minWidth:VEH_COL_W+780,position:'relative'}}>
 
-            {/* hour header */}
-            <div style={{display:'flex',height:40,borderBottom:'1px solid rgba(255,255,255,0.06)',background:'#141416',position:'sticky',top:0,zIndex:5}}>
+            {/* ── Hour header ── */}
+            <div style={{display:'flex',height:40,borderBottom:'1px solid rgba(255,255,255,0.06)',
+              background:'#141416',position:'sticky',top:0,zIndex:5}}>
+              {/* vehicle col header */}
               <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:6,
                 background:'#141416',borderRight:'1px solid rgba(255,255,255,0.06)',
                 display:'flex',alignItems:'center',padding:'0 14px'}}>
                 <span style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.1em'}}>Vehículo</span>
               </div>
-              {HOURS.map(h=>(
-                <div key={h} style={{width:HOUR_W,flexShrink:0,borderLeft:'1px solid rgba(255,255,255,0.04)',
-                  display:'flex',alignItems:'center',padding:'0 8px'}}>
-                  <span style={{fontSize:11,color:'#888580'}}>{String(h).padStart(2,'0')}:00</span>
-                </div>
-              ))}
+              {/* hour labels — percentage based */}
+              <div style={{flex:1,display:'flex',position:'relative'}}>
+                {HOURS.map(h=>(
+                  <div key={h} style={{flex:1,borderLeft:'1px solid rgba(255,255,255,0.04)',
+                    display:'flex',alignItems:'center',padding:'0 6px'}}>
+                    <span style={{fontSize:11,color:'#888580'}}>{String(h).padStart(2,'0')}:00</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* current time line */}
+            {/* ── Current time line (percentage) ── */}
             {showNowLine&&(
-              <div style={{position:'absolute',left:VEH_COL_W+nowLeft,top:40,bottom:0,width:1,
-                background:'#ff4f4f',zIndex:4,pointerEvents:'none'}}>
+              <div style={{position:'absolute',
+                left:`calc(${VEH_COL_W}px + (100% - ${VEH_COL_W}px) * ${nowPct/100})`,
+                top:40,bottom:0,width:1,background:'#ff4f4f',zIndex:4,pointerEvents:'none'}}>
                 <div style={{width:8,height:8,borderRadius:'50%',background:'#ff4f4f',marginLeft:-4,marginTop:-4}}/>
               </div>
             )}
 
-            {/* vehicle rows */}
+            {/* ── Vehicle rows ── */}
             {loading ? (
               <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
             ) : vehicles.length===0 ? (
               <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Sin vehículos registrados.</div>
             ) : vehicles.map((v,i)=>{
-              const vBookings  = getBookingsForVehicle(v.id)
-              const demoItems  = getDemoForVehicle(v.name)
-              const enRuta     = v.status==='en_ruta'
-              const techs: string[] = Array.isArray(v.technicians)&&v.technicians.length>0
+              const vBookings = getBookingsForVehicle(v.id)
+              const demoItems = getDemoForVehicle(v.name)
+              const enRuta    = v.status==='en_ruta'
+              const techs:string[] = Array.isArray(v.technicians)&&v.technicians.length>0
                 ? v.technicians : v.technician?[v.technician]:[]
+
               return (
                 <div key={v.id} style={{display:'flex',height:ROW_H,
                   borderBottom:'1px solid rgba(255,255,255,0.04)',
                   background:i%2===0?'#141416':'#0d0d0f'}}>
 
-                  {/* vehicle label */}
+                  {/* vehicle label — sticky */}
                   <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:2,
                     background:i%2===0?'#141416':'#0d0d0f',
                     borderRight:'1px solid rgba(255,255,255,0.06)',
@@ -435,9 +480,7 @@ export default function BookingsPage() {
                       <div style={{width:6,height:6,borderRadius:'50%',flexShrink:0,
                         background:enRuta?'#34d399':'rgba(255,255,255,0.2)'}}/>
                       <span style={{fontSize:12,fontWeight:600,color:'#f0ede8',
-                        whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                        {v.name}
-                      </span>
+                        whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{v.name}</span>
                     </div>
                     <div style={{fontSize:10,fontFamily:'monospace',color:'#c9a84c',paddingLeft:12}}>
                       {v.license_plate}
@@ -450,44 +493,42 @@ export default function BookingsPage() {
                     )}
                   </div>
 
-                  {/* timeline area */}
+                  {/* timeline area — percentage positioned */}
                   <div style={{flex:1,position:'relative',overflow:'visible'}}>
-                    {HOURS.map(h=>(
-                      <div key={h} style={{position:'absolute',left:(h-HOUR_START)*HOUR_W,top:0,bottom:0,
-                        width:1,background:'rgba(255,255,255,0.03)',pointerEvents:'none'}}/>
+                    {/* grid lines at each hour */}
+                    {HOURS.map((_,idx)=>(
+                      <div key={idx} style={{position:'absolute',left:`${(idx/TOTAL_HORAS)*100}%`,
+                        top:0,bottom:0,width:1,background:'rgba(255,255,255,0.035)',pointerEvents:'none'}}/>
                     ))}
-                    {HOURS.map(h=>(
-                      <div key={`${h}m`} style={{position:'absolute',left:(h-HOUR_START)*HOUR_W+HOUR_W/2,top:0,bottom:0,
-                        width:1,background:'rgba(255,255,255,0.015)',pointerEvents:'none'}}/>
+                    {/* half-hour lines */}
+                    {HOURS.map((_,idx)=>(
+                      <div key={`h${idx}`} style={{position:'absolute',
+                        left:`${((idx+0.5)/TOTAL_HORAS)*100}%`,
+                        top:0,bottom:0,width:1,background:'rgba(255,255,255,0.015)',pointerEvents:'none'}}/>
                     ))}
 
-                    {/* real bookings */}
-                    {vBookings.map(b=>{
-                      if(!b.scheduled_at) return null
-                      const start  = new Date(b.scheduled_at)
-                      const end    = b.end_at?new Date(b.end_at):new Date(start.getTime()+3600000)
-                      const left   = ((start.getHours()-HOUR_START)+start.getMinutes()/60)*HOUR_W
-                      const width  = Math.max(((end.getTime()-start.getTime())/3600000)*HOUR_W,18)
-                      return (
-                        <GanttBlock key={b.id}
-                          left={left} width={width}
-                          timeLabel={`${toTimeStr(start)} — ${toTimeStr(end)}`}
-                          client={b.contacts?.name??'Cliente'}
-                          service={b.services?.name??''}
-                          status={b.status??'confirmed'}
-                          onClick={()=>setDetailBooking(b)}/>
-                      )
-                    })}
+                    {/* real bookings for this vehicle on selected day */}
+                    {vBookings.map(b=>(
+                      <GanttBlock key={b.id}
+                        leftPct={calcLeft(b.scheduled_at)}
+                        widthPct={calcWidth(b.scheduled_at,b.end_at)}
+                        timeLabel={`${formatHora(b.scheduled_at)} — ${formatHora(b.end_at)}`}
+                        client={b.contacts?.name ?? 'Cliente'}
+                        service={b.services?.name ?? ''}
+                        status={b.status ?? 'confirmed'}
+                        onClick={()=>setDetailBooking(b)}/>
+                    ))}
 
                     {/* demo bookings */}
-                    {demoItems.map(d=>(
-                      <GanttBlock key={d.id}
-                        left={(d.start_hour-HOUR_START)*HOUR_W}
-                        width={(d.end_hour-d.start_hour)*HOUR_W}
+                    {demoItems.map(d=>{
+                      const lPct = ((d.start_hour-HORA_INICIO)/TOTAL_HORAS*100).toFixed(3)+'%'
+                      const wPct = (((d.end_hour-d.start_hour)/TOTAL_HORAS)*100).toFixed(3)+'%'
+                      return <GanttBlock key={d.id}
+                        leftPct={lPct} widthPct={wPct}
                         timeLabel={`${String(d.start_hour).padStart(2,'0')}:00 — ${String(d.end_hour).padStart(2,'0')}:00`}
                         client={d.client} service={d.service} status={d.status}
                         onClick={()=>{}}/>
-                    ))}
+                    })}
                   </div>
                 </div>
               )
@@ -506,28 +547,24 @@ export default function BookingsPage() {
             onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
               <span style={{fontSize:17,fontWeight:700,color:'#f0ede8'}}>{editId?'Editar Reserva':'Nueva Reserva'}</span>
-              <button onClick={()=>{setShowNew(false);resetForm()}}
-                style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}>
+              <button onClick={()=>{setShowNew(false);resetForm()}} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}>
                 <X size={18}/>
               </button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:14}}>
-              <div>
-                <MLabel>Cliente *</MLabel>
+              <div><MLabel>Cliente *</MLabel>
                 <MSelect value={newForm.contact_id} onChange={e=>setNewForm(f=>({...f,contact_id:e.target.value}))}>
                   <option value="">Seleccionar cliente…</option>
                   {contacts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                 </MSelect>
               </div>
-              <div>
-                <MLabel>Vehículo *</MLabel>
+              <div><MLabel>Vehículo *</MLabel>
                 <MSelect value={newForm.vehicle_id} onChange={e=>setNewForm(f=>({...f,vehicle_id:e.target.value}))}>
                   <option value="">Seleccionar vehículo…</option>
                   {vehicles.map(v=><option key={v.id} value={v.id}>{v.name} — {v.license_plate}</option>)}
                 </MSelect>
               </div>
-              <div>
-                <MLabel>Servicio *</MLabel>
+              <div><MLabel>Servicio *</MLabel>
                 <MSelect value={newForm.service_id} onChange={e=>{
                   const svc=services.find(s=>s.id===e.target.value)
                   setNewForm(f=>({...f,service_id:e.target.value,price:svc?.price?String(svc.price):f.price}))
@@ -536,8 +573,7 @@ export default function BookingsPage() {
                   {services.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </MSelect>
               </div>
-              <div>
-                <MLabel>Fecha *</MLabel>
+              <div><MLabel>Fecha *</MLabel>
                 <MInput type="date" value={newForm.date} onChange={e=>setNewForm(f=>({...f,date:e.target.value}))}/>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -546,15 +582,12 @@ export default function BookingsPage() {
                 <div><MLabel>Hora Fin *</MLabel>
                   <MInput type="time" value={newForm.end_time} onChange={e=>setNewForm(f=>({...f,end_time:e.target.value}))}/></div>
               </div>
-              <div>
-                <MLabel>Técnicos</MLabel>
+              <div><MLabel>Técnicos</MLabel>
                 <TechPicker selected={newTechs} onChange={setNewTechs} pool={contacts.map(c=>c.name)}/>
               </div>
-              <div>
-                <MLabel>Dirección del Cliente</MLabel>
+              <div><MLabel>Dirección del Cliente</MLabel>
                 <MInput placeholder="Palm Jumeirah, Villa 14" value={newForm.address}
-                  onChange={e=>setNewForm(f=>({...f,address:e.target.value}))}/>
-              </div>
+                  onChange={e=>setNewForm(f=>({...f,address:e.target.value}))}/></div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
                 <div><MLabel>Precio AED *</MLabel>
                   <MInput type="number" min={0} placeholder="3500" value={newForm.price}
@@ -563,14 +596,11 @@ export default function BookingsPage() {
                   <MInput type="number" min={0} placeholder="0" value={newForm.discount}
                     onChange={e=>setNewForm(f=>({...f,discount:e.target.value}))}/></div>
               </div>
-              <div>
-                <MLabel>Notas</MLabel>
+              <div><MLabel>Notas</MLabel>
                 <MTextarea rows={3} placeholder="Instrucciones especiales…" value={newForm.notes}
-                  onChange={e=>setNewForm(f=>({...f,notes:e.target.value}))}/>
-              </div>
+                  onChange={e=>setNewForm(f=>({...f,notes:e.target.value}))}/></div>
             </div>
-            <button onClick={saveBooking}
-              disabled={saving||!newForm.contact_id||!newForm.date}
+            <button onClick={saveBooking} disabled={saving||!newForm.contact_id||!newForm.date}
               style={{width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,
                 background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,
                 fontFamily:'Outfit,sans-serif',cursor:'pointer',
@@ -588,7 +618,6 @@ export default function BookingsPage() {
             background:'#141416',borderLeft:'1px solid rgba(255,255,255,0.08)',
             display:'flex',flexDirection:'column',overflowY:'auto'}}
             onClick={e=>e.stopPropagation()}>
-
             <div style={{padding:'20px 24px',borderBottom:'1px solid rgba(255,255,255,0.06)',
               display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
               <div>
@@ -602,12 +631,11 @@ export default function BookingsPage() {
                 <X size={18}/>
               </button>
             </div>
-
             <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:18,flex:1}}>
               <DetailRow label="Vehículo">
                 {detailBooking.vehicles
-                  ? <span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#c9a84c'}}>{detailBooking.vehicles.license_plate}</span></span>
-                  : '—'}
+                  ?<span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#c9a84c'}}>{detailBooking.vehicles.license_plate}</span></span>
+                  :'—'}
               </DetailRow>
               <DetailRow label="Servicio">{detailBooking.services?.name??'—'}</DetailRow>
               {detailBooking.scheduled_at&&(
@@ -615,8 +643,8 @@ export default function BookingsPage() {
                   {(()=>{
                     const s=new Date(detailBooking.scheduled_at)
                     const e=detailBooking.end_at?new Date(detailBooking.end_at):null
-                    const dateStr=s.toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
-                    return <span style={{textTransform:'capitalize'}}>{dateStr} · {toTimeStr(s)}{e?` — ${toTimeStr(e)}`:''}</span>
+                    const ds=s.toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
+                    return <span style={{textTransform:'capitalize'}}>{ds} · {toTimeStr(s)}{e?` — ${toTimeStr(e)}`:''}</span>
                   })()}
                 </DetailRow>
               )}
@@ -637,14 +665,9 @@ export default function BookingsPage() {
                   {detailBooking.discount>0&&<span style={{marginLeft:8,color:'#888580',fontSize:11}}>-AED {Number(detailBooking.discount).toLocaleString('en-AE')} desc.</span>}
                 </DetailRow>
               )}
-              {detailBooking.address&&(
-                <DetailRow label="Dirección">📍 {detailBooking.address}</DetailRow>
-              )}
-              {detailBooking.notes&&(
-                <DetailRow label="Notas"><span style={{color:'#888580'}}>{detailBooking.notes}</span></DetailRow>
-              )}
+              {detailBooking.address&&<DetailRow label="Dirección">📍 {detailBooking.address}</DetailRow>}
+              {detailBooking.notes&&<DetailRow label="Notas"><span style={{color:'#888580'}}>{detailBooking.notes}</span></DetailRow>}
             </div>
-
             <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:8}}>
               {detailBooking.status!=='completed'&&detailBooking.status!=='cancelled'&&(
                 <button onClick={()=>updateStatus(detailBooking.id,'completed')}
