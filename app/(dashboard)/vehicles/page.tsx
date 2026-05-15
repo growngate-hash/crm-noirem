@@ -92,6 +92,97 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+// ─── tech tag (gold chip with ×) ──────────────────────────────────────────────
+function TechTag({ name, onRemove }: { name: string; onRemove: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:99,
+      background:'rgba(201,168,76,0.12)',border:`1px solid ${hov?'rgba(255,79,79,0.45)':'rgba(201,168,76,0.35)'}`,
+      color:'#c9a84c',fontSize:11,fontWeight:600,transition:'border-color 0.15s'}}>
+      {name}
+      <button type="button" onClick={onRemove}
+        onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+        style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',
+          color:hov?'#ff4f4f':'#888580',lineHeight:1,transition:'color 0.15s'}}>
+        <X size={10}/>
+      </button>
+    </span>
+  )
+}
+
+const FALLBACK_TECHS = ['Mohammed A.', 'Carlos R.', 'Ivan P.', 'Yimmer', 'Ahmed H.']
+
+// ─── multi-select technician picker ──────────────────────────────────────────
+function TechPicker({ selected, onChange, pool }: {
+  selected: string[]; onChange: (v: string[]) => void; pool: string[]
+}) {
+  const [query, setQuery] = useState('')
+  const [open,  setOpen]  = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  const src      = pool.length > 0 ? pool : FALLBACK_TECHS
+  const filtered = src.filter(t => t.toLowerCase().includes(query.toLowerCase()) && !selected.includes(t))
+  const canAdd   = query.trim() && !src.includes(query.trim()) && !selected.includes(query.trim())
+
+  function add(name: string) {
+    if (!name.trim() || selected.includes(name)) return
+    onChange([...selected, name]); setQuery(''); setOpen(false)
+  }
+  function remove(name: string) { onChange(selected.filter(t => t !== name)) }
+
+  useEffect(()=>{
+    function outside(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', outside)
+    return ()=>document.removeEventListener('mousedown', outside)
+  },[])
+
+  return (
+    <div ref={wrapRef} style={{position:'relative'}}>
+      {selected.length > 0 && (
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:8}}>
+          {selected.map(t=><TechTag key={t} name={t} onRemove={()=>remove(t)}/>)}
+        </div>
+      )}
+      <div style={{position:'relative'}}>
+        <MInput placeholder="Buscar o escribir técnico…" value={query}
+          onChange={e=>{ setQuery(e.target.value); setOpen(true) }}
+          onFocus={()=>setOpen(true)}/>
+        {canAdd && (
+          <button type="button" onClick={()=>add(query.trim())}
+            style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',
+              background:'#c9a84c',border:'none',borderRadius:6,color:'#0d0d0f',
+              fontSize:11,fontWeight:700,padding:'3px 8px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+            + Agregar
+          </button>
+        )}
+      </div>
+      {open && filtered.length > 0 && (
+        <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,
+          background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,
+          zIndex:810,overflow:'hidden',boxShadow:'0 8px 24px rgba(0,0,0,0.5)'}}>
+          {filtered.map(t=>(
+            <TechDropRow key={t} name={t} onPick={()=>add(t)}/>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
+  const [hov,setHov] = useState(false)
+  return (
+    <div onClick={onPick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
+      style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#f0ede8',
+        fontFamily:'Outfit,sans-serif',background:hov?'rgba(201,168,76,0.1)':'transparent',
+        transition:'background 0.1s'}}>
+      {name}
+    </div>
+  )
+}
+
 // ─── vehicle card ─────────────────────────────────────────────────────────────
 function VehicleCard({ v, alertCount, onEdit, onClear, onAssign, onInventory }: {
   v: any; alertCount: number;
@@ -156,10 +247,22 @@ function VehicleCard({ v, alertCount, onEdit, onClear, onAssign, onInventory }: 
                 <div style={{fontSize:12,fontWeight:600,color:'#f0ede8'}}>{v.eta||'—'}</div>
               </div>
             </div>
-            <div style={{textAlign:'right'}}>
-              <div style={{fontSize:10,color:'#888580'}}>Tech</div>
-              <div style={{fontSize:11,fontWeight:500,color:'#f0ede8'}}>{v.technician||'—'}</div>
-            </div>
+            {(()=>{
+              const techs: string[] = Array.isArray(v.technicians) && v.technicians.length > 0
+                ? v.technicians
+                : v.technician ? [v.technician] : []
+              const first = techs[0] || '—'
+              const extra = techs.length > 1 ? `+${techs.length-1}` : ''
+              return (
+                <div style={{textAlign:'right',cursor:techs.length>1?'default':'default'}} title={techs.join(', ')}>
+                  <div style={{fontSize:10,color:'#888580'}}>Tech</div>
+                  <div style={{fontSize:11,fontWeight:500,color:'#f0ede8'}}>
+                    {first}
+                    {extra && <span style={{marginLeft:4,color:'#c9a84c',fontWeight:700}}>{extra}</span>}
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </>
       ) : (
@@ -247,6 +350,10 @@ export default function VehiclesPage() {
   const [assignForm,        setAssignForm]        = useState({...EMPTY_ASSIGN})
   const [saving,            setSaving]            = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  // multi-tech state
+  const [addTechs,    setAddTechs]    = useState<string[]>([])
+  const [editTechs,   setEditTechs]   = useState<string[]>([])
+  const [assignTechs, setAssignTechs] = useState<string[]>([])
 
   // vehicle inventory panel
   const [invVeh,        setInvVeh]        = useState<any|null>(null)
@@ -428,16 +535,21 @@ export default function VehiclesPage() {
     const {error} = await createClient().from('vehicles').insert({
       name:addForm.name, license_plate:addForm.license_plate, make:addForm.make,
       model:addForm.model, year:addForm.year?Number(addForm.year):null,
-      color:addForm.color, status:addForm.status, technician:addForm.technician,
+      color:addForm.color, status:addForm.status,
+      technician:addTechs.join(', '), technicians:addTechs,
     })
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
     addToast('Vehículo agregado','success')
-    setShowAdd(false); setAddForm({...EMPTY_VEH}); fetchVehicles()
+    setShowAdd(false); setAddForm({...EMPTY_VEH}); setAddTechs([]); fetchVehicles()
   }
 
   function openEdit(v: any) {
-    setEditForm({ name:v.name??'', license_plate:v.license_plate??'', make:v.make??'', model:v.model??'', year:v.year?String(v.year):'', color:v.color??'', status:v.status??'libre', technician:v.technician??'' })
+    setEditForm({ name:v.name??'', license_plate:v.license_plate??'', make:v.make??'', model:v.model??'', year:v.year?String(v.year):'', color:v.color??'', status:v.status??'libre' })
+    const techs: string[] = Array.isArray(v.technicians) && v.technicians.length > 0
+      ? v.technicians
+      : v.technician ? v.technician.split(', ').map((t:string)=>t.trim()).filter(Boolean) : []
+    setEditTechs(techs)
     setShowDeleteConfirm(false); setEditVeh(v)
   }
 
@@ -447,7 +559,8 @@ export default function VehiclesPage() {
     const {error} = await createClient().from('vehicles').update({
       name:editForm.name, license_plate:editForm.license_plate, make:editForm.make,
       model:editForm.model, year:editForm.year?Number(editForm.year):null,
-      color:editForm.color, status:editForm.status, technician:editForm.technician,
+      color:editForm.color, status:editForm.status,
+      technician:editTechs.join(', '), technicians:editTechs,
     }).eq('id', editVeh.id)
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
@@ -464,7 +577,7 @@ export default function VehiclesPage() {
   async function clearVehicle(v: any) {
     const {error} = await createClient().from('vehicles').update({
       status:'libre', service:null, client_name:null, client_address:null,
-      progress:0, departed_at:null, eta:null, technician:null,
+      progress:0, departed_at:null, eta:null, technician:null, technicians:[],
     }).eq('id', v.id)
     if (error) { addToast(error.message,'error'); return }
     addToast('Vehículo marcado como disponible','success'); fetchVehicles()
@@ -479,12 +592,12 @@ export default function VehiclesPage() {
       status:'en_ruta', service:svc?.name??'',
       client_name:contact?.name??'', client_address:assignForm.client_address,
       departed_at:assignForm.departed_at, eta:assignForm.eta,
-      technician:assignForm.technician, progress:0,
+      technician:assignTechs.join(', '), technicians:assignTechs, progress:0,
     }).eq('id', assignVeh.id)
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
     addToast('Trabajo asignado','success')
-    setAssignVeh(null); setAssignForm({...EMPTY_ASSIGN}); fetchVehicles()
+    setAssignVeh(null); setAssignForm({...EMPTY_ASSIGN}); setAssignTechs([]); fetchVehicles()
   }
 
   // ── computed ─────────────────────────────────────────────────────────────
@@ -695,7 +808,7 @@ export default function VehiclesPage() {
               <div><MLabel>Color</MLabel><MInput placeholder="White" value={addForm.color} onChange={e=>setAddForm({...addForm,color:e.target.value})}/></div>
             </div>
             <div><MLabel>Estado</MLabel><StatusPill value={addForm.status} onChange={v=>setAddForm({...addForm,status:v})}/></div>
-            <div><MLabel>Técnico Asignado</MLabel><MInput placeholder="Mohammed A." value={addForm.technician} onChange={e=>setAddForm({...addForm,technician:e.target.value})}/></div>
+            <div><MLabel>Técnicos Asignados</MLabel><TechPicker selected={addTechs} onChange={setAddTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           <button onClick={saveAdd} disabled={saving||!addForm.name.trim()||!addForm.license_plate.trim()} style={{...SUBMIT_STYLE,opacity:(addForm.name.trim()&&addForm.license_plate.trim())?1:0.5}}>
             {saving?'Guardando…':'Agregar Vehículo'}
@@ -716,7 +829,7 @@ export default function VehiclesPage() {
               <div><MLabel>Color</MLabel><MInput placeholder="White" value={editForm.color} onChange={e=>setEditForm({...editForm,color:e.target.value})}/></div>
             </div>
             <div><MLabel>Estado</MLabel><StatusPill value={editForm.status} onChange={v=>setEditForm({...editForm,status:v})}/></div>
-            <div><MLabel>Técnico Asignado</MLabel><MInput placeholder="Mohammed A." value={editForm.technician} onChange={e=>setEditForm({...editForm,technician:e.target.value})}/></div>
+            <div><MLabel>Técnicos Asignados</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           {showDeleteConfirm && (
             <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -807,7 +920,7 @@ export default function VehiclesPage() {
               <div><MLabel>Hora de Salida</MLabel><MInput placeholder="09:00" value={assignForm.departed_at} onChange={e=>setAssignForm({...assignForm,departed_at:e.target.value})}/></div>
               <div><MLabel>ETA Estimada</MLabel><MInput placeholder="11:30" value={assignForm.eta} onChange={e=>setAssignForm({...assignForm,eta:e.target.value})}/></div>
             </div>
-            <div><MLabel>Técnico</MLabel><MInput placeholder="Mohammed A." value={assignForm.technician} onChange={e=>setAssignForm({...assignForm,technician:e.target.value})}/></div>
+            <div><MLabel>Técnicos</MLabel><TechPicker selected={assignTechs} onChange={setAssignTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           <button onClick={saveAssign} disabled={saving||!assignForm.service_id} style={{...SUBMIT_STYLE,opacity:assignForm.service_id?1:0.5}}>
             {saving?'Asignando…':'Asignar'}
