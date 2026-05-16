@@ -8,6 +8,7 @@ let _tid = 0
 
 export default function AuthPage() {
   const router = useRouter()
+  const [checking, setChecking] = useState(true)
   const [mode, setMode] = useState<'login' | 'reset'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,9 +21,17 @@ export default function AuthPage() {
   const [pwErr, setPwErr] = useState(false)
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => {
-      if (user) router.replace('/')
-    })
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await createClient().auth.getSession()
+        if (session) router.replace('/')
+      } catch {
+        // ignore — always show the form
+      } finally {
+        setChecking(false)
+      }
+    }
+    checkSession()
   }, [router])
 
   function showToast(msg: string, type: 'success' | 'error') {
@@ -63,6 +72,13 @@ export default function AuthPage() {
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter') mode === 'login' ? handleLogin() : handleReset()
   }
+
+  if (checking) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0d0d0f', gap: 12 }}>
+      <div style={{ width: 36, height: 36, borderRadius: 8, background: '#c9a84c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#0d0d0f', fontSize: 14 }}>N</div>
+      <span style={{ color: '#888580', fontSize: 13 }}>Cargando...</span>
+    </div>
+  )
 
   const inp = (err: boolean): React.CSSProperties => ({
     width: '100%', boxSizing: 'border-box',
