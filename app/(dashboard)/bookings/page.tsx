@@ -764,7 +764,80 @@ export default function BookingsPage() {
             </div>
             <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:8}}>
               {detailBooking.status!=='completed'&&detailBooking.status!=='cancelled'&&(
-                <button onClick={()=>updateStatus(detailBooking.id,'completed')}
+                <button
+                  onClick={async () => {
+                    const bookingId = detailBooking.id
+                    console.log('🔥 CLIC EN MARK COMPLETE')
+                    console.log('🔥 Booking ID:', bookingId)
+
+                    if (!bookingId) { console.error('❌ Sin booking ID'); return }
+
+                    const sb = createClient()
+
+                    // Paso 1: actualizar status
+                    const { error: updateError } = await sb.from('bookings')
+                      .update({ status: 'completed', completed_at: new Date().toISOString() })
+                      .eq('id', bookingId)
+                    console.log('📋 Update error:', updateError)
+                    if (updateError) { addToast(updateError.message, 'error'); return }
+
+                    // Paso 2: obtener booking
+                    const { data: bk, error: bkErr } = await sb.from('bookings')
+                      .select('*, contacts(name)')
+                      .eq('id', bookingId)
+                      .single()
+                    console.log('📋 Booking data:', bk)
+                    console.log('❌ Booking error:', bkErr)
+
+                    if (!bk) { addToast(t('bookingCompleted'), 'success'); setDetailBooking(null); fetchBookings(selectedDay); return }
+
+                    // Paso 3: número de factura
+                    const now = new Date()
+                    const year = now.getFullYear()
+                    const month = String(now.getMonth() + 1).padStart(2, '0')
+                    const { count } = await sb.from('invoices')
+                      .select('*', { count: 'exact', head: true })
+                      .gte('created_at', `${year}-${month}-01`)
+                    const invoiceNo = `INV-${year}${month}-${String((count||0)+1).padStart(3,'0')}`
+                    const subtotal = Number(bk.price) || 0
+                    const discount = Number(bk.discount) || 0
+                    const tax   = Number(((subtotal - discount) * 0.05).toFixed(2))
+                    const total = Number((subtotal - discount + tax).toFixed(2))
+                    console.log('💰 Invoice:', { invoiceNo, subtotal, tax, total })
+
+                    // Paso 4: insertar factura
+                    const { data: inv, error: invError } = await sb.from('invoices')
+                      .insert({
+                        booking_id: bookingId,
+                        contact_id: bk.contact_id,
+                        invoice_no: invoiceNo,
+                        subtotal, discount, tax, total,
+                        status: 'draft',
+                        issued_at: now.toISOString(),
+                        due_at: new Date(now.getTime() + 30*24*60*60*1000).toISOString(),
+                      })
+                      .select()
+                      .single()
+                    console.log('✅ Invoice creado:', inv)
+                    console.log('❌ Invoice error:', invError)
+
+                    if (inv) {
+                      await sb.from('notifications').insert({
+                        type: 'payment',
+                        title: 'Factura generada',
+                        message: `${invoiceNo} · ${bk.contacts?.name ?? '—'} · AED ${total}`,
+                        read: false,
+                      })
+                      alert(`✅ Factura ${invoiceNo} generada · AED ${total}`)
+                      setCompletedInvoice(inv)
+                      setShowInvoiceModal(true)
+                    } else {
+                      alert(`❌ Error: ${invError?.message}`)
+                    }
+
+                    setDetailBooking(null)
+                    fetchBookings(selectedDay)
+                  }}
                   style={{width:'100%',padding:11,borderRadius:8,
                     border:'1px solid rgba(52,211,153,0.35)',background:'rgba(52,211,153,0.12)',
                     color:'#34d399',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
