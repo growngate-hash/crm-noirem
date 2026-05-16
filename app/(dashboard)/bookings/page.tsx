@@ -372,13 +372,17 @@ export default function BookingsPage() {
   }
 
   async function updateStatus(id:string,status:string){
+    console.log('✅ updateStatus llamado — id:', id, 'status:', status)
     const{error}=await createClient().from('bookings')
       .update({ status, ...(status==='completed' ? { completed_at: new Date().toISOString() } : {}) })
       .eq('id',id)
+    console.log('📋 Status actualizado, error:', error)
     if(error){addToast(error.message,'error');return}
 
     if (status === 'completed') {
+      console.log('🧾 Llamando generateInvoiceFromBooking para id:', id)
       const invoice = await generateInvoiceFromBooking(id)
+      console.log('🧾 Resultado generateInvoice:', invoice)
       if (invoice) {
         addToast(`✓ ${t('bookingCompleted')} · Factura ${invoice.invoice_no} generada`, 'success')
         setCompletedInvoice(invoice)
