@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 import {
   toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
   dubaiToUTC, getDubaiToday, dubaiDayRange,
@@ -187,6 +188,7 @@ type Toast={id:number;msg:string;type:'success'|'error'|'warn'}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
+  const { t } = useLanguage()
   const [bookings,    setBookings]    = useState<any[]>([])
   const [contacts,    setContacts]    = useState<any[]>([])
   const [vehicles,    setVehicles]    = useState<any[]>([])
@@ -335,7 +337,7 @@ export default function BookingsPage() {
     }
     setSaving(false)
     if(error){addToast(error.message,'error');return}
-    addToast(editId?'Reserva actualizada':'Reserva creada','success')
+    addToast(editId ? t('bookingUpdated') : t('bookingCreated'), 'success')
     setShowNew(false);resetForm()
     await fetchBookings(selectedDay) // reload immediately
   }
@@ -357,7 +359,7 @@ export default function BookingsPage() {
   async function updateStatus(id:string,status:string){
     const{error}=await createClient().from('bookings').update({status}).eq('id',id)
     if(error){addToast(error.message,'error');return}
-    addToast(status==='completed'?'Reserva completada':'Reserva cancelada',status==='completed'?'success':'warn')
+    addToast(status==='completed' ? t('bookingCompleted') : t('bookingCancelled'), status==='completed'?'success':'warn')
     setDetailBooking(null);fetchBookings(selectedDay)
   }
 
@@ -376,13 +378,13 @@ export default function BookingsPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>Reservas — Calendario</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('bookingsCalendar')}</div>
           <div style={{fontSize:12,color:'#888580',marginTop:3,textTransform:'capitalize'}}>{todayStr}</div>
         </div>
         <button onClick={()=>{setNewForm(f=>({...f,date:toDateStr(selectedDay)}));setShowNew(true)}}
           style={{padding:'8px 20px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',
             fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
-          + Nueva Reserva
+          + {t('newBooking')}
         </button>
       </div>
 
@@ -427,7 +429,7 @@ export default function BookingsPage() {
               <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:6,
                 background:'#141416',borderRight:'1px solid rgba(255,255,255,0.06)',
                 display:'flex',alignItems:'center',padding:'0 14px'}}>
-                <span style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.1em'}}>Vehículo</span>
+                <span style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.1em'}}>{t('vehicle')}</span>
               </div>
               {/* hour labels — percentage based */}
               <div style={{flex:1,display:'flex',position:'relative'}}>
@@ -453,7 +455,7 @@ export default function BookingsPage() {
             {loading ? (
               <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
             ) : vehicles.length===0 ? (
-              <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Sin vehículos registrados.</div>
+              <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>{t('noVehiclesReg2')}</div>
             ) : vehicles.map((v,i)=>{
               const vBookings = getBookingsForVehicle(v.id)
               const demoItems = getDemoForVehicle(v.name)
@@ -541,58 +543,58 @@ export default function BookingsPage() {
             padding:28,width:'100%',maxWidth:540,maxHeight:'90vh',overflowY:'auto'}}
             onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
-              <span style={{fontSize:17,fontWeight:700,color:'#f0ede8'}}>{editId?'Editar Reserva':'Nueva Reserva'}</span>
+              <span style={{fontSize:17,fontWeight:700,color:'#f0ede8'}}>{editId ? t('editBooking') : t('newBooking')}</span>
               <button onClick={()=>{setShowNew(false);resetForm()}} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}>
                 <X size={18}/>
               </button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:14}}>
-              <div><MLabel>Cliente *</MLabel>
+              <div><MLabel>{t('client')} *</MLabel>
                 <MSelect value={newForm.contact_id} onChange={e=>setNewForm(f=>({...f,contact_id:e.target.value}))}>
-                  <option value="">Seleccionar cliente…</option>
+                  <option value="">{t('selectClient')}</option>
                   {contacts.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
                 </MSelect>
               </div>
-              <div><MLabel>Vehículo *</MLabel>
+              <div><MLabel>{t('vehicle')} *</MLabel>
                 <MSelect value={newForm.vehicle_id} onChange={e=>setNewForm(f=>({...f,vehicle_id:e.target.value}))}>
-                  <option value="">Seleccionar vehículo…</option>
+                  <option value="">{t('selectVehicle')}</option>
                   {vehicles.map(v=><option key={v.id} value={v.id}>{v.name} — {v.license_plate}</option>)}
                 </MSelect>
               </div>
-              <div><MLabel>Servicio *</MLabel>
+              <div><MLabel>{t('service')} *</MLabel>
                 <MSelect value={newForm.service_id} onChange={e=>{
                   const svc=services.find(s=>s.id===e.target.value)
                   setNewForm(f=>({...f,service_id:e.target.value,price:svc?.price?String(svc.price):f.price}))
                 }}>
-                  <option value="">Seleccionar servicio…</option>
+                  <option value="">{t('selectService')}</option>
                   {services.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
                 </MSelect>
               </div>
-              <div><MLabel>Fecha *</MLabel>
+              <div><MLabel>{t('date')} *</MLabel>
                 <MInput type="date" value={newForm.date} onChange={e=>setNewForm(f=>({...f,date:e.target.value}))}/>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <div><MLabel>Hora Inicio *</MLabel>
+                <div><MLabel>{t('startTime')} *</MLabel>
                   <MInput type="time" value={newForm.start_time} onChange={e=>setNewForm(f=>({...f,start_time:e.target.value}))}/></div>
-                <div><MLabel>Hora Fin *</MLabel>
+                <div><MLabel>{t('endTime')} *</MLabel>
                   <MInput type="time" value={newForm.end_time} onChange={e=>setNewForm(f=>({...f,end_time:e.target.value}))}/></div>
               </div>
-              <div><MLabel>Técnicos</MLabel>
+              <div><MLabel>{t('technicians')}</MLabel>
                 <TechPicker selected={newTechs} onChange={setNewTechs} pool={contacts.map(c=>c.name)}/>
               </div>
-              <div><MLabel>Dirección del Cliente</MLabel>
+              <div><MLabel>{t('clientAddress')}</MLabel>
                 <MInput placeholder="Palm Jumeirah, Villa 14" value={newForm.address}
                   onChange={e=>setNewForm(f=>({...f,address:e.target.value}))}/></div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-                <div><MLabel>Precio AED *</MLabel>
+                <div><MLabel>{t('priceAED')} *</MLabel>
                   <MInput type="number" min={0} placeholder="3500" value={newForm.price}
                     onChange={e=>setNewForm(f=>({...f,price:e.target.value}))}/></div>
-                <div><MLabel>Descuento AED</MLabel>
+                <div><MLabel>{t('discountAED')}</MLabel>
                   <MInput type="number" min={0} placeholder="0" value={newForm.discount}
                     onChange={e=>setNewForm(f=>({...f,discount:e.target.value}))}/></div>
               </div>
-              <div><MLabel>Notas</MLabel>
-                <MTextarea rows={3} placeholder="Instrucciones especiales…" value={newForm.notes}
+              <div><MLabel>{t('notes')}</MLabel>
+                <MTextarea rows={3} placeholder={t('specialInstr')} value={newForm.notes}
                   onChange={e=>setNewForm(f=>({...f,notes:e.target.value}))}/></div>
             </div>
             <button onClick={saveBooking} disabled={saving||!newForm.contact_id||!newForm.date}
@@ -600,7 +602,7 @@ export default function BookingsPage() {
                 background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,
                 fontFamily:'Outfit,sans-serif',cursor:'pointer',
                 opacity:(!newForm.contact_id||!newForm.date)?0.5:1}}>
-              {saving?'Guardando…':editId?'Actualizar Reserva':'Crear Reserva'}
+              {saving ? t('saving') : editId ? t('updateBooking') : t('createBooking')}
             </button>
           </div>
         </div>
@@ -627,14 +629,14 @@ export default function BookingsPage() {
               </button>
             </div>
             <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:18,flex:1}}>
-              <DetailRow label="Vehículo">
+              <DetailRow label={t('vehicleLabel')}>
                 {detailBooking.vehicles
                   ?<span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#c9a84c'}}>{detailBooking.vehicles.license_plate}</span></span>
                   :'—'}
               </DetailRow>
-              <DetailRow label="Servicio">{detailBooking.services?.name??'—'}</DetailRow>
+              <DetailRow label={t('serviceLabel')}>{detailBooking.services?.name??'—'}</DetailRow>
               {detailBooking.scheduled_at&&(
-                <DetailRow label="Horario">
+                <DetailRow label={t('schedule')}>
                   {(()=>{
                     const ds=toDubaiTime(detailBooking.scheduled_at).toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
                     return <span style={{textTransform:'capitalize'}}>{ds} · {formatHoraDubai(detailBooking.scheduled_at)}{detailBooking.end_at?` — ${formatHoraDubai(detailBooking.end_at)}`:''}</span>
@@ -643,7 +645,7 @@ export default function BookingsPage() {
               )}
               {detailBooking.technician&&(
                 <div>
-                  <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:8}}>Técnicos</div>
+                  <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:8}}>{t('technicians')}</div>
                   <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                     {detailBooking.technician.split(', ').filter(Boolean).map((t:string)=>(
                       <span key={t} style={{padding:'3px 10px',borderRadius:99,background:'rgba(201,168,76,0.12)',
@@ -653,13 +655,13 @@ export default function BookingsPage() {
                 </div>
               )}
               {detailBooking.price!=null&&(
-                <DetailRow label="Precio">
+                <DetailRow label={t('price')}>
                   <span style={{color:'#c9a84c',fontWeight:700}}>AED {Number(detailBooking.price).toLocaleString('en-AE')}</span>
                   {detailBooking.discount>0&&<span style={{marginLeft:8,color:'#888580',fontSize:11}}>-AED {Number(detailBooking.discount).toLocaleString('en-AE')} desc.</span>}
                 </DetailRow>
               )}
-              {detailBooking.address&&<DetailRow label="Dirección">📍 {detailBooking.address}</DetailRow>}
-              {detailBooking.notes&&<DetailRow label="Notas"><span style={{color:'#888580'}}>{detailBooking.notes}</span></DetailRow>}
+              {detailBooking.address&&<DetailRow label={t('address')}>📍 {detailBooking.address}</DetailRow>}
+              {detailBooking.notes&&<DetailRow label={t('notes')}><span style={{color:'#888580'}}>{detailBooking.notes}</span></DetailRow>}
             </div>
             <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:8}}>
               {detailBooking.status!=='completed'&&detailBooking.status!=='cancelled'&&(
@@ -667,21 +669,21 @@ export default function BookingsPage() {
                   style={{width:'100%',padding:11,borderRadius:8,
                     border:'1px solid rgba(52,211,153,0.35)',background:'rgba(52,211,153,0.12)',
                     color:'#34d399',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
-                  ✓ Marcar Completada
+                  ✓ {t('markCompleted')}
                 </button>
               )}
               <button onClick={()=>openEdit(detailBooking)}
                 style={{width:'100%',padding:11,borderRadius:8,
                   border:'1px solid rgba(201,168,76,0.4)',background:'transparent',
                   color:'#c9a84c',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
-                ✏ Editar
+                ✏ {t('edit')}
               </button>
               {detailBooking.status!=='cancelled'&&detailBooking.status!=='completed'&&(
                 <button onClick={()=>updateStatus(detailBooking.id,'cancelled')}
                   style={{width:'100%',padding:11,borderRadius:8,
                     border:'1px solid rgba(255,79,79,0.3)',background:'transparent',
                     color:'#ff4f4f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
-                  Cancelar Reserva
+                  {t('cancelBooking')}
                 </button>
               )}
             </div>

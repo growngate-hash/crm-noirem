@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useLanguage } from '@/contexts/LanguageContext'
 import { DollarSign, BarChart2, FileText, BookOpen, Receipt, Package, Database, Star, ChevronLeft, Download, FileSpreadsheet, Mail, MessageSquare, X, Star as StarFilled } from 'lucide-react'
 
 // ─── types ────────────────────────────────────────────────────────────────────
@@ -571,6 +572,7 @@ function ExportRow({ label, icon, onClick }: { label: string; icon: React.ReactN
 
 // ─── page ─────────────────────────────────────────────────────────────────────
 export default function ReportsPage() {
+  const { t } = useLanguage()
   const [selected,     setSelected]     = useState<string|null>(null)
   const [showExport,   setShowExport]   = useState(false)
   const [previewReport, setPreviewReport] = useState<string|null>(null)
@@ -605,7 +607,7 @@ export default function ReportsPage() {
       {/* header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:28 }}>
         <div>
-          <div style={{ fontSize:24, fontWeight:700, color:'#f0ede8' }}>Reportes</div>
+          <div style={{ fontSize:24, fontWeight:700, color:'#f0ede8' }}>{t('reports')}</div>
           <div style={{ fontSize:13, color:'#888580', marginTop:4 }}>Genera, descarga y comparte reportes del negocio</div>
         </div>
         <div ref={exportRef} style={{ position:'relative' }}>
@@ -634,7 +636,7 @@ export default function ReportsPage() {
           {/* panel header */}
           <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
             <button onClick={() => setSelected(null)} style={{ display:'flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', color:'#888580', fontSize:12, fontFamily:'Outfit,sans-serif', padding:0 }}>
-              <ChevronLeft size={14}/> Volver
+              <ChevronLeft size={14}/> {t('backToReports')}
             </button>
             <span style={{ width:1, height:14, background:'rgba(255,255,255,0.1)' }}/>
             <span style={{ fontSize:15, fontWeight:700, color:'#f0ede8' }}>{activeCat.label}</span>

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { Search, X, Car, Calendar, MessageCircle, Phone, Pencil, AlertTriangle } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
 const initials = (n: string) => n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -109,9 +110,7 @@ const DEMO_CONTACTS = [
   { id:'d4', name:'Fatima Al Zaabi',     tier:'VIP',           tipo:'cliente', bookings:[{},{}],                              vehicles:[{ make:'Porsche',      model:'Cayenne', license_plate:'SHJ·9012', id:'v4', year:2021 }], total:18700  },
 ]
 
-const TABS       = ['Clientes','Proveedores']
 const TIER_PILLS = ['All','Black Diamond','Platinum','VIP']
-const COL_HEADS  = ['Cliente','Categoría','Vehículo Principal','Matrícula','Gasto Total','Acciones']
 
 const EMPTY_CLIENT   = { name:'', phone:'', email:'', vehicle_type:'', license_plate:'', tier:'VIP', address:'', notes:'' }
 const EMPTY_PROVIDER = { name:'', phone:'', email:'', supplier_type:'', address:'', notes:'' }
@@ -119,11 +118,12 @@ const EMPTY_PROVIDER = { name:'', phone:'', email:'', supplier_type:'', address:
 const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', transition:'opacity 0.15s', cursor:'pointer' }
 
 export default function ContactsPage() {
+  const { t } = useLanguage()
   const [contacts,   setContacts]   = useState<any[]>([])
   const [loading,    setLoading]    = useState(true)
   const [search,     setSearch]     = useState('')
   const [tierFilter, setTierFilter] = useState('All')
-  const [activeTab,  setActiveTab]  = useState('Clientes')
+  const [activeTab,  setActiveTab]  = useState<'clients'|'suppliers'>('clients')
   const [drawer,     setDrawer]     = useState<any | null>(null)
 
   // add modals
@@ -178,12 +178,12 @@ export default function ContactsPage() {
 
   // ── fetch with tab filter ──────────────────────────────────────────────────
   async function fetchContacts(tab?: string) {
-    const t = tab ?? activeTab
+    const curTab = tab ?? activeTab
     setLoading(true)
     const sb = createClient()
     let q = sb.from('contacts').select('*, vehicles(*), bookings(id,price,status,created_at)').order('created_at', { ascending: false })
-    if (t === 'Clientes')    q = q.eq('tipo', 'cliente')
-    if (t === 'Proveedores') q = q.eq('tipo', 'proveedor')
+    if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
+    if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
     const { data } = await q
     setContacts(data ?? [])
     setLoading(false)
@@ -198,7 +198,7 @@ export default function ContactsPage() {
     const { error } = await createClient().from('contacts').insert({ name:clientForm.name, phone:clientForm.phone, email:clientForm.email, tier:clientForm.tier, address:clientForm.address, notes:clientForm.notes, vehicle_type:clientForm.vehicle_type, license_plate:clientForm.license_plate, tipo:'cliente' })
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Cliente agregado correctamente', 'success')
+    addToast(t('clientAdded'), 'success')
     closeClient(); fetchContacts()
   }
 
@@ -209,7 +209,7 @@ export default function ContactsPage() {
     const { error } = await createClient().from('contacts').insert({ name:providerForm.name, phone:providerForm.phone, email:providerForm.email, address:providerForm.address, notes:providerForm.notes, supplier_type:providerForm.supplier_type, tipo:'proveedor' })
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Proveedor agregado', 'success')
+    addToast(t('supplierAdded'), 'success')
     closeProvider(); fetchContacts()
   }
 
@@ -228,7 +228,7 @@ export default function ContactsPage() {
     const { error } = await createClient().from('contacts').update(payload).eq('id', editContact.id)
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Cambios guardados correctamente', 'success')
+    addToast(t('changesSaved'), 'success')
     setContacts(prev => prev.map(c => c.id === editContact.id ? { ...c, ...payload } : c))
     closeEdit()
   }
@@ -240,13 +240,13 @@ export default function ContactsPage() {
     const { error } = await createClient().from('contacts').update({ deleted_at: new Date().toISOString() }).eq('id', editContact.id)
     setDeleting(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Contacto eliminado', 'success')
+    addToast(t('contactDeleted'), 'success')
     setContacts(prev => prev.filter(c => c.id !== editContact.id))
     closeEdit()
   }
 
   // ── display data ───────────────────────────────────────────────────────────
-  const isDemo = contacts.length === 0 && activeTab === 'Clientes' && !loading
+  const isDemo = contacts.length === 0 && activeTab === 'clients' && !loading
   const source = isDemo ? DEMO_CONTACTS : contacts
 
   const filtered = source.filter(c => {
@@ -256,22 +256,21 @@ export default function ContactsPage() {
     return matchSearch && matchTier
   })
 
-  // empty state message/action per tab
-  const emptyMsg    = activeTab === 'Proveedores' ? 'No hay proveedores aún' : 'No hay clientes aún'
-  const emptyAction = activeTab === 'Proveedores'
-    ? <button onClick={() => setShowProvider(true)} style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'1px solid rgba(201,168,76,0.3)', background:'#1a1a1e', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ Agregar Proveedor</button>
-    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ Agregar Cliente</button>
+  const emptyMsg    = activeTab === 'suppliers' ? t('noSuppliersYet') : t('noClientsYet')
+  const emptyAction = activeTab === 'suppliers'
+    ? <button onClick={() => setShowProvider(true)} style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'1px solid rgba(201,168,76,0.3)', background:'#1a1a1e', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addSupplier')}</button>
+    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
 
   return (
     <div style={{ padding:24, minHeight:'100%' }}>
 
       {/* ── Tabs ── */}
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:20 }}>
-        {TABS.map(tab => (
+        {(['clients', 'suppliers'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             style={{ background:'transparent', border:'none', cursor:'pointer', padding:'10px 18px', fontSize:14, fontFamily:'Outfit,sans-serif', fontWeight:activeTab===tab?600:400, color:activeTab===tab?'#c9a84c':'#888580', borderBottom:`2px solid ${activeTab===tab?'#c9a84c':'transparent'}`, marginBottom:-1, transition:'all 0.15s' }}
           >
-            {tab}
+            {t(tab === 'clients' ? 'clients' : 'suppliers')}
           </button>
         ))}
       </div>
@@ -280,10 +279,10 @@ export default function ContactsPage() {
       <div style={{ display:'flex', gap:10, marginBottom:16, alignItems:'center', flexWrap:'wrap' }}>
         <div style={{ position:'relative', flex:1, minWidth:180, maxWidth:300 }}>
           <Search size={13} color="#888580" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
-          <input className="inp" style={{ paddingLeft:30, fontSize:12 }} placeholder="Buscar…" value={search} onChange={e => setSearch(e.target.value)} />
+          <input className="inp" style={{ paddingLeft:30, fontSize:12 }} placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div style={{ display:'flex', gap:6 }}>
-          {(activeTab === 'Proveedores' ? ['All'] : TIER_PILLS).map(pill => {
+          {(activeTab === 'suppliers' ? ['All'] : TIER_PILLS).map(pill => {
             const isActive = tierFilter === pill
             return (
               <button key={pill} onClick={() => setTierFilter(pill)}
@@ -298,12 +297,12 @@ export default function ContactsPage() {
           <button onClick={() => setShowProvider(true)}
             style={{ padding:'8px 16px', borderRadius:8, cursor:'pointer', background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
           >
-            + Agregar Proveedor
+            + {t('addSupplier')}
           </button>
           <button onClick={() => setShowClient(true)}
             style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
           >
-            + Agregar Cliente
+            + {t('addClient')}
           </button>
         </div>
       </div>
@@ -313,21 +312,21 @@ export default function ContactsPage() {
         <table style={{ width:'100%', borderCollapse:'collapse' }}>
           <thead>
             <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-              {['Cliente','Categoría'].map(h => (
+              {[t('client'), t('category')].map(h => (
                 <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
               ))}
-              {activeTab === 'Proveedores' ? (
+              {activeTab === 'suppliers' ? (
                 <>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Tipo de Proveedor</th>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Teléfono</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('supplierType')}</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('phone')}</th>
                 </>
               ) : (
                 <>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Vehículo Principal</th>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>Matrícula</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('mainVehicle')}</th>
+                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('licensePlate')}</th>
                 </>
               )}
-              {['Gasto Total','Acciones'].map(h => (
+              {[t('totalSpent'), t('actions')].map(h => (
                 <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
               ))}
             </tr>
@@ -351,17 +350,17 @@ export default function ContactsPage() {
                 <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
                   <td style={{ padding:'14px 16px' }}>
                     <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
-                    {activeTab !== 'Proveedores' && (
-                      <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?'reserva':'reservas'}</div>
+                    {activeTab !== 'suppliers' && (
+                      <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
                     )}
                   </td>
                   <td style={{ padding:'14px 16px' }}>
-                    {activeTab === 'Proveedores'
-                      ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>PROVEEDOR</span>
+                    {activeTab === 'suppliers'
+                      ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>{t('suppliers').toUpperCase()}</span>
                       : <CategoryBadge tier={c.tier ?? 'VIP'} />
                     }
                   </td>
-                  {activeTab === 'Proveedores' ? (
+                  {activeTab === 'suppliers' ? (
                     <>
                       <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#f0ede8' : '#3a3836' }}>{c.supplier_type || '—'}</td>
                       <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#f0ede8' : '#3a3836' }}>{c.phone || '—'}</td>
@@ -415,9 +414,9 @@ export default function ContactsPage() {
             </div>
             <div className="scroll" style={{ flex:1, padding:20 }}>
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Vehículos</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('vehicles')}</div>
                 {(drawer.vehicles ?? []).length === 0
-                  ? <div style={{ fontSize:12, color:'#888580' }}>Sin vehículos registrados</div>
+                  ? <div style={{ fontSize:12, color:'#888580' }}>{t('noVehiclesReg')}</div>
                   : (drawer.vehicles ?? []).map((v: any) => (
                     <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:10, marginBottom:8 }}>
                       <Car size={14} color="#c9a84c" />
@@ -429,9 +428,9 @@ export default function ContactsPage() {
                   ))}
               </div>
               <div>
-                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>Últimas Reservas</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('lastBookings')}</div>
                 {(drawer.bookings ?? []).length === 0
-                  ? <div style={{ fontSize:12, color:'#888580' }}>Sin reservas aún</div>
+                  ? <div style={{ fontSize:12, color:'#888580' }}>{t('noBookingsYet2')}</div>
                   : [...(drawer.bookings ?? [])].sort((a: any, b: any) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()).slice(0, 5).map((bk: any, i: number) => (
                     <div key={bk.id ?? i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
                       <div>
@@ -455,43 +454,43 @@ export default function ContactsPage() {
 
       {/* ── Modal: Agregar Cliente ── */}
       {showClient && (
-        <ContactModal title="Agregar Nuevo Cliente" onClose={closeClient}>
+        <ContactModal title={t('addNewClient')} onClose={closeClient}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-            <div><MLabel>Nombre *</MLabel><MInput placeholder="Ahmed Al Rashid" value={clientForm.name} onChange={e => setClientForm({...clientForm, name:e.target.value})} /></div>
-            <div><MLabel>Teléfono</MLabel><MInput placeholder="+971 50 000 0000" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone:e.target.value})} /></div>
-            <div><MLabel>Correo</MLabel><MInput type="email" placeholder="ahmed@example.ae" value={clientForm.email} onChange={e => setClientForm({...clientForm, email:e.target.value})} /></div>
-            <div><MLabel>Tipo de Vehículo</MLabel><MInput placeholder="ej. Bugatti Chiron" value={clientForm.vehicle_type} onChange={e => setClientForm({...clientForm, vehicle_type:e.target.value})} /></div>
-            <div><MLabel>Matrícula</MLabel><MInput placeholder="ej. M-00007" value={clientForm.license_plate} onChange={e => setClientForm({...clientForm, license_plate:e.target.value})} /></div>
-            <div><MLabel>Categoría</MLabel><TierPicker value={clientForm.tier} onChange={v => setClientForm({...clientForm, tier:v})} /></div>
-            <div style={{ gridColumn:'1 / -1' }}><MLabel>Dirección</MLabel><MInput placeholder="Dubai, UAE" value={clientForm.address} onChange={e => setClientForm({...clientForm, address:e.target.value})} /></div>
-            <div style={{ gridColumn:'1 / -1' }}><MLabel>Notas</MLabel><MTextarea rows={3} placeholder="Detalles importantes sobre este cliente..." value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes:e.target.value})} /></div>
+            <div><MLabel>{t('name')} *</MLabel><MInput placeholder="Ahmed Al Rashid" value={clientForm.name} onChange={e => setClientForm({...clientForm, name:e.target.value})} /></div>
+            <div><MLabel>{t('phone')}</MLabel><MInput placeholder="+971 50 000 0000" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone:e.target.value})} /></div>
+            <div><MLabel>{t('email')}</MLabel><MInput type="email" placeholder="ahmed@example.ae" value={clientForm.email} onChange={e => setClientForm({...clientForm, email:e.target.value})} /></div>
+            <div><MLabel>{t('vehicleType')}</MLabel><MInput placeholder="ej. Bugatti Chiron" value={clientForm.vehicle_type} onChange={e => setClientForm({...clientForm, vehicle_type:e.target.value})} /></div>
+            <div><MLabel>{t('licensePlate')}</MLabel><MInput placeholder="ej. M-00007" value={clientForm.license_plate} onChange={e => setClientForm({...clientForm, license_plate:e.target.value})} /></div>
+            <div><MLabel>{t('category')}</MLabel><TierPicker value={clientForm.tier} onChange={v => setClientForm({...clientForm, tier:v})} /></div>
+            <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('address')}</MLabel><MInput placeholder="Dubai, UAE" value={clientForm.address} onChange={e => setClientForm({...clientForm, address:e.target.value})} /></div>
+            <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('notes')}</MLabel><MTextarea rows={3} placeholder="..." value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes:e.target.value})} /></div>
           </div>
           <button onClick={saveClient} disabled={saving || !clientForm.name.trim()} style={{ ...SUBMIT_STYLE, opacity:clientForm.name.trim()?1:0.5, cursor:clientForm.name.trim()?'pointer':'not-allowed' }}>
-            {saving ? 'Guardando…' : 'Agregar Cliente'}
+            {saving ? t('saving') : t('addClient')}
           </button>
         </ContactModal>
       )}
 
       {/* ── Modal: Agregar Proveedor ── */}
       {showProvider && (
-        <ContactModal title="Agregar Nuevo Proveedor" onClose={closeProvider}>
+        <ContactModal title={t('addNewSupplier')} onClose={closeProvider}>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-            <div><MLabel>Nombre *</MLabel><MInput placeholder="Al Noor Supplies" value={providerForm.name} onChange={e => setProviderForm({...providerForm, name:e.target.value})} /></div>
-            <div><MLabel>Teléfono</MLabel><MInput placeholder="+971 50 000 0000" value={providerForm.phone} onChange={e => setProviderForm({...providerForm, phone:e.target.value})} /></div>
-            <div><MLabel>Correo</MLabel><MInput type="email" placeholder="contact@supplier.ae" value={providerForm.email} onChange={e => setProviderForm({...providerForm, email:e.target.value})} /></div>
-            <div><MLabel>Tipo de Proveedor</MLabel><MInput placeholder="ej. Químicos" value={providerForm.supplier_type} onChange={e => setProviderForm({...providerForm, supplier_type:e.target.value})} /></div>
-            <div style={{ gridColumn:'1 / -1' }}><MLabel>Dirección</MLabel><MInput placeholder="Dubai, UAE" value={providerForm.address} onChange={e => setProviderForm({...providerForm, address:e.target.value})} /></div>
-            <div style={{ gridColumn:'1 / -1' }}><MLabel>Notas</MLabel><MTextarea rows={3} placeholder="Detalles importantes sobre este proveedor..." value={providerForm.notes} onChange={e => setProviderForm({...providerForm, notes:e.target.value})} /></div>
+            <div><MLabel>{t('name')} *</MLabel><MInput placeholder="Al Noor Supplies" value={providerForm.name} onChange={e => setProviderForm({...providerForm, name:e.target.value})} /></div>
+            <div><MLabel>{t('phone')}</MLabel><MInput placeholder="+971 50 000 0000" value={providerForm.phone} onChange={e => setProviderForm({...providerForm, phone:e.target.value})} /></div>
+            <div><MLabel>{t('email')}</MLabel><MInput type="email" placeholder="contact@supplier.ae" value={providerForm.email} onChange={e => setProviderForm({...providerForm, email:e.target.value})} /></div>
+            <div><MLabel>{t('supplierType')}</MLabel><MInput placeholder="ej. Químicos" value={providerForm.supplier_type} onChange={e => setProviderForm({...providerForm, supplier_type:e.target.value})} /></div>
+            <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('address')}</MLabel><MInput placeholder="Dubai, UAE" value={providerForm.address} onChange={e => setProviderForm({...providerForm, address:e.target.value})} /></div>
+            <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('notes')}</MLabel><MTextarea rows={3} placeholder="..." value={providerForm.notes} onChange={e => setProviderForm({...providerForm, notes:e.target.value})} /></div>
           </div>
           <button onClick={saveProvider} disabled={saving || !providerForm.name.trim()} style={{ ...SUBMIT_STYLE, opacity:providerForm.name.trim()?1:0.5, cursor:providerForm.name.trim()?'pointer':'not-allowed' }}>
-            {saving ? 'Guardando…' : 'Agregar Proveedor'}
+            {saving ? t('saving') : t('addSupplier')}
           </button>
         </ContactModal>
       )}
 
       {/* ── Modal: Editar Contacto ── */}
       {editContact && (
-        <ContactModal title={editContact.tipo === 'proveedor' ? 'Editar Proveedor' : 'Editar Cliente'} onClose={closeEdit}>
+        <ContactModal title={editContact.tipo === 'proveedor' ? t('editSupplier') : t('editClient')} onClose={closeEdit}>
           {editContact.tipo === 'proveedor' ? (
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
               <div><MLabel>Nombre *</MLabel><MInput value={editForm.name ?? ''} onChange={e => setEditForm({...editForm, name:e.target.value})} /></div>
@@ -519,15 +518,15 @@ export default function ContactsPage() {
             <div style={{ marginTop:20, padding:16, borderRadius:10, background:'rgba(255,79,79,0.08)', border:'1px solid rgba(255,79,79,0.2)' }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
                 <AlertTriangle size={15} color="#ff4f4f" />
-                <span style={{ fontSize:13, fontWeight:600, color:'#ff4f4f' }}>¿Seguro que deseas eliminar este contacto?</span>
+                <span style={{ fontSize:13, fontWeight:600, color:'#ff4f4f' }}>{t('deleteContactQ')}</span>
               </div>
-              <div style={{ fontSize:12, color:'#888580', marginBottom:14 }}>Esta acción no se puede deshacer.</div>
+              <div style={{ fontSize:12, color:'#888580', marginBottom:14 }}>{t('irreversible')}</div>
               <div style={{ display:'flex', gap:8 }}>
                 <button onClick={() => setShowDeleteConfirm(false)} style={{ flex:1, padding:'9px 0', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-                  Cancelar
+                  {t('cancel')}
                 </button>
                 <button onClick={deleteContact} disabled={deleting} style={{ flex:1, padding:'9px 0', borderRadius:8, border:'none', background:'#ff4f4f', color:'#fff', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-                  {deleting ? 'Eliminando…' : 'Sí, eliminar'}
+                  {deleting ? t('deleting') : `${t('yes')}, ${t('delete').toLowerCase()}`}
                 </button>
               </div>
             </div>
@@ -537,14 +536,14 @@ export default function ContactsPage() {
           <div style={{ display:'flex', gap:10, marginTop:20, alignItems:'center' }}>
             {!showDeleteConfirm && (
               <button onClick={() => setShowDeleteConfirm(true)} style={{ padding:'12px 16px', borderRadius:10, border:'1px solid rgba(255,79,79,0.3)', background:'transparent', color:'#ff4f4f', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
-                Eliminar contacto
+                {t('deleteContact')}
               </button>
             )}
             <button onClick={closeEdit} style={{ flex:1, padding:14, borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-              Cancelar
+              {t('cancel')}
             </button>
             <button onClick={saveEdit} disabled={saving || !editForm.name?.trim()} style={{ flex:2, padding:14, borderRadius:10, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:editForm.name?.trim()?'pointer':'not-allowed', opacity:editForm.name?.trim()?1:0.5 }}>
-              {saving ? 'Guardando…' : 'Guardar Cambios'}
+              {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
         </ContactModal>

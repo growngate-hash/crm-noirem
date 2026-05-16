@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Package } from 'lucide-react'
 import { getDubaiToday, dubaiDayRange, formatHoraDubai, toDubaiTime } from '@/utils/timezone'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // ─── shared inputs ────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -397,6 +398,7 @@ const BTN_RED:      React.CSSProperties = { padding:'8px 14px', borderRadius:8, 
 const BTN_GHOST:    React.CSSProperties = { padding:'8px 16px', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'#1a1a1e', color:'#888580', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
 
 export default function VehiclesPage() {
+  const { t } = useLanguage()
   const [vehicles,  setVehicles]  = useState<any[]>([])
   const [contacts,  setContacts]  = useState<any[]>([])
   const [services,  setServices]  = useState<any[]>([])
@@ -632,7 +634,7 @@ export default function VehiclesPage() {
     })
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
-    addToast('Vehículo agregado','success')
+    addToast(t('vehicleAdded'), 'success')
     setShowAdd(false); setAddForm({...EMPTY_VEH}); setAddTechs([]); fetchVehicles()
   }
 
@@ -656,14 +658,14 @@ export default function VehiclesPage() {
     }).eq('id', editVeh.id)
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
-    addToast('Vehículo actualizado','success'); setEditVeh(null); fetchVehicles()
+    addToast(t('vehicleSaved'), 'success'); setEditVeh(null); fetchVehicles()
   }
 
   async function deleteVeh() {
     if (!editVeh) return
     const {error} = await createClient().from('vehicles').delete().eq('id', editVeh.id)
     if (error) { addToast(error.message,'error'); return }
-    addToast('Vehículo eliminado','success'); setEditVeh(null); fetchVehicles()
+    addToast(t('vehicleDeleted'), 'success'); setEditVeh(null); fetchVehicles()
   }
 
   async function clearVehicle(v: any) {
@@ -703,10 +705,10 @@ export default function VehiclesPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>Vehicles — Home Service</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('vehicles')} — Home Service</div>
           <div style={{fontSize:12,color:'#888580',marginTop:3}}>{new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         </div>
-        <button style={BTN_GOLD} onClick={()=>setShowAdd(true)}>+ Add Vehicle</button>
+        <button style={BTN_GOLD} onClick={()=>setShowAdd(true)}>+ {t('addVehicle')}</button>
       </div>
 
       {/* ── Section label ── */}
@@ -722,7 +724,7 @@ export default function VehiclesPage() {
           ))}
         </div>
       ) : vehicles.length === 0 ? (
-        <div style={{color:'#888580',fontSize:13,padding:20}}>Sin vehículos registrados.</div>
+        <div style={{color:'#888580',fontSize:13,padding:20}}>{t('noVehiclesYet')}</div>
       ) : (
         <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:8}}>
           {vehicles.map(v=>(
@@ -890,53 +892,53 @@ export default function VehiclesPage() {
 
       {/* ── Modal: Add Vehicle ── */}
       {showAdd && (
-        <VModal title="Agregar Vehículo" onClose={()=>{setShowAdd(false);setAddForm({...EMPTY_VEH})}}>
+        <VModal title={t('addVehicle')} onClose={()=>{setShowAdd(false);setAddForm({...EMPTY_VEH})}}>
           <div style={{display:'flex',flexDirection:'column',gap:14}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-              <div><MLabel>Nombre *</MLabel><MInput placeholder="Van 01 — Sprinter" value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/></div>
-              <div><MLabel>Matrícula *</MLabel><MInput placeholder="DXB-M-8231" value={addForm.license_plate} onChange={e=>setAddForm({...addForm,license_plate:e.target.value})}/></div>
-              <div><MLabel>Marca</MLabel><MInput placeholder="Mercedes" value={addForm.make} onChange={e=>setAddForm({...addForm,make:e.target.value})}/></div>
-              <div><MLabel>Modelo</MLabel><MInput placeholder="Sprinter" value={addForm.model} onChange={e=>setAddForm({...addForm,model:e.target.value})}/></div>
-              <div><MLabel>Año</MLabel><MInput type="number" placeholder="2023" value={addForm.year} onChange={e=>setAddForm({...addForm,year:e.target.value})}/></div>
-              <div><MLabel>Color</MLabel><MInput placeholder="White" value={addForm.color} onChange={e=>setAddForm({...addForm,color:e.target.value})}/></div>
+              <div><MLabel>{t('name')} *</MLabel><MInput placeholder="Van 01 — Sprinter" value={addForm.name} onChange={e=>setAddForm({...addForm,name:e.target.value})}/></div>
+              <div><MLabel>{t('licensePlate')} *</MLabel><MInput placeholder="DXB-M-8231" value={addForm.license_plate} onChange={e=>setAddForm({...addForm,license_plate:e.target.value})}/></div>
+              <div><MLabel>{t('make')}</MLabel><MInput placeholder="Mercedes" value={addForm.make} onChange={e=>setAddForm({...addForm,make:e.target.value})}/></div>
+              <div><MLabel>{t('model')}</MLabel><MInput placeholder="Sprinter" value={addForm.model} onChange={e=>setAddForm({...addForm,model:e.target.value})}/></div>
+              <div><MLabel>{t('year')}</MLabel><MInput type="number" placeholder="2023" value={addForm.year} onChange={e=>setAddForm({...addForm,year:e.target.value})}/></div>
+              <div><MLabel>{t('color')}</MLabel><MInput placeholder="White" value={addForm.color} onChange={e=>setAddForm({...addForm,color:e.target.value})}/></div>
             </div>
-            <div><MLabel>Estado</MLabel><StatusPill value={addForm.status} onChange={v=>setAddForm({...addForm,status:v})}/></div>
-            <div><MLabel>Técnicos Asignados</MLabel><TechPicker selected={addTechs} onChange={setAddTechs} pool={contacts.map(c=>c.name)}/></div>
+            <div><MLabel>{t('status')}</MLabel><StatusPill value={addForm.status} onChange={v=>setAddForm({...addForm,status:v})}/></div>
+            <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={addTechs} onChange={setAddTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           <button onClick={saveAdd} disabled={saving||!addForm.name.trim()||!addForm.license_plate.trim()} style={{...SUBMIT_STYLE,opacity:(addForm.name.trim()&&addForm.license_plate.trim())?1:0.5}}>
-            {saving?'Guardando…':'Agregar Vehículo'}
+            {saving ? t('saving') : t('addVehicle')}
           </button>
         </VModal>
       )}
 
       {/* ── Modal: Edit Vehicle ── */}
       {editVeh && (
-        <VModal title="Editar Vehículo" onClose={()=>{setEditVeh(null);setShowDeleteConfirm(false)}}>
+        <VModal title={t('editVehicle')} onClose={()=>{setEditVeh(null);setShowDeleteConfirm(false)}}>
           <div style={{display:'flex',flexDirection:'column',gap:14}}>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-              <div><MLabel>Nombre *</MLabel><MInput placeholder="Van 01 — Sprinter" value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
-              <div><MLabel>Matrícula *</MLabel><MInput placeholder="DXB-M-8231" value={editForm.license_plate} onChange={e=>setEditForm({...editForm,license_plate:e.target.value})}/></div>
-              <div><MLabel>Marca</MLabel><MInput placeholder="Mercedes" value={editForm.make} onChange={e=>setEditForm({...editForm,make:e.target.value})}/></div>
-              <div><MLabel>Modelo</MLabel><MInput placeholder="Sprinter" value={editForm.model} onChange={e=>setEditForm({...editForm,model:e.target.value})}/></div>
-              <div><MLabel>Año</MLabel><MInput type="number" placeholder="2023" value={editForm.year} onChange={e=>setEditForm({...editForm,year:e.target.value})}/></div>
-              <div><MLabel>Color</MLabel><MInput placeholder="White" value={editForm.color} onChange={e=>setEditForm({...editForm,color:e.target.value})}/></div>
+              <div><MLabel>{t('name')} *</MLabel><MInput placeholder="Van 01 — Sprinter" value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/></div>
+              <div><MLabel>{t('licensePlate')} *</MLabel><MInput placeholder="DXB-M-8231" value={editForm.license_plate} onChange={e=>setEditForm({...editForm,license_plate:e.target.value})}/></div>
+              <div><MLabel>{t('make')}</MLabel><MInput placeholder="Mercedes" value={editForm.make} onChange={e=>setEditForm({...editForm,make:e.target.value})}/></div>
+              <div><MLabel>{t('model')}</MLabel><MInput placeholder="Sprinter" value={editForm.model} onChange={e=>setEditForm({...editForm,model:e.target.value})}/></div>
+              <div><MLabel>{t('year')}</MLabel><MInput type="number" placeholder="2023" value={editForm.year} onChange={e=>setEditForm({...editForm,year:e.target.value})}/></div>
+              <div><MLabel>{t('color')}</MLabel><MInput placeholder="White" value={editForm.color} onChange={e=>setEditForm({...editForm,color:e.target.value})}/></div>
             </div>
-            <div><MLabel>Estado</MLabel><StatusPill value={editForm.status} onChange={v=>setEditForm({...editForm,status:v})}/></div>
-            <div><MLabel>Técnicos Asignados</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={contacts.map(c=>c.name)}/></div>
+            <div><MLabel>{t('status')}</MLabel><StatusPill value={editForm.status} onChange={v=>setEditForm({...editForm,status:v})}/></div>
+            <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           {showDeleteConfirm && (
             <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-              <span style={{fontSize:12,color:'#ff4f4f'}}>¿Eliminar este vehículo?</span>
+              <span style={{fontSize:12,color:'#ff4f4f'}}>{t('deleteContactQ').replace('contacto','vehículo')}</span>
               <div style={{display:'flex',gap:6}}>
-                <button onClick={()=>setShowDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
-                <button onClick={deleteVeh} style={{padding:'5px 12px',borderRadius:6,border:'none',background:'#ff4f4f',color:'#fff',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Sí, eliminar</button>
+                <button onClick={()=>setShowDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>{t('no')}</button>
+                <button onClick={deleteVeh} style={{padding:'5px 12px',borderRadius:6,border:'none',background:'#ff4f4f',color:'#fff',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>{t('yes')}, {t('delete').toLowerCase()}</button>
               </div>
             </div>
           )}
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:20}}>
-            <button onClick={()=>setShowDeleteConfirm(true)} style={BTN_RED}>Eliminar Vehículo</button>
+            <button onClick={()=>setShowDeleteConfirm(true)} style={BTN_RED}>{t('delete')} {t('vehicle').toLowerCase()}</button>
             <button onClick={saveEdit} disabled={saving||!editForm.name?.trim()} style={{...BTN_GOLD,padding:'10px 20px',opacity:editForm.name?.trim()?1:0.5}}>
-              {saving?'Guardando…':'Guardar Cambios'}
+              {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
         </VModal>

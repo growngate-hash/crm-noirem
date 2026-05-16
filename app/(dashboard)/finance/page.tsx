@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // ─── shared inputs ─────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -1293,13 +1294,14 @@ function ComingSoon({ label }: { label: string }) {
 
 // ─── PAGE ──────────────────────────────────────────────────────────────────────
 export default function FinancePage() {
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('Costs & Expenses')
 
   return (
     <div style={{ padding: 24 }}>
       {/* header */}
       <div style={{ marginBottom: 22 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, color: '#f0ede8' }}>Finance</div>
+        <div style={{ fontSize: 22, fontWeight: 700, color: '#f0ede8' }}>{t('finance')}</div>
         <div style={{ fontSize: 12, color: '#888580', marginTop: 3 }}>
           {new Date().toLocaleDateString('en-AE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>

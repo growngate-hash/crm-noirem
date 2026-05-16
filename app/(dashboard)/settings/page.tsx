@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
 import { usePermissions } from '@/hooks/usePermissions'
+import { useLanguage } from '@/contexts/LanguageContext'
 import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
@@ -820,6 +821,7 @@ function BillingSection() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
+  const { t } = useLanguage()
   const [activeSection, setActiveSection] = useState<Section>('profile')
   const { isAdmin, isManager, currentUserEmail } = usePermissions()
 

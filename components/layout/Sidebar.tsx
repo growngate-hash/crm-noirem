@@ -113,7 +113,7 @@ export default function Sidebar() {
                 borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <UserIcon size={13} color="var(--text2)"/> Mi perfil
+              <UserIcon size={13} color="var(--text2)"/> {t('myProfile')}
             </Link>
             <Link href="/settings" onClick={() => setShowMenu(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
@@ -121,7 +121,7 @@ export default function Sidebar() {
                 borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <Settings size={13} color="var(--text2)"/> Configuración
+              <Settings size={13} color="var(--text2)"/> {t('configuration')}
             </Link>
             <button onClick={handleLogout}
               style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
@@ -130,7 +130,7 @@ export default function Sidebar() {
                 transition: 'background 0.1s' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,79,79,0.05)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <LogOut size={13}/> Cerrar sesión
+              <LogOut size={13}/> {t('logOut')}
             </button>
           </div>
         )}

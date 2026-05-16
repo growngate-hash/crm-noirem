@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Plus, Trash2 } from 'lucide-react'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
 const INP_BASE: React.CSSProperties = {
@@ -181,6 +182,7 @@ const SUBMIT_STYLE: React.CSSProperties = { width:'100%',padding:14,borderRadius
 type MatRow = { name: string; qty: string; unit: string }
 
 export default function ServicesPage() {
+  const { t } = useLanguage()
   const [services,  setServices]  = useState<any[]>([])
   const [inventory, setInventory] = useState<any[]>([])
   const [loadingS,  setLoadingS]  = useState(true)
@@ -357,7 +359,7 @@ export default function ServicesPage() {
       )
     }
     setSaving(false)
-    addToast('Servicio creado correctamente','success')
+    addToast(t('serviceAdded'), 'success')
     closeService(); fetchServices()
   }
 
@@ -373,7 +375,7 @@ export default function ServicesPage() {
     })
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
-    addToast('Producto agregado correctamente','success')
+    addToast(t('itemAdded'), 'success')
     closeInv(); fetchInventory()
   }
 
@@ -387,7 +389,7 @@ export default function ServicesPage() {
     })
     setSavingItem(false)
     if (error) { addToast(error.message,'error'); return }
-    addToast('Ítem agregado','success')
+    addToast(t('itemAdded'), 'success')
     setShowAddItem(false); setNewItem({...EMPTY_ITEM})
     openMaterials(selectedSvc)
   }
@@ -409,12 +411,12 @@ export default function ServicesPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>Servicios e Inventario</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('servicesInventory')}</div>
           <div style={{fontSize:12,color:'#888580',marginTop:3}}>{new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         </div>
         <div style={{display:'flex',gap:10}}>
-          <button style={BTN_OUTLINE} onClick={()=>setShowService(true)}>+ Agregar Servicio</button>
-          <button style={BTN_GOLD}    onClick={()=>setShowInv(true)}>+ Agregar Inventario</button>
+          <button style={BTN_OUTLINE} onClick={()=>setShowService(true)}>+ {t('addService')}</button>
+          <button style={BTN_GOLD}    onClick={()=>setShowInv(true)}>+ {t('addItem')}</button>
         </div>
       </div>
 
