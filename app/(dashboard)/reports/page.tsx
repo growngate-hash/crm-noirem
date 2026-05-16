@@ -18,13 +18,27 @@ const aed = (v: number) => `AED ${(v || 0).toLocaleString('en-AE', { maximumFrac
 // ─── catalogue ────────────────────────────────────────────────────────────────
 const CATEGORIES: Category[] = [
   {
-    id: 'ventas', label: 'Ventas', icon: <DollarSign size={18}/>, iconBg: 'rgba(52,211,153,0.15)', count: 5,
-    reports: [
-      { name: 'Resumen de Ventas Mensual',  desc: 'Ingresos totales, ticket promedio y tendencias del mes' },
-      { name: 'Análisis por Servicio',       desc: 'Ingresos y unidades vendidas por tipo de servicio' },
-      { name: 'Ventas por Técnico',          desc: 'Productividad y facturación por técnico asignado' },
-      { name: 'Tendencia 12 Meses',          desc: 'Evolución de ventas en el último año' },
-      { name: 'Comparativo de Periodos',     desc: 'Contraste mes actual vs. mes anterior' },
+    id: 'ventas', label: 'Ventas', icon: <DollarSign size={18}/>, iconBg: 'rgba(52,211,153,0.15)', count: 6,
+    reports: [],
+    richReports: [
+      { icon: '📊', name: 'Reporte de Ventas por Período', previewId: 'ventas-periodo',
+        desc: 'Resumen de ventas diarias, semanales o mensuales con comparativo vs período anterior.',
+        tags: ['Diario', 'Semanal', 'Mensual'] },
+      { icon: '🔧', name: 'Ventas por Servicio', previewId: 'ventas-servicio',
+        desc: 'Ranking de servicios más vendidos con ingresos, unidades y ticket promedio.',
+        tags: ['Ranking', 'Servicios'] },
+      { icon: '👤', name: 'Ventas por Cliente (Top 10)', previewId: 'ventas-top10',
+        desc: 'Top 10 clientes por volumen de compra, frecuencia de visita y valor de vida del cliente.',
+        tags: ['Top 10', 'CLV'] },
+      { icon: '📋', name: 'Ventas por Cliente', previewId: 'ventas-clientes',
+        desc: 'Historial completo de compras por cliente con totales, servicios y frecuencia.',
+        tags: ['Clientes', 'Historial'] },
+      { icon: '💹', name: 'Rentabilidad por Servicio', previewId: 'rentabilidad',
+        desc: 'Margen de ganancia por servicio descontando materiales, mano de obra y costos indirectos. Identifica los servicios más rentables.',
+        tags: ['Margen', 'Rentabilidad', 'IFRS'] },
+      { icon: '💰', name: 'Comisiones y Bonificaciones', previewId: 'comisiones',
+        desc: 'Cálculo de comisiones por técnico basado en ventas y servicios completados.',
+        tags: ['Comisiones', 'Técnicos'] },
     ],
   },
   {
@@ -164,7 +178,7 @@ function ReportRow({ report, color }: { report: Report; color: string }) {
 }
 
 // ─── rich report card (for financieros) ───────────────────────────────────────
-function RichReportCard({ report, onGenerate }: { report: RichReport; onGenerate: (id: string) => void }) {
+function RichReportCard({ report, onGenerate, iconBg = 'rgba(251,146,60,0.15)' }: { report: RichReport; onGenerate: (id: string) => void; iconBg?: string }) {
   const [hov, setHov] = useState(false)
   const [fav, setFav] = useState(false)
   return (
@@ -173,7 +187,7 @@ function RichReportCard({ report, onGenerate }: { report: RichReport; onGenerate
         background:'#1a1a1e', cursor:'default', transition:'border-color 0.15s',
         border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}` }}>
       {/* icon */}
-      <div style={{ width:40, height:40, borderRadius:10, background:'rgba(251,146,60,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
+      <div style={{ width:40, height:40, borderRadius:10, background:iconBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
         {report.icon}
       </div>
       {/* text */}
@@ -477,6 +491,70 @@ function MovimientosModal({ onClose }: { onClose: () => void }) {
   )
 }
 
+// Rentabilidad por Servicio
+function RentabilidadModal({ onClose }: { onClose: () => void }) {
+  const rows = [
+    { servicio: 'Detailing Completo',       ingresos: 850,  mat: 120,  mo: 200, margen: 530,  pct: 62.4 },
+    { servicio: 'Recubrimiento Cerámico',   ingresos: 2800, mat: 800,  mo: 350, margen: 1650, pct: 58.9 },
+    { servicio: 'Film de Protección (PPF)', ingresos: 3500, mat: 1200, mo: 400, margen: 1900, pct: 54.3 },
+    { servicio: 'Limpieza Interior',        ingresos: 650,  mat: 80,   mo: 150, margen: 420,  pct: 64.6 },
+    { servicio: 'Polarizado de Vidrios',    ingresos: 1200, mat: 350,  mo: 200, margen: 650,  pct: 54.2 },
+    { servicio: 'Cambio de Aceite',         ingresos: 280,  mat: 120,  mo: 80,  margen: 80,   pct: 28.6 },
+    { servicio: 'Servicio A/C',             ingresos: 450,  mat: 150,  mo: 120, margen: 180,  pct: 40.0 },
+  ]
+  const totI = rows.reduce((s, r) => s + r.ingresos, 0)
+  const totM = rows.reduce((s, r) => s + r.mat, 0)
+  const totO = rows.reduce((s, r) => s + r.mo, 0)
+  const totG = rows.reduce((s, r) => s + r.margen, 0)
+  const totP = ((totG / totI) * 100).toFixed(1)
+  function pctColor(p: number) { return p >= 55 ? '#34d399' : p >= 40 ? '#c9a84c' : '#ff4f4f' }
+  const TH = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
+    <th style={{ padding:'10px 14px', fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign: right?'right':'left', whiteSpace:'nowrap' }}>{children}</th>
+  )
+  return (
+    <PreviewShell title="Rentabilidad por Servicio" subtitle="Mayo 2026 · Margen por línea de servicio" onClose={onClose}>
+      <div style={{ overflow:'hidden', borderRadius:10, border:'1px solid rgba(255,255,255,0.06)' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ background:'#1a1a1e', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+              <TH>Servicio</TH>
+              <TH right>Ingresos</TH>
+              <TH right>Costo Mat.</TH>
+              <TH right>Costo M.O.</TH>
+              <TH right>Margen AED</TH>
+              <TH right>Margen %</TH>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.servicio} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                <td style={{ padding:'11px 14px', fontSize:13, color:'#f0ede8', fontWeight:500 }}>{r.servicio}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#f0ede8', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.ingresos)}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mat)}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mo)}</td>
+                <td style={{ padding:'11px 14px', fontSize:13, fontWeight:700, color:'#34d399', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.margen)}</td>
+                <td style={{ padding:'11px 14px', textAlign:'right' }}>
+                  <span style={{ fontSize:12, fontWeight:700, color:pctColor(r.pct), background:`${pctColor(r.pct)}18`, borderRadius:20, padding:'3px 10px' }}>{r.pct}%</span>
+                </td>
+              </tr>
+            ))}
+            <tr style={{ background:'rgba(201,168,76,0.06)', borderTop:'1px solid rgba(255,255,255,0.1)' }}>
+              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#c9a84c' }}>TOTAL</td>
+              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#f0ede8', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totI)}</td>
+              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totM)}</td>
+              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totO)}</td>
+              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#34d399', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totG)}</td>
+              <td style={{ padding:'12px 14px', textAlign:'right' }}>
+                <span style={{ fontSize:12, fontWeight:700, color:'#c9a84c', background:'rgba(201,168,76,0.15)', borderRadius:20, padding:'3px 10px' }}>{totP}%</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </PreviewShell>
+  )
+}
+
 // ─── export row ───────────────────────────────────────────────────────────────
 function ExportRow({ label, icon, onClick }: { label: string; icon: React.ReactNode; onClick: () => void }) {
   const [hov, setHov] = useState(false)
@@ -569,7 +647,7 @@ export default function ReportsPage() {
           {activeCat.richReports && activeCat.richReports.length > 0 ? (
             <div style={{ padding:'16px 20px' }}>
               {activeCat.richReports.map((r, i) => (
-                <RichReportCard key={i} report={r} onGenerate={generateReport}/>
+                <RichReportCard key={i} report={r} onGenerate={generateReport} iconBg={activeCat.iconBg}/>
               ))}
             </div>
           ) : activeCat.reports.length === 0 ? (
@@ -587,7 +665,8 @@ export default function ReportsPage() {
       )}
 
       {/* preview modals */}
-      {previewReport === 'balance'    && <BalanceSheetModal onClose={() => setPreviewReport(null)}/>}
+      {previewReport === 'rentabilidad'&& <RentabilidadModal  onClose={() => setPreviewReport(null)}/>}
+      {previewReport === 'balance'    && <BalanceSheetModal  onClose={() => setPreviewReport(null)}/>}
       {previewReport === 'pl'         && <PLModal           onClose={() => setPreviewReport(null)}/>}
       {previewReport === 'cashflow'   && <CashFlowModal     onClose={() => setPreviewReport(null)}/>}
       {previewReport === 'movimientos'&& <MovimientosModal  onClose={() => setPreviewReport(null)}/>}
