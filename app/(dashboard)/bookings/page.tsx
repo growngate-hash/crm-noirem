@@ -371,31 +371,34 @@ export default function BookingsPage() {
   }
 
   async function updateStatus(id:string,status:string){
-    console.log('✅ updateStatus llamado — id:', id, 'status:', status)
+    const{error}=await createClient().from('bookings').update({status}).eq('id',id)
+    if(error){addToast(error.message,'error');return}
+    addToast(t('bookingCancelled'),'warn')
+    setDetailBooking(null);fetchBookings(selectedDay)
+  }
 
-    if (!id) { console.error('❌ No hay booking id'); return }
+  async function handleMarkComplete(bookingId: string) {
+    console.log('🔥 FUNCIÓN LLAMADA con bookingId:', bookingId)
+
+    if (!bookingId) {
+      console.error('❌ bookingId undefined!')
+      return
+    }
 
     const sb = createClient()
 
-    // PASO 1: Actualizar status
+    // PASO 1: Marcar booking como completado
     const { error: updateError } = await sb.from('bookings')
-      .update({ status, ...(status==='completed' ? { completed_at: new Date().toISOString() } : {}) })
-      .eq('id', id)
+      .update({ status: 'completed', completed_at: new Date().toISOString() })
+      .eq('id', bookingId)
     console.log('📋 Status actualizado, error:', updateError)
     if (updateError) { addToast(updateError.message, 'error'); return }
-
-    if (status !== 'completed') {
-      addToast(t('bookingCancelled'), 'warn')
-      setDetailBooking(null)
-      fetchBookings(selectedDay)
-      return
-    }
 
     try {
       // PASO 2: Obtener datos del booking
       const { data: booking, error: bookingError } = await sb.from('bookings')
         .select('*, contacts(name), services(name)')
-        .eq('id', id)
+        .eq('id', bookingId)
         .single()
       console.log('📋 Booking data:', booking)
       console.log('❌ Booking error:', bookingError)
@@ -420,7 +423,7 @@ export default function BookingsPage() {
 
       // PASO 5: Insertar factura
       const invoiceData = {
-        booking_id: id,
+        booking_id: bookingId,
         contact_id: booking.contact_id,
         invoice_no: invoiceNo,
         subtotal, discount, tax, total,
@@ -438,7 +441,6 @@ export default function BookingsPage() {
         console.error('❌ Error creando factura:', invoiceError)
         addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
       } else if (invoice) {
-        // PASO 6: Notificación
         await sb.from('notifications').insert({
           type: 'payment',
           title: 'Factura generada automáticamente',
@@ -450,7 +452,7 @@ export default function BookingsPage() {
         setShowInvoiceModal(true)
       }
     } catch (err) {
-      console.error('❌ Error general en generación de factura:', err)
+      console.error('❌ Error general:', err)
       addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
     }
 
@@ -760,7 +762,7 @@ export default function BookingsPage() {
             </div>
             <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:8}}>
               {detailBooking.status!=='completed'&&detailBooking.status!=='cancelled'&&(
-                <button onClick={()=>updateStatus(detailBooking.id,'completed')}
+                <button onClick={()=>handleMarkComplete(detailBooking.id)}
                   style={{width:'100%',padding:11,borderRadius:8,
                     border:'1px solid rgba(52,211,153,0.35)',background:'rgba(52,211,153,0.12)',
                     color:'#34d399',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
