@@ -81,7 +81,7 @@ const EXP_FILTERS = ['All', 'Fixed', 'Variable', 'Operational']
 const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false }
 
 function CostsTab() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const [expenses,         setExpenses]         = useState<any[]>([])
   const [loading,          setLoading]          = useState(true)
   const [expFilter,        setExpFilter]        = useState('All')
@@ -100,6 +100,7 @@ function CostsTab() {
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<any>(null)
   const [busqueda,           setBusqueda]           = useState('')
   const [invoices,           setInvoices]           = useState<any[]>([])
+  const [invoiceFilter,      setInvoiceFilter]      = useState('all')
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -170,17 +171,10 @@ function CostsTab() {
   async function fetchInvoices() {
     const { data } = await createClient()
       .from('invoices')
-      .select('*, contacts(name), bookings(id, scheduled_at)')
+      .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, contact_id, contacts(name)')
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(20)
     setInvoices(data ?? [])
-  }
-
-  async function updateInvoiceStatus(id: string, status: string) {
-    const patch: any = { status }
-    if (status === 'paid') patch.paid_at = new Date().toISOString()
-    await createClient().from('invoices').update(patch).eq('id', id)
-    fetchInvoices()
   }
 
   useEffect(() => {
@@ -363,76 +357,109 @@ function CostsTab() {
         )}
       </div>
 
-      {/* Invoices section */}
-      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden', marginTop: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+      {/* SECCIÓN FACTURAS */}
+      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16, marginTop: 16 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Facturas Recientes</span>
-            <span style={{ fontSize: 12, color: '#888580', background: '#1a1a1e', borderRadius: 99, padding: '2px 9px' }}>
-              {invoices.length}
+            <span style={{ fontSize: 15, fontWeight: 700, color: '#f0ede8' }}>
+              {lang === 'es' ? 'Facturas' : 'Invoices'}
+            </span>
+            <span style={{ background: 'rgba(255,255,255,0.06)', color: '#888580', fontSize: 11, padding: '2px 8px', borderRadius: 20 }}>
+              {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
             </span>
           </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {(['all','draft','sent','paid','overdue'] as const).map(s => (
+              <button key={s} onClick={() => setInvoiceFilter(s)} style={{
+                padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: 'pointer', border: '1px solid', fontFamily: 'Outfit,sans-serif',
+                borderColor: invoiceFilter === s ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.08)',
+                background:  invoiceFilter === s ? 'rgba(201,168,76,0.12)' : 'transparent',
+                color:       invoiceFilter === s ? '#c9a84c' : '#888580',
+              }}>
+                {s === 'all'     ? (lang === 'es' ? 'Todas'    : 'All')
+               : s === 'draft'   ? (lang === 'es' ? 'Borrador' : 'Draft')
+               : s === 'sent'    ? (lang === 'es' ? 'Enviada'  : 'Sent')
+               : s === 'paid'    ? (lang === 'es' ? 'Pagada'   : 'Paid')
+               :                   (lang === 'es' ? 'Vencida'  : 'Overdue')}
+              </button>
+            ))}
+          </div>
         </div>
+
+        {/* Tabla / vacío */}
         {invoices.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#888580', fontSize: 13 }}>
-            No hay facturas generadas aún
+          <div style={{ textAlign: 'center', padding: 32, color: '#3a3836', fontSize: 13 }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🧾</div>
+            {lang === 'es'
+              ? 'No hay facturas aún. Marca una reserva como completada para generar una.'
+              : 'No invoices yet. Mark a booking as complete to generate one.'}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Factura #', 'Cliente', 'Subtotal', 'VAT', 'Total', 'Estado', 'Acciones'].map(h => (
-                  <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+              <tr>
+                {['FACTURA #','CLIENTE','SUBTOTAL','VAT','TOTAL','ESTADO','ACCIONES'].map(h => (
+                  <th key={h} style={{ fontSize: 10, fontWeight: 500, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0 10px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv: any) => {
-                const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-                  draft:   { bg: 'rgba(136,133,128,0.15)', color: '#888580' },
-                  sent:    { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff' },
-                  paid:    { bg: 'rgba(52,211,153,0.12)',  color: '#34d399' },
-                  overdue: { bg: 'rgba(255,79,79,0.12)',   color: '#ff4f4f' },
-                }
-                const ss = STATUS_STYLE[inv.status] ?? STATUS_STYLE.draft
-                return (
-                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 700 }}>{inv.invoice_no}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8' }}>{inv.contacts?.name ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{aed(inv.subtotal ?? 0)}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{aed(inv.tax ?? 0)}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8' }}>{aed(inv.total ?? 0)}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: ss.bg, color: ss.color, textTransform: 'uppercase' }}>
-                        {inv.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        {inv.status === 'draft' && (
-                          <button onClick={() => updateInvoiceStatus(inv.id, 'sent')}
-                            style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(79,163,255,0.3)', background: 'rgba(79,163,255,0.08)', color: '#4fa3ff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            Enviar
-                          </button>
-                        )}
-                        {(inv.status === 'draft' || inv.status === 'sent' || inv.status === 'overdue') && (
-                          <button onClick={() => updateInvoiceStatus(inv.id, 'paid')}
-                            style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.08)', color: '#34d399', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            Marcar pagada
-                          </button>
-                        )}
-                        <button
-                          style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#888580', fontSize: 11, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'Outfit,sans-serif', opacity: 0.5 }}>
-                          PDF
+              {invoices
+                .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
+                .map((inv: any) => (
+                <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                  <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 600 }}>{inv.invoice_no}</td>
+                  <td style={{ padding: '12px 8px', fontSize: 13, color: '#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</td>
+                  <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#00d4aa' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
+                  <td style={{ padding: '12px 8px' }}>
+                    <span style={{
+                      padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                      background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
+                      color:      inv.status==='paid' ? '#34d399'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
+                    }}>
+                      {inv.status==='paid'    ? (lang==='es' ? 'Pagada'   : 'Paid')
+                     : inv.status==='sent'    ? (lang==='es' ? 'Enviada'  : 'Sent')
+                     : inv.status==='overdue' ? (lang==='es' ? 'Vencida'  : 'Overdue')
+                     :                          (lang==='es' ? 'Borrador' : 'Draft')}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px 0' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {inv.status === 'draft' && (
+                        <button onClick={async () => {
+                          await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
+                          fetchInvoices()
+                        }} style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          {lang === 'es' ? 'Enviar' : 'Send'}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
+                      )}
+                      {inv.status === 'sent' && (
+                        <button onClick={async () => {
+                          await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
+                          fetchInvoices()
+                        }} style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          {lang === 'es' ? 'Pagada' : 'Mark Paid'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan={4} style={{ padding: '12px 0', fontSize: 12, color: '#888580', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
+                </td>
+                <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#00d4aa', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                  AED {invoices.reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
+                </td>
+                <td colSpan={2} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+              </tr>
+            </tfoot>
           </table>
         )}
       </div>
