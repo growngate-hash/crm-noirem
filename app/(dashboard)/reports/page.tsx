@@ -140,8 +140,20 @@ const EXPORT_OPTIONS = [
 
 // ─── category card ─────────────────────────────────────────────────────────────
 function CategoryCard({ cat, active, onClick }: { cat: Category; active: boolean; onClick: () => void }) {
+  const { t } = useLanguage()
   const [hov, setHov] = useState(false)
   const color = ICON_COLOR[cat.id]
+  const LABEL_MAP: Record<string, string> = {
+    ventas:          t('sales'),
+    administrativos: t('administrative'),
+    financieros:     t('financialReports'),
+    contables:       t('accounting'),
+    fiscales:        t('fiscal'),
+    trabajar:        t('workReports'),
+    exogena:         t('exogenousInfo'),
+    favoritos:       t('favorites'),
+  }
+  const label = LABEL_MAP[cat.id] ?? cat.label
   return (
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ position:'relative', background: hov||active?'#1a1a1e':'#141416', cursor:'pointer', transition:'all 0.2s ease',
@@ -152,14 +164,15 @@ function CategoryCard({ cat, active, onClick }: { cat: Category; active: boolean
       )}
       {active && <span style={{ position:'absolute', top:10, right: cat.badge?80:10, width:6, height:6, borderRadius:'50%', background:'#c9a84c' }}/>}
       <div style={{ width:42, height:42, borderRadius:'50%', background:cat.iconBg, display:'flex', alignItems:'center', justifyContent:'center', color, marginBottom:14 }}>{cat.icon}</div>
-      <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8', marginBottom:4 }}>{cat.label}</div>
-      <div style={{ fontSize:12, color:'#888580' }}>{cat.count===0?'Sin reportes guardados':`${cat.count} ${cat.count===1?'reporte':'reportes'}`}</div>
+      <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8', marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:12, color:'#888580' }}>{cat.count===0 ? t('noSavedReports') : `${cat.count} ${cat.count===1 ? t('reporte') : t('reportes')}`}</div>
     </div>
   )
 }
 
 // ─── simple report row (non-rich panels) ──────────────────────────────────────
 function ReportRow({ report, color }: { report: Report; color: string }) {
+  const { t } = useLanguage()
   const [hov, setHov] = useState(false)
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
@@ -172,7 +185,7 @@ function ReportRow({ report, color }: { report: Report; color: string }) {
       <button style={{ padding:'6px 14px', borderRadius:7, border:`1px solid ${hov?color:'rgba(255,255,255,0.08)'}`,
         background: hov?`${color}18`:'transparent', color: hov?color:'#888580',
         fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s', flexShrink:0 }}>
-        Generar ↗
+        {t('generate')} ↗
       </button>
     </div>
   )
@@ -180,6 +193,7 @@ function ReportRow({ report, color }: { report: Report; color: string }) {
 
 // ─── rich report card (for financieros) ───────────────────────────────────────
 function RichReportCard({ report, onGenerate, iconBg = 'rgba(251,146,60,0.15)' }: { report: RichReport; onGenerate: (id: string) => void; iconBg?: string }) {
+  const { t } = useLanguage()
   const [hov, setHov] = useState(false)
   const [fav, setFav] = useState(false)
   return (
@@ -210,7 +224,7 @@ function RichReportCard({ report, onGenerate, iconBg = 'rgba(251,146,60,0.15)' }
         </button>
         <button onClick={() => onGenerate(report.previewId)}
           style={{ padding:'6px 14px', borderRadius:6, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
-          Generar
+          {t('generate')}
         </button>
         <button
           style={{ padding:'6px 10px', borderRadius:6, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
@@ -608,12 +622,12 @@ export default function ReportsPage() {
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:28 }}>
         <div>
           <div style={{ fontSize:24, fontWeight:700, color:'#f0ede8' }}>{t('reports')}</div>
-          <div style={{ fontSize:13, color:'#888580', marginTop:4 }}>Genera, descarga y comparte reportes del negocio</div>
+          <div style={{ fontSize:13, color:'#888580', marginTop:4 }}>{t('reportsSubtitle')}</div>
         </div>
         <div ref={exportRef} style={{ position:'relative' }}>
           <button onClick={() => setShowExport(p => !p)}
             style={{ padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', gap:6 }}>
-            <Download size={14}/> Exportar <span style={{ fontSize:10 }}>▾</span>
+            <Download size={14}/> {t('export')} <span style={{ fontSize:10 }}>▾</span>
           </button>
           {showExport && (
             <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:400, background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, overflow:'hidden', minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}>
@@ -641,7 +655,7 @@ export default function ReportsPage() {
             <span style={{ width:1, height:14, background:'rgba(255,255,255,0.1)' }}/>
             <span style={{ fontSize:15, fontWeight:700, color:'#f0ede8' }}>{activeCat.label}</span>
             <span style={{ fontSize:11, color:'#888580', background:'rgba(255,255,255,0.06)', borderRadius:99, padding:'2px 8px' }}>
-              {activeCat.count} reporte{activeCat.count!==1?'s':''}
+              {activeCat.count} {activeCat.count!==1 ? t('reportes') : t('reporte')}
             </span>
           </div>
 
@@ -655,8 +669,8 @@ export default function ReportsPage() {
           ) : activeCat.reports.length === 0 ? (
             <div style={{ padding:'40px 20px', textAlign:'center' }}>
               <div style={{ fontSize:28, marginBottom:10 }}>⭐</div>
-              <div style={{ fontSize:14, fontWeight:600, color:'#3a3836', marginBottom:6 }}>Sin reportes favoritos</div>
-              <div style={{ fontSize:12, color:'#3a3836' }}>Marca reportes como favoritos para acceder rápido desde aquí</div>
+              <div style={{ fontSize:14, fontWeight:600, color:'#3a3836', marginBottom:6 }}>{t('noFavoriteReports')}</div>
+              <div style={{ fontSize:12, color:'#3a3836' }}>{t('noFavoritesDesc')}</div>
             </div>
           ) : (
             activeCat.reports.map((r, i) => (

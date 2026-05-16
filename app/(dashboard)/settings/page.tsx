@@ -318,6 +318,7 @@ const INTEGRATIONS = [
 
 // ─── Profile section ──────────────────────────────────────────────────────────
 function ProfileSection() {
+  const { t } = useLanguage()
   const { logoUrl, setLogoUrl } = useCompany()
   const [form, setForm] = useState({ businessName:'Noirem Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
@@ -404,12 +405,12 @@ function ProfileSection() {
 
   return (
     <div style={{ maxWidth: 540 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Business Profile</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>General settings for your CRM</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('businessProfile')}</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('generalSettings')}</div>
 
       {/* ── Logo upload ── */}
       <div style={{ marginBottom: 28, padding: 20, background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 16 }}>Logo de la empresa</div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 16 }}>{t('companyLogo')}</div>
 
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
           {/* Logo square */}
@@ -430,12 +431,12 @@ function ProfileSection() {
                   style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
                     fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: uploading ? 'default' : 'pointer',
                     opacity: uploading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Upload size={12}/>{uploading ? 'Subiendo…' : 'Guardar logo'}
+                  <Upload size={12}/>{uploading ? t('saving') : t('saveLogo')}
                 </button>
                 <button onClick={cancelPreview}
                   style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
                     color: '#888580', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-                  Cancelar
+                  {t('cancel')}
                 </button>
               </>
             ) : (
@@ -444,14 +445,14 @@ function ProfileSection() {
                   style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(201,168,76,0.25)', background: '#141416',
                     color: '#c9a84c', fontSize: 12, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Upload size={12}/> Subir logo
+                  <Upload size={12}/> {t('uploadLogo')}
                 </button>
                 {logoUrl && (
                   <button onClick={removeLogo}
                     style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: 'transparent',
                       color: '#ff4f4f', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Trash size={12}/> Eliminar logo
+                    <Trash size={12}/> {t('removeLogo')}
                   </button>
                 )}
               </>
@@ -477,12 +478,12 @@ function ProfileSection() {
       {/* ── Form fields ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label className="label">Business Name</label>
+          <label className="label">{t('businessName')}</label>
           <input className="inp" value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})}/>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
-            <label className="label">Country</label>
+            <label className="label">{t('country')}</label>
             <select className="inp" value={form.country} onChange={e => setForm({...form, country: e.target.value})}>
               <option value="UAE">United Arab Emirates</option>
               <option value="SA">Saudi Arabia</option>
@@ -490,7 +491,7 @@ function ProfileSection() {
             </select>
           </div>
           <div>
-            <label className="label">Currency</label>
+            <label className="label">{t('currency')}</label>
             <select className="inp" value={form.currency} onChange={e => setForm({...form, currency: e.target.value})}>
               <option value="AED">AED — UAE Dirham</option>
               <option value="SAR">SAR — Saudi Riyal</option>
@@ -498,7 +499,7 @@ function ProfileSection() {
             </select>
           </div>
           <div>
-            <label className="label">Timezone</label>
+            <label className="label">{t('timezone')}</label>
             <select className="inp" value={form.timezone} onChange={e => setForm({...form, timezone: e.target.value})}>
               <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
               <option value="Asia/Riyadh">Asia/Riyadh (UTC+3)</option>
@@ -506,7 +507,7 @@ function ProfileSection() {
             </select>
           </div>
           <div>
-            <label className="label">Language</label>
+            <label className="label">{t('interfaceLanguage')}</label>
             <select className="inp" value={form.language} onChange={e => setForm({...form, language: e.target.value})}>
               <option value="EN">English</option>
               <option value="ES">Spanish</option>
@@ -515,7 +516,7 @@ function ProfileSection() {
           </div>
         </div>
         <button className="btn btn-gold" onClick={save} style={{ width: 160, justifyContent: 'center', marginTop: 8 }}>
-          {saved ? <><Check size={13}/> Saved!</> : <><Save size={13}/> Save Changes</>}
+          {saved ? <><Check size={13}/> Saved!</> : <><Save size={13}/> {t('saveChanges')}</>}
         </button>
       </div>
 
@@ -540,6 +541,7 @@ const INIT_TEAM: TeamMember[] = [
 ]
 
 function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentUserEmail: string }) {
+  const { t } = useLanguage()
   const [team, setTeam] = useState<TeamMember[]>(INIT_TEAM)
   const [permsMap, setPermsMap] = useState<Record<string, { role: string; permissions: Permissions }>>({})
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
@@ -596,17 +598,17 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isAdmin ? 20 : 12 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Team & Roles</div>
-          <div style={{ fontSize: 12, color: 'var(--text2)' }}>{team.length} members</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('teamRoles')}</div>
+          <div style={{ fontSize: 12, color: 'var(--text2)' }}>{team.length} {t('members')}</div>
         </div>
-        {isAdmin && <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13}/> Invite Member</button>}
+        {isAdmin && <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13}/> {t('inviteMember')}</button>}
       </div>
 
       {!isAdmin && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8,
           background: 'rgba(136,133,128,0.08)', border: '1px solid rgba(136,133,128,0.15)',
           marginBottom: 20, fontSize: 12, color: '#888580' }}>
-          🔒 <span>Solo lectura — solo los administradores pueden modificar permisos y miembros del equipo.</span>
+          🔒 <span>{t('readOnly')}</span>
         </div>
       )}
 
@@ -614,7 +616,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {(['Name','Email','Role','Permisos', ...(isAdmin ? ['Actions'] : [])] as string[]).map(h => (
+              {([t('name'), t('email'), t('role'), t('permissions'), ...(isAdmin ? [t('actions')] : [])] as string[]).map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
               ))}
             </tr>
@@ -639,14 +641,14 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
                           style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
                             border: '1px solid rgba(201,168,76,0.25)', background: '#1a1a1e', color: '#c9a84c',
                             fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                          ✏️ Permisos
+                          ✏️ {t('permissions')}
                         </button>
                         {m.email !== currentUserEmail && (
                           <button onClick={() => removeTeam(m.id)}
                             style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
                               border: '1px solid rgba(255,79,79,0.25)', background: 'rgba(255,79,79,0.1)', color: '#ff4f4f',
                               fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                            🗑 Remove
+                            🗑 {t('remove')}
                           </button>
                         )}
                       </div>
@@ -661,14 +663,14 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
 
       {/* Invite modal */}
       {showInvite && (
-        <Modal title="Invite Team Member" onClose={() => setShowInvite(false)}>
+        <Modal title={t('inviteMember')} onClose={() => setShowInvite(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <label className="label">Email Address</label>
+              <label className="label">{t('email')}</label>
               <input className="inp" type="email" placeholder="colleague@noirem.ae" value={invite.email} onChange={e => setInvite({...invite, email: e.target.value})}/>
             </div>
             <div>
-              <label className="label">Role</label>
+              <label className="label">{t('role')}</label>
               <select className="inp" value={invite.role} onChange={e => setInvite({...invite, role: e.target.value})}>
                 <option value="Admin">Admin</option>
                 <option value="Manager">Manager</option>
@@ -679,7 +681,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
               Se asignarán permisos predeterminados según el rol seleccionado.
             </div>
             <button className="btn btn-gold" onClick={sendInvite} style={{ width: '100%', justifyContent: 'center' }}>
-              Send Invite
+              {t('inviteUser')}
             </button>
           </div>
         </Modal>
@@ -701,11 +703,12 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
 
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
+  const { t } = useLanguage()
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ whatsapp: true, stripe: false, gcal: true, gmail: false, zapier: false })
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Integrations</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Connect third-party tools</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('integrations')}</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('connectApps')}</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {INTEGRATIONS.map(int => (
           <div key={int.key} className="glass" style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'center' }}>
@@ -729,6 +732,7 @@ function IntegrationsSection() {
 
 // ─── Plans section ────────────────────────────────────────────────────────────
 function PlansSection() {
+  const { t } = useLanguage()
   const plans = [
     { name: 'Starter', price: '$49', period: '/mo', features: ['Up to 100 contacts','1 user','Basic reports','Email support'], cta: 'Select Plan', ctaClass: 'btn btn-ghost', highlight: false },
     { name: 'Pro', price: '$129', period: '/mo', features: ['Unlimited contacts','5 users','Advanced reports','All integrations','Priority support'], cta: 'Current Plan', ctaClass: 'btn btn-gold', highlight: true },
@@ -736,8 +740,8 @@ function PlansSection() {
   ]
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Plans</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Choose the plan that fits your business</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('plans')}</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('choosePlan')}</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
         {plans.map(p => (
           <div key={p.name} className="glass" style={{ padding: 24, border: p.highlight ? '1px solid var(--gold-b)' : undefined, position: 'relative' }}>
@@ -766,12 +770,13 @@ function PlansSection() {
 
 // ─── Billing section ──────────────────────────────────────────────────────────
 function BillingSection() {
+  const { t } = useLanguage()
   return (
     <div style={{ maxWidth: 600 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Billing</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Manage your subscription and payment method</div>
+      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('billing')}</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('manageSub')}</div>
       <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Current Subscription</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('currentSubscription')}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Plan</div>
@@ -781,7 +786,7 @@ function BillingSection() {
         </div>
       </div>
       <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Payment Method</div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('paymentMethod')}</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600 }}>VISA</div>
@@ -794,11 +799,11 @@ function BillingSection() {
         </div>
       </div>
       <div className="glass" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Invoice History</div>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('invoiceHistory')}</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Date','Amount','Status','Download'].map(h => (
+              {[t('date'), t('amount'), t('status'), t('download')].map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
               ))}
             </tr>
@@ -844,17 +849,24 @@ export default function SettingsPage() {
   return (
     <div style={{ padding: 24, height: '100%', display: 'flex', gap: 24 }}>
       <div style={{ width: 160, flexShrink: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Settings</div>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('settings')}</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {visibleNav.map(item => {
             const Icon = item.icon; const active = activeSection === item.key
+            const NAV_LABEL: Record<string, string> = {
+              profile:      t('profile'),
+              team:         t('teamRoles'),
+              integrations: t('integrations'),
+              plans:        t('plans'),
+              billing:      t('billing'),
+            }
             return (
               <button key={item.key} onClick={() => setActiveSection(item.key)}
                 style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
                   fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
                   background: active ? 'var(--gold-dim)' : 'transparent', color: active ? 'var(--gold)' : 'var(--text2)',
                   textAlign: 'left', width: '100%', transition: 'all 0.15s' }}>
-                <Icon size={14}/>{item.label}
+                <Icon size={14}/>{NAV_LABEL[item.key] ?? item.label}
               </button>
             )
           })}

@@ -80,6 +80,7 @@ const EXP_FILTERS = ['All', 'Fixed', 'Variable', 'Operational']
 const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false }
 
 function CostsTab() {
+  const { t } = useLanguage()
   const [expenses,         setExpenses]         = useState<any[]>([])
   const [loading,          setLoading]          = useState(true)
   const [expFilter,        setExpFilter]        = useState('All')
@@ -186,7 +187,7 @@ function CostsTab() {
     const { error } = await createClient().from('expenses').insert(payload)
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Gasto guardado', 'success')
+    addToast(t('expenseAdded'), 'success')
     setShowAdd(false); setForm({ ...EMPTY_EXP })
     setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false)
     fetchExpenses(); fetchFinanceKPIs()
@@ -211,10 +212,10 @@ function CostsTab() {
       {/* KPI row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 10 }}>
         {[
-          { dot: '#00d4aa', label: 'Total Revenue MTD',  value: aed(totalRevenue),   color: '#00d4aa' },
-          { dot: '#ff4f4f', label: 'Total Expenses MTD', value: aed(totalExpenses),  color: '#ff4f4f' },
-          { dot: '#c9a84c', label: 'Net Profit MTD',     value: aed(netProfit),      color: '#c9a84c' },
-          { dot: '#00d4aa', label: 'Profit Margin',      value: `${profitMargin}%`,  color: '#00d4aa' },
+          { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa' },
+          { dot: '#ff4f4f', label: t('totalExpensesMTD'), value: aed(totalExpenses),  color: '#ff4f4f' },
+          { dot: '#c9a84c', label: t('netProfitMTD'),     value: aed(netProfit),      color: '#c9a84c' },
+          { dot: '#00d4aa', label: t('profitMargin'),      value: `${profitMargin}%`,  color: '#00d4aa' },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -229,9 +230,9 @@ function CostsTab() {
       {/* KPI row 2 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 22 }}>
         {[
-          { icon: <BarChart2 size={14} color="#4fa3ff" />, iconBg: 'rgba(79,163,255,0.15)',   label: 'Fixed Costs',    sub: `${fixedCosts.pct}% of expenses`,    value: aed(fixedCosts.amount),    bar: '#4fa3ff', pct: fixedCosts.pct    },
-          { icon: <Droplets  size={14} color="#c9a84c" />, iconBg: 'rgba(201,168,76,0.15)',  label: 'Variable Costs', sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#c9a84c', pct: variableCosts.pct },
-          { icon: <Settings  size={14} color="#888580" />, iconBg: 'rgba(136,133,128,0.12)', label: 'Operational',    sub: `${operational.pct}% of expenses`,    value: aed(operational.amount),   bar: '#888580', pct: operational.pct   },
+          { icon: <BarChart2 size={14} color="#4fa3ff" />, iconBg: 'rgba(79,163,255,0.15)',   label: t('fixedCosts'),    sub: `${fixedCosts.pct}% of expenses`,    value: aed(fixedCosts.amount),    bar: '#4fa3ff', pct: fixedCosts.pct    },
+          { icon: <Droplets  size={14} color="#c9a84c" />, iconBg: 'rgba(201,168,76,0.15)',  label: t('variableCosts'), sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#c9a84c', pct: variableCosts.pct },
+          { icon: <Settings  size={14} color="#888580" />, iconBg: 'rgba(136,133,128,0.12)', label: t('operational'),   sub: `${operational.pct}% of expenses`,    value: aed(operational.amount),   bar: '#888580', pct: operational.pct   },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -256,7 +257,7 @@ function CostsTab() {
         {/* header bar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Expense Register</span>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>{t('expenseRegister')}</span>
             {!loading && (
               <span style={{ fontSize: 12, color: '#888580', background: '#1a1a1e', borderRadius: 99, padding: '2px 9px' }}>
                 {expenses.length} item{expenses.length !== 1 ? 's' : ''}
@@ -278,20 +279,20 @@ function CostsTab() {
             </div>
             <button onClick={() => setShowAdd(true)}
               style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f', fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-              + Add Expense
+              + {t('addExpense')}
             </button>
           </div>
         </div>
 
         {/* table */}
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>Cargando…</div>
+          <div style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('loading')}</div>
         ) : expenses.length === 0 ? (
           <div style={{ padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#3a3836' }}>No hay gastos registrados</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: '#3a3836' }}>{t('noExpenses')}</div>
             <button onClick={() => setShowAdd(true)}
               style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-              + Add Expense
+              + {t('addExpense')}
             </button>
           </div>
         ) : (
@@ -306,7 +307,7 @@ function CostsTab() {
               </thead>
               <tbody>
                 {displayed.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>Sin gastos en esta categoría</td></tr>
+                  <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noExpensesInCat')}</td></tr>
                 ) : displayed.map((e: any) => (
                   <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
                     onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
@@ -344,7 +345,7 @@ function CostsTab() {
           onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}>
           <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Add Expense</span>
+              <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>{t('addExpense')}</span>
               <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
             </div>
@@ -484,12 +485,12 @@ function CostsTab() {
               <div><FLabel>Amount (AED) *</FLabel><FInput type="number" min={0} placeholder="0" value={form.amount as any} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.recurring} onChange={e => setForm({ ...form, recurring: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#c9a84c' }} />
-                <span style={{ fontSize: 13, color: '#f0ede8' }}>Recurring monthly</span>
+                <span style={{ fontSize: 13, color: '#f0ede8' }}>{t('recurringMonthly')}</span>
               </label>
             </div>
             <button onClick={saveExpense} disabled={saving || !form.description.trim() || !form.amount}
               style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount) ? 1 : 0.5 }}>
-              {saving ? 'Guardando…' : 'Save Expense'}
+              {saving ? t('saving') : t('saveExpenseBtn')}
             </button>
           </div>
         </div>
@@ -519,6 +520,7 @@ const SEED_ACCOUNTS = [
 const EMPTY_ACC = { name: '', account_type: 'Bank', account_number: '', balance: '', notes: '' }
 
 function BanksTab() {
+  const { t } = useLanguage()
   const [accounts,  setAccounts]  = useState<any[]>([])
   const [loading,   setLoading]   = useState(true)
   const [showAdd,   setShowAdd]   = useState(false)
@@ -564,7 +566,7 @@ function BanksTab() {
     })
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Cuenta agregada', 'success'); setShowAdd(false); fetchAccounts()
+    addToast(t('accountAdded'), 'success'); setShowAdd(false); fetchAccounts()
   }
 
   async function saveEdit() {
@@ -577,14 +579,14 @@ function BanksTab() {
     }).eq('id', editAcc.id)
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Cuenta actualizada', 'success'); setEditAcc(null); fetchAccounts()
+    addToast(t('accountUpdated'), 'success'); setEditAcc(null); fetchAccounts()
   }
 
   async function deleteAcc() {
     if (!editAcc) return
     const { error } = await createClient().from('bank_accounts').delete().eq('id', editAcc.id)
     if (error) { addToast(error.message, 'error'); return }
-    addToast('Cuenta eliminada', 'success'); setEditAcc(null); fetchAccounts()
+    addToast(t('accountDeleted'), 'success'); setEditAcc(null); fetchAccounts()
   }
 
   const bankBal  = accounts.filter(a => a.account_type === 'Bank').reduce((s, a) => s + (a.balance ?? 0), 0)
@@ -602,9 +604,9 @@ function BanksTab() {
             <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <div><FLabel>Nombre de la Cuenta *</FLabel><FInput placeholder="e.g. Emirates NBD Cuenta Principal" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+            <div><FLabel>{t('name')} *</FLabel><FInput placeholder="e.g. Emirates NBD Cuenta Principal" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
             <div>
-              <FLabel>Tipo de Cuenta *</FLabel>
+              <FLabel>{t('accountType')} *</FLabel>
               <div style={{ display: 'flex', gap: 8 }}>
                 {['Bank', 'Credit Card', 'Cash'].map(t => (
                   <button key={t} type="button" onClick={() => setForm({ ...form, account_type: t })}
@@ -617,18 +619,18 @@ function BanksTab() {
                 ))}
               </div>
             </div>
-            <div><FLabel>Número de Cuenta</FLabel><FInput placeholder="XXXX XXXX XXXX XXXX" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} style={{ fontFamily: 'monospace' }} /></div>
-            <div><FLabel>Saldo Inicial (AED)</FLabel><FInput type="number" placeholder="0" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
-            <div><FLabel>Notas</FLabel><FTextarea placeholder="Observaciones opcionales…" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><FLabel>{t('accountNumber')}</FLabel><FInput placeholder="XXXX XXXX XXXX XXXX" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} style={{ fontFamily: 'monospace' }} /></div>
+            <div><FLabel>{t('balance')} (AED)</FLabel><FInput type="number" placeholder="0" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
+            <div><FLabel>{t('notes')}</FLabel><FTextarea placeholder="Observaciones opcionales…" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
           </div>
 
           {/* delete confirm (edit only) */}
           {editAcc && delConfirm && (
             <div style={{ marginTop: 16, padding: 12, background: 'rgba(255,79,79,0.08)', border: '1px solid rgba(255,79,79,0.25)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: 12, color: '#ff4f4f' }}>¿Eliminar esta cuenta?</span>
+              <span style={{ fontSize: 12, color: '#ff4f4f' }}>{t('confirmRemove')}</span>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => setDelConfirm(false)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: '#1a1a1e', color: '#888580', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>No</button>
-                <button onClick={deleteAcc} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#ff4f4f', color: '#fff', fontSize: 11, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>Sí, eliminar</button>
+                <button onClick={() => setDelConfirm(false)} style={{ padding: '5px 12px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: '#1a1a1e', color: '#888580', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>{t('no')}</button>
+                <button onClick={deleteAcc} style={{ padding: '5px 12px', borderRadius: 6, border: 'none', background: '#ff4f4f', color: '#fff', fontSize: 11, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>{t('yes')}, {t('delete')}</button>
               </div>
             </div>
           )}
@@ -637,7 +639,7 @@ function BanksTab() {
             {editAcc && (
               <button onClick={() => setDelConfirm(true)}
                 style={{ padding: '9px 16px', borderRadius: 8, border: '1px solid rgba(255,79,79,0.3)', background: 'transparent', color: '#ff4f4f', fontSize: 12, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-                Eliminar Cuenta
+                {t('delete')}
               </button>
             )}
             <button onClick={onSave} disabled={saving || !form.name.trim()}
@@ -655,31 +657,31 @@ function BanksTab() {
       {/* section header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: '#f0ede8' }}>Accounts</div>
-          <div style={{ fontSize: 12, color: '#888580', marginTop: 3 }}>Banks, credit cards &amp; petty cash</div>
+          <div style={{ fontSize: 20, fontWeight: 700, color: '#f0ede8' }}>{t('accounts')}</div>
+          <div style={{ fontSize: 12, color: '#888580', marginTop: 3 }}>{t('bankSubtitle')}</div>
         </div>
         <button onClick={openAdd}
           style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-          + Add Account
+          + {t('addAccount')}
         </button>
       </div>
 
       {/* accounts table */}
       <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>Cargando…</div>
+          <div style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('loading')}</div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                {['Name', 'Account Type', 'Account Number', 'Balance', 'Reconciliation', 'Actions'].map(h => (
+                {[t('name'), t('accountType'), t('accountNumber'), t('balance'), t('reconciliation'), t('actions')].map(h => (
                   <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {accounts.length === 0 ? (
-                <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>No accounts found</td></tr>
+                <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noAccountsFound')}</td></tr>
               ) : accounts.map(acc => (
                 <tr key={acc.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
                   onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
@@ -704,7 +706,7 @@ function BanksTab() {
                   {/* reconciliation */}
                   <td style={{ padding: '12px 16px' }}>
                     <button style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', background: '#1a1a1e', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c' }}>
-                      Reconcile
+                      {t('reconcile')}
                     </button>
                   </td>
                   {/* actions */}
@@ -725,9 +727,9 @@ function BanksTab() {
       {/* KPI cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
         {[
-          { label: 'BANK BALANCE',  value: bankBal },
-          { label: 'CASH ON HAND',  value: cashBal },
-          { label: 'CREDIT CARDS',  value: ccBal   },
+          { label: t('bankBalance'),  value: bankBal },
+          { label: t('cashOnHand'),   value: cashBal },
+          { label: t('creditCards'),  value: ccBal   },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{k.label}</div>
@@ -738,10 +740,10 @@ function BanksTab() {
 
       {/* modals */}
       {showAdd && (
-        <AccModal title="Agregar Cuenta" onClose={() => setShowAdd(false)} onSave={saveAdd} saveLabel="Agregar Cuenta" />
+        <AccModal title={t('addAccount')} onClose={() => setShowAdd(false)} onSave={saveAdd} saveLabel={t('addAccount')} />
       )}
       {editAcc && (
-        <AccModal title="Editar Cuenta" onClose={() => { setEditAcc(null); setDelConfirm(false) }} onSave={saveEdit} saveLabel="Guardar Cambios" />
+        <AccModal title={`${t('edit')} ${t('accounts')}`} onClose={() => { setEditAcc(null); setDelConfirm(false) }} onSave={saveEdit} saveLabel={t('saveChanges')} />
       )}
 
       {/* toasts */}
@@ -781,6 +783,7 @@ function hexRgba(hex: string, a: number): string {
 }
 
 function ChartOfAccountsTab() {
+  const { t } = useLanguage()
   const [accounts, setAccounts] = useState<any[]>([])
   const [loading,  setLoading]  = useState(true)
   const [search,   setSearch]   = useState('')
@@ -876,7 +879,7 @@ function ChartOfAccountsTab() {
 
       {/* accordion */}
       {loading ? (
-        <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando plan de cuentas…</div>
+        <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>{t('loading')}</div>
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
           {COA_GROUPS.filter(g => !isFiltering || activeGroups.has(g)).map(g => {
@@ -1063,6 +1066,7 @@ function TaxStatusBadge({ active }: { active: boolean }) {
 }
 
 function ImpuestosTab() {
+  const { t } = useLanguage()
   const [taxes,   setTaxes]   = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -1230,7 +1234,7 @@ function ImpuestosTab() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando…</td></tr>
+              <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>{t('loading')}</td></tr>
             ) : taxes.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding:'60px 20px', textAlign:'center' }}>
@@ -1296,6 +1300,12 @@ function ComingSoon({ label }: { label: string }) {
 export default function FinancePage() {
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('Costs & Expenses')
+  const TAB_LABELS: Record<string, string> = {
+    'Costs & Expenses': t('costsExpenses'),
+    'Banks':            t('banks'),
+    'Chart of Accounts': t('chartOfAccounts'),
+    'Impuestos':        t('taxes'),
+  }
 
   return (
     <div style={{ padding: 24 }}>
@@ -1318,7 +1328,7 @@ export default function FinancePage() {
                 background: active ? '#c9a84c' : '#1a1a1e',
                 color:      active ? '#0d0d0f' : '#888580',
                 border:     active ? '1px solid #c9a84c' : '1px solid rgba(255,255,255,0.1)' }}>
-              {tab}
+              {TAB_LABELS[tab]}
             </button>
           )
         })}
