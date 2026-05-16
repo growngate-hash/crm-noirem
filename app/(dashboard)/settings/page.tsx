@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
+import { usePermissions } from '@/hooks/usePermissions'
 import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
@@ -537,7 +538,7 @@ const INIT_TEAM: TeamMember[] = [
   { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Khalid Hassan',     email: 'khalid@noirem.ae', role: 'Technician' },
 ]
 
-function TeamSection() {
+function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentUserEmail: string }) {
   const [team, setTeam] = useState<TeamMember[]>(INIT_TEAM)
   const [permsMap, setPermsMap] = useState<Record<string, { role: string; permissions: Permissions }>>({})
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
@@ -592,19 +593,27 @@ function TeamSection() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isAdmin ? 20 : 12 }}>
         <div>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Team & Roles</div>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>{team.length} members</div>
         </div>
-        <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13}/> Invite Member</button>
+        {isAdmin && <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13}/> Invite Member</button>}
       </div>
+
+      {!isAdmin && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8,
+          background: 'rgba(136,133,128,0.08)', border: '1px solid rgba(136,133,128,0.15)',
+          marginBottom: 20, fontSize: 12, color: '#888580' }}>
+          🔒 <span>Solo lectura — solo los administradores pueden modificar permisos y miembros del equipo.</span>
+        </div>
+      )}
 
       <div className="glass" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Name','Email','Role','Permisos','Actions'].map(h => (
+              {(['Name','Email','Role','Permisos', ...(isAdmin ? ['Actions'] : [])] as string[]).map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
               ))}
             </tr>
@@ -622,22 +631,26 @@ function TeamSection() {
                   <td style={{ padding: '12px 16px', minWidth: 170 }}>
                     <PermChips perms={mp?.permissions}/>
                   </td>
-                  <td style={{ padding: '12px 16px' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      <button onClick={() => setEditingMember(m)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
-                          border: '1px solid rgba(201,168,76,0.25)', background: '#1a1a1e', color: '#c9a84c',
-                          fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        ✏️ Permisos
-                      </button>
-                      <button onClick={() => removeTeam(m.id)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
-                          border: '1px solid rgba(255,79,79,0.25)', background: 'rgba(255,79,79,0.1)', color: '#ff4f4f',
-                          fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                        🗑 Remove
-                      </button>
-                    </div>
-                  </td>
+                  {isAdmin && (
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => setEditingMember(m)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
+                            border: '1px solid rgba(201,168,76,0.25)', background: '#1a1a1e', color: '#c9a84c',
+                            fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          ✏️ Permisos
+                        </button>
+                        {m.email !== currentUserEmail && (
+                          <button onClick={() => removeTeam(m.id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
+                              border: '1px solid rgba(255,79,79,0.25)', background: 'rgba(255,79,79,0.1)', color: '#ff4f4f',
+                              fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            🗑 Remove
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  )}
                 </tr>
               )
             })}
@@ -808,11 +821,18 @@ function BillingSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile')
+  const { isAdmin, isManager, currentUserEmail } = usePermissions()
+
+  const visibleNav = NAV.filter(item => {
+    if (item.key === 'plans' || item.key === 'billing') return isAdmin
+    if (item.key === 'integrations') return isAdmin || isManager
+    return true
+  })
 
   const renderContent = () => {
     switch (activeSection) {
       case 'profile':      return <ProfileSection/>
-      case 'team':         return <TeamSection/>
+      case 'team':         return <TeamSection isAdmin={isAdmin} currentUserEmail={currentUserEmail}/>
       case 'integrations': return <IntegrationsSection/>
       case 'plans':        return <PlansSection/>
       case 'billing':      return <BillingSection/>
@@ -824,7 +844,7 @@ export default function SettingsPage() {
       <div style={{ width: 160, flexShrink: 0 }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Settings</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV.map(item => {
+          {visibleNav.map(item => {
             const Icon = item.icon; const active = activeSection === item.key
             return (
               <button key={item.key} onClick={() => setActiveSection(item.key)}
