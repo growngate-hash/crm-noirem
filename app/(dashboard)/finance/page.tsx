@@ -99,6 +99,7 @@ function CostsTab() {
   const [dropdownAbierto,   setDropdownAbierto]   = useState(false)
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<any>(null)
   const [busqueda,           setBusqueda]           = useState('')
+  const [invoices,           setInvoices]           = useState<any[]>([])
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -166,10 +167,27 @@ function CostsTab() {
     setCuentasContables(data ?? [])
   }
 
+  async function fetchInvoices() {
+    const { data } = await createClient()
+      .from('invoices')
+      .select('*, contacts(name), bookings(id, scheduled_at)')
+      .order('created_at', { ascending: false })
+      .limit(10)
+    setInvoices(data ?? [])
+  }
+
+  async function updateInvoiceStatus(id: string, status: string) {
+    const patch: any = { status }
+    if (status === 'paid') patch.paid_at = new Date().toISOString()
+    await createClient().from('invoices').update(patch).eq('id', id)
+    fetchInvoices()
+  }
+
   useEffect(() => {
     fetchExpenses()
     fetchFinanceKPIs()
     fetchCuentasContables()
+    fetchInvoices()
   }, [])
 
   async function saveExpense() {
@@ -342,6 +360,80 @@ function CostsTab() {
               <span style={{ fontSize: 14, fontWeight: 800, color: '#ff4f4f', fontVariantNumeric: 'tabular-nums' }}>{aed(total)}</span>
             </div>
           </>
+        )}
+      </div>
+
+      {/* Invoices section */}
+      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12, overflow: 'hidden', marginTop: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Facturas Recientes</span>
+            <span style={{ fontSize: 12, color: '#888580', background: '#1a1a1e', borderRadius: 99, padding: '2px 9px' }}>
+              {invoices.length}
+            </span>
+          </div>
+        </div>
+        {invoices.length === 0 ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center', color: '#888580', fontSize: 13 }}>
+            No hay facturas generadas aún
+          </div>
+        ) : (
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                {['Factura #', 'Cliente', 'Subtotal', 'VAT', 'Total', 'Estado', 'Acciones'].map(h => (
+                  <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((inv: any) => {
+                const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+                  draft:   { bg: 'rgba(136,133,128,0.15)', color: '#888580' },
+                  sent:    { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff' },
+                  paid:    { bg: 'rgba(52,211,153,0.12)',  color: '#34d399' },
+                  overdue: { bg: 'rgba(255,79,79,0.12)',   color: '#ff4f4f' },
+                }
+                const ss = STATUS_STYLE[inv.status] ?? STATUS_STYLE.draft
+                return (
+                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <td style={{ padding: '12px 16px', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 700 }}>{inv.invoice_no}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8' }}>{inv.contacts?.name ?? '—'}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{aed(inv.subtotal ?? 0)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{aed(inv.tax ?? 0)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8' }}>{aed(inv.total ?? 0)}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: ss.bg, color: ss.color, textTransform: 'uppercase' }}>
+                        {inv.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {inv.status === 'draft' && (
+                          <button onClick={() => updateInvoiceStatus(inv.id, 'sent')}
+                            style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(79,163,255,0.3)', background: 'rgba(79,163,255,0.08)', color: '#4fa3ff', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            Enviar
+                          </button>
+                        )}
+                        {(inv.status === 'draft' || inv.status === 'sent' || inv.status === 'overdue') && (
+                          <button onClick={() => updateInvoiceStatus(inv.id, 'paid')}
+                            style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(52,211,153,0.3)', background: 'rgba(52,211,153,0.08)', color: '#34d399', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            Marcar pagada
+                          </button>
+                        )}
+                        <button
+                          style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#888580', fontSize: 11, fontWeight: 600, cursor: 'not-allowed', fontFamily: 'Outfit,sans-serif', opacity: 0.5 }}>
+                          PDF
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         )}
       </div>
 

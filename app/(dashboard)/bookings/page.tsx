@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
+import { generateInvoiceFromBooking } from '@/utils/generateInvoice'
 import {
   toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
   dubaiToUTC, getDubaiToday, dubaiDayRange,
@@ -189,7 +191,8 @@ type Toast={id:number;msg:string;type:'success'|'error'|'warn'}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function BookingsPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
+  const router = useRouter()
   const [bookings,    setBookings]    = useState<any[]>([])
   const [contacts,    setContacts]    = useState<any[]>([])
   const [vehicles,    setVehicles]    = useState<any[]>([])
@@ -200,10 +203,12 @@ export default function BookingsPage() {
   const [selectedDay, setSelectedDay] = useState<Date>(()=>getDubaiToday())
   const [weekRef,     setWeekRef]     = useState<Date>(()=>getDubaiToday())
 
-  const [showNew,       setShowNew]       = useState(false)
-  const [editId,        setEditId]        = useState<string|null>(null)
-  const [detailBooking, setDetailBooking] = useState<any|null>(null)
-  const [saving,        setSaving]        = useState(false)
+  const [showNew,         setShowNew]         = useState(false)
+  const [editId,          setEditId]          = useState<string|null>(null)
+  const [detailBooking,   setDetailBooking]   = useState<any|null>(null)
+  const [saving,          setSaving]          = useState(false)
+  const [completedInvoice, setCompletedInvoice] = useState<any|null>(null)
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false)
 
   const [newForm, setNewForm] = useState({
     contact_id:'',vehicle_id:'',service_id:'',
@@ -367,17 +372,26 @@ export default function BookingsPage() {
   }
 
   async function updateStatus(id:string,status:string){
-    const{error}=await createClient().from('bookings').update({status}).eq('id',id)
+    const{error}=await createClient().from('bookings')
+      .update({ status, ...(status==='completed' ? { completed_at: new Date().toISOString() } : {}) })
+      .eq('id',id)
     if(error){addToast(error.message,'error');return}
-    addToast(status==='completed' ? t('bookingCompleted') : t('bookingCancelled'), status==='completed'?'success':'warn')
-    if (status === 'completed' && detailBooking) {
-      createNotification({
-        type: 'booking',
-        title: 'Reserva completada',
-        message: `${detailBooking.cliente ?? '—'} · ${detailBooking.servicio ?? '—'}${detailBooking.price ? ` · AED ${detailBooking.price}` : ''}`,
-      })
+
+    if (status === 'completed') {
+      const invoice = await generateInvoiceFromBooking(id)
+      if (invoice) {
+        addToast(`✓ ${t('bookingCompleted')} · Factura ${invoice.invoice_no} generada`, 'success')
+        setCompletedInvoice(invoice)
+        setShowInvoiceModal(true)
+      } else {
+        addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
+      }
+    } else {
+      addToast(t('bookingCancelled'), 'warn')
     }
-    setDetailBooking(null);fetchBookings(selectedDay)
+
+    setDetailBooking(null)
+    fetchBookings(selectedDay)
   }
 
   const loading = loadingB||loadingV
@@ -703,6 +717,47 @@ export default function BookingsPage() {
                   {t('cancelBooking')}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Invoice confirmation modal ── */}
+      {showInvoiceModal && completedInvoice && (
+        <div style={{position:'fixed',inset:0,zIndex:800,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div style={{background:'#141416',border:'1px solid rgba(201,168,76,0.3)',borderRadius:16,padding:32,maxWidth:420,width:'100%',textAlign:'center',fontFamily:'Outfit,sans-serif'}}>
+            <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(52,211,153,0.15)',border:'2px solid #34d399',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,margin:'0 auto 16px'}}>✓</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#f0ede8',marginBottom:8}}>
+              {lang==='es' ? '¡Reserva completada!' : 'Booking completed!'}
+            </div>
+            <div style={{fontSize:13,color:'#888580',marginBottom:20}}>
+              {lang==='es' ? 'Se generó la factura automáticamente' : 'Invoice generated automatically'}
+            </div>
+            <div style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:16,marginBottom:20,textAlign:'left'}}>
+              {[
+                { label: lang==='es' ? 'Número de factura' : 'Invoice number', value: completedInvoice.invoice_no, mono: true, color: '#c9a84c' },
+                { label: 'Subtotal', value: `AED ${completedInvoice.subtotal?.toFixed(2)}`, mono: false, color: '#f0ede8' },
+                { label: 'VAT (5%)', value: `AED ${completedInvoice.tax?.toFixed(2)}`, mono: false, color: '#f0ede8' },
+              ].map(row => (
+                <div key={row.label} style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                  <span style={{fontSize:12,color:'#888580'}}>{row.label}</span>
+                  <span style={{fontSize:12,fontWeight:700,color:row.color,fontFamily:row.mono?'monospace':'Outfit,sans-serif'}}>{row.value}</span>
+                </div>
+              ))}
+              <div style={{display:'flex',justifyContent:'space-between',paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
+                <span style={{fontSize:13,fontWeight:700,color:'#f0ede8'}}>Total</span>
+                <span style={{fontSize:13,fontWeight:800,color:'#00d4aa'}}>AED {completedInvoice.total?.toFixed(2)}</span>
+              </div>
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>{setShowInvoiceModal(false);router.push('/finance')}}
+                style={{flex:1,padding:10,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                {lang==='es' ? 'Ver en Finanzas' : 'View in Finance'}
+              </button>
+              <button onClick={()=>setShowInvoiceModal(false)}
+                style={{flex:1,padding:10,background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',color:'#888580',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,cursor:'pointer'}}>
+                {lang==='es' ? 'Cerrar' : 'Close'}
+              </button>
             </div>
           </div>
         </div>
