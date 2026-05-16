@@ -11,15 +11,22 @@ import {
 import { DollarSign, TrendingUp, TrendingDown, ChevronDown, Plus, X } from 'lucide-react'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
+function formatAED(value: number): string {
+  if (value >= 1_000_000) return `AED ${(value / 1_000_000).toFixed(1)}M`
+  if (value >= 1_000) return `AED ${(value / 1_000).toFixed(0)}K`
+  return `AED ${value.toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+}
+const fmt = formatAED
 
-function timeAgo(d: string) {
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000)
-  if (m < 1) return 'just now'
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  return `${Math.floor(h / 24)}d ago`
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60_000)
+  const hours = Math.floor(diff / 3_600_000)
+  const days = Math.floor(diff / 86_400_000)
+  if (mins < 1) return 'Ahora mismo'
+  if (mins < 60) return `Hace ${mins} min`
+  if (hours < 24) return `Hace ${hours} hr`
+  return `Hace ${days} día${days > 1 ? 's' : ''}`
 }
 
 function initials(n: string) {
@@ -33,6 +40,8 @@ const TIER_GRAD: Record<string, string> = {
   Standard: 'linear-gradient(135deg,#555,#333)',
 }
 const DOT_COLOR: Record<string, string> = {
+  completed: '#22c55e', in_progress: '#818cf8', confirmed: '#00d4aa',
+  cancelled: '#ff4f4f', pending: '#c9a84c',
   Completed: '#22c55e', 'In Progress': '#818cf8', Confirmed: '#00d4aa',
   Cancelled: '#ff4f4f', Pending: '#c9a84c',
 }
@@ -50,32 +59,19 @@ const PERIOD_OPTIONS = [
   { key: 'thisQuarter',  label: 'Este Trimestre' },
   { key: 'thisYear',     label: 'Este Año' },
 ]
-const STATUS_ACTIVE = ['Pending', 'Confirmed', 'In Progress']
 const GOLD = '#c9a84c'
 const CHART_COLORS = [GOLD, '#00d4aa', '#ff4f4f', '#818cf8', '#ffa800']
 
-// ─── demo data ───────────────────────────────────────────────────────────────
-const DEMO_BOOKINGS = [
-  { id:'d1', contacts:{name:'Khalid Al Mansoori',tier:'Ultra-VIP'}, services:{name:'Full Detail'}, vehicles:{make:'Lamborghini',model:'Urus'}, price:4200, status:'Completed', created_at:new Date(Date.now()-120000).toISOString() },
-  { id:'d2', contacts:{name:'Sara Al Rashid',tier:'VIP'}, services:{name:'Paint Protection Film'}, vehicles:{make:'Range Rover',model:'Sport'}, price:7800, status:'Pending', created_at:new Date(Date.now()-3600000).toISOString() },
-  { id:'d3', contacts:{name:'Mohammed Hassan',tier:'VIP'}, services:{name:'Ceramic Coating'}, vehicles:{make:'Ferrari',model:'488'}, price:12500, status:'In Progress', created_at:new Date(Date.now()-7200000).toISOString() },
-]
-const DEMO_ACTIVITY = [
-  { id:'a1', name:'Khalid Al Mansoori', desc:'Full Detail completed', status:'Completed', time:'2m ago' },
-  { id:'a2', name:'Sara Al Rashid', desc:'Paint Protection booked', status:'Confirmed', time:'45m ago' },
-  { id:'a3', name:'Mohammed Hassan', desc:'Ceramic Coating started', status:'In Progress', time:'1h ago' },
-  { id:'a4', name:'System Alert', desc:'Low stock: Ceramic Pro 9H', status:'Pending', time:'3h ago' },
-]
+// ─── demo chart data ──────────────────────────────────────────────────────────
 const DEMO_SALES    = [{m:'Ene',v:45000},{m:'Feb',v:52000},{m:'Mar',v:48000},{m:'Abr',v:61000},{m:'May',v:73000},{m:'Jun',v:68000}]
 const DEMO_FLOW     = [{d:'Lun',n:5},{d:'Mar',n:8},{d:'Mié',n:3},{d:'Jue',n:9},{d:'Vie',n:7},{d:'Sáb',n:4},{d:'Dom',n:2}]
 const DEMO_EXPENSES = [{name:'Materiales',value:35},{name:'Mano de obra',value:40},{name:'Marketing',value:15},{name:'Otros',value:10}]
 const DEMO_PRODUCTS = [{name:'Ceramic Coating',v:85000},{name:'Full Detail',v:62000},{name:'PPF',v:54000},{name:'Corrección',v:38000},{name:'Tintado',v:22000}]
 const DEMO_CLIENTS  = [{name:'Khalid Al Mansoori',v:45000},{name:'Mohammed Al Maktoum',v:38000},{name:'Sara Al Rashid',v:29000},{name:'Ahmed Hassan',v:24000},{name:'Fatima Al Zaabi',v:18000}]
 
-// ─── tooltip style ────────────────────────────────────────────────────────────
 const tooltipStyle = { background:'#141416', border:'1px solid rgba(201,168,76,0.25)', borderRadius:8, fontSize:11, color:'#f0ede8' }
 
-// ─── chart widgets ────────────────────────────────────────────────────────────
+// ─── chart widget ─────────────────────────────────────────────────────────────
 function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
   const opt = CHART_OPTIONS.find(c => c.id === id)!
   return (
@@ -153,6 +149,39 @@ function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
   )
 }
 
+// ─── KPI skeleton ────────────────────────────────────────────────────────────
+function KpiSkeleton() {
+  return (
+    <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px', height:108 }}>
+      <div style={{ height:10, width:'60%', borderRadius:4, marginBottom:14,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+      <div style={{ height:28, width:'75%', borderRadius:6, marginBottom:10,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+      <div style={{ height:8, width:'50%', borderRadius:4,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+    </div>
+  )
+}
+
+function KpiSkeleton2() {
+  return (
+    <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 16px', height:88 }}>
+      <div style={{ height:8, width:'55%', borderRadius:4, marginBottom:12,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+      <div style={{ height:22, width:'65%', borderRadius:6, marginBottom:8,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+      <div style={{ height:8, width:'45%', borderRadius:4,
+        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
+    </div>
+  )
+}
+
 // ─── dropdown shared style ───────────────────────────────────────────────────
 const dropdownStyle: React.CSSProperties = {
   position:'absolute', top:'110%', right:0, zIndex:300,
@@ -165,49 +194,181 @@ const dropdownStyle: React.CSSProperties = {
 export default function DashboardPage() {
   const { t } = useLanguage()
 
-  // data
-  const [bookings, setBookings] = useState<any[]>([])
-  const [inventory, setInventory] = useState<any[]>([])
+  // ── KPI state ──
+  const [kpis, setKpis] = useState({
+    totalProfit: 0, totalRevenue: 0, totalExpenses: 0,
+    lowStockAlerts: 0, revenueMTD: 0, activeBookings: 0,
+    avgOrderValue: 0, csatScore: 0, deltaRevenue: 0,
+  })
+  const [recentBookings, setRecentBookings] = useState<any[]>([])
+  const [activityFeed, setActivityFeed] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
-  // period dropdown
+  // ── UI state ──
   const [period, setPeriod] = useState('currentMonth')
   const [periodView, setPeriodView] = useState<'list'|'custom'>('list')
   const [showPeriod, setShowPeriod] = useState(false)
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [appliedLabel, setAppliedLabel] = useState('Mes Actual')
-
-  // add chart dropdown
   const [showAddChart, setShowAddChart] = useState(false)
   const [activeCharts, setActiveCharts] = useState<string[]>([])
-
-  // toast
   const [toast, setToast] = useState('')
 
   const periodRef = useRef<HTMLDivElement>(null)
   const chartRef = useRef<HTMLDivElement>(null)
 
+  // ── data fetch ──
+  async function fetchDashboardData() {
+    const supabase = createClient()
+    const ahora = new Date()
+
+    // Month boundaries in Dubai (UTC+4)
+    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59)
+    const inicioMesUTC = new Date(inicioMes.getTime() - 4 * 3600000).toISOString()
+    const finMesUTC = new Date(finMes.getTime() - 4 * 3600000).toISOString()
+
+    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1)
+    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59)
+
+    const [
+      { data: bookingsCompletados },
+      { data: bookingsActivos },
+      { data: gastosMes },
+      { data: inventario },
+      { data: bookingsMesAnterior },
+      { data: bookingsRecientes },
+    ] = await Promise.all([
+      // Completed bookings this month
+      supabase
+        .from('bookings')
+        .select('price, discount')
+        .eq('status', 'completed')
+        .gte('scheduled_at', inicioMesUTC)
+        .lte('scheduled_at', finMesUTC),
+
+      // Active bookings (any status = pending/confirmed/in_progress)
+      supabase
+        .from('bookings')
+        .select('id')
+        .in('status', ['confirmed', 'in_progress', 'pending']),
+
+      // Expenses this month
+      supabase
+        .from('expenses')
+        .select('amount')
+        .gte('date', inicioMes.toISOString().split('T')[0])
+        .lte('date', finMes.toISOString().split('T')[0]),
+
+      // All inventory for low-stock check
+      supabase
+        .from('inventory_items')
+        .select('stock_qty, min_stock'),
+
+      // Previous month completed for delta
+      supabase
+        .from('bookings')
+        .select('price, discount')
+        .eq('status', 'completed')
+        .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
+        .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
+
+      // Recent bookings for table
+      supabase
+        .from('bookings')
+        .select('id, price, discount, status, scheduled_at, created_at, contacts(full_name, tier), vehicles(make, model), services(name)')
+        .order('created_at', { ascending: false })
+        .limit(10),
+    ])
+
+    // Revenue calculations
+    const totalRevenue = (bookingsCompletados ?? []).reduce(
+      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
+    )
+    const totalExpenses = (gastosMes ?? []).reduce((sum, g) => sum + (g.amount ?? 0), 0)
+    const totalProfit = totalRevenue - totalExpenses
+    const avgOrderValue = (bookingsCompletados?.length ?? 0) > 0
+      ? totalRevenue / bookingsCompletados!.length : 0
+
+    const revenueMesAnterior = (bookingsMesAnterior ?? []).reduce(
+      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
+    )
+    const deltaRevenue = revenueMesAnterior > 0
+      ? +((totalRevenue - revenueMesAnterior) / revenueMesAnterior * 100).toFixed(1)
+      : 0
+
+    const lowStockAlerts = (inventario ?? []).filter(
+      i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0) && (i.min_stock ?? 0) > 0
+    ).length
+
+    // CSAT — optional table
+    let csatScore = 0
+    try {
+      const { data: reviews } = await supabase
+        .from('reviews')
+        .select('rating')
+        .gte('created_at', inicioMesUTC)
+      if (reviews && reviews.length > 0) {
+        csatScore = reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / reviews.length
+      }
+    } catch { /* table may not exist yet */ }
+
+    setKpis({
+      totalRevenue, totalExpenses, totalProfit,
+      lowStockAlerts, revenueMTD: totalRevenue,
+      activeBookings: bookingsActivos?.length ?? 0,
+      avgOrderValue, csatScore, deltaRevenue,
+    })
+
+    // Recent bookings
+    setRecentBookings(bookingsRecientes ?? [])
+
+    // Activity feed — try activity_log first, fall back to bookings
+    try {
+      const { data: activities, error } = await supabase
+        .from('activity_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      if (!error && activities && activities.length > 0) {
+        setActivityFeed(activities)
+      } else {
+        buildActivityFromBookings(bookingsRecientes ?? [])
+      }
+    } catch {
+      buildActivityFromBookings(bookingsRecientes ?? [])
+    }
+
+    setLoading(false)
+  }
+
+  function buildActivityFromBookings(rows: any[]) {
+    setActivityFeed(
+      rows.slice(0, 8).map(b => ({
+        id: b.id,
+        name: b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente',
+        desc: `${b.services?.name ?? 'Servicio'} — ${b.status ?? 'pending'}`,
+        status: b.status ?? 'pending',
+        time: b.updated_at ?? b.created_at,
+      }))
+    )
+  }
+
   useEffect(() => {
     setMounted(true)
-    const supabase = createClient()
-    Promise.all([
-      supabase.from('bookings').select('*, contacts(*), vehicles(*), services(*)').order('created_at', { ascending: false }),
-      supabase.from('inventory_items').select('*'),
-    ]).then(([{ data: b }, { data: inv }]) => {
-      setBookings(b ?? [])
-      setInventory(inv ?? [])
-      setLoading(false)
-    })
+    fetchDashboardData()
+    const interval = setInterval(fetchDashboardData, 5 * 60 * 1000)
+    return () => clearInterval(interval)
   }, [])
 
-  // close dropdowns on outside click
+  // ── close dropdowns on outside click ──
   useEffect(() => {
     function onOut(e: MouseEvent) {
       if (periodRef.current && !periodRef.current.contains(e.target as Node)) {
-        setShowPeriod(false)
-        setPeriodView('list')
+        setShowPeriod(false); setPeriodView('list')
       }
       if (chartRef.current && !chartRef.current.contains(e.target as Node)) {
         setShowAddChart(false)
@@ -217,69 +378,36 @@ export default function DashboardPage() {
     return () => document.removeEventListener('mousedown', onOut)
   }, [])
 
-  function openPeriod() {
-    setShowAddChart(false)
-    setShowPeriod(p => !p)
-    setPeriodView('list')
-  }
-  function openAddChart() {
-    setShowPeriod(false)
-    setShowAddChart(p => !p)
-  }
-
-  function selectPeriod(key: string, label: string) {
-    setPeriod(key)
-    setAppliedLabel(label)
-    setShowPeriod(false)
-    setPeriodView('list')
-  }
-
+  function openPeriod() { setShowAddChart(false); setShowPeriod(p => !p); setPeriodView('list') }
+  function openAddChart() { setShowPeriod(false); setShowAddChart(p => !p) }
+  function selectPeriod(key: string, label: string) { setPeriod(key); setAppliedLabel(label); setShowPeriod(false); setPeriodView('list') }
   function applyCustom() {
     if (!customFrom || !customTo) return
-    const label = `${customFrom} → ${customTo}`
-    setPeriod('custom')
-    setAppliedLabel(label)
-    setShowPeriod(false)
-    setPeriodView('list')
+    setPeriod('custom'); setAppliedLabel(`${customFrom} → ${customTo}`)
+    setShowPeriod(false); setPeriodView('list')
   }
+  function addChart(id: string) { if (!activeCharts.includes(id)) setActiveCharts(p => [...p, id]); setShowAddChart(false) }
+  function removeChart(id: string) { setActiveCharts(p => p.filter(c => c !== id)) }
 
-  function addChart(id: string) {
-    if (!activeCharts.includes(id)) setActiveCharts(prev => [...prev, id])
-    setShowAddChart(false)
-  }
-  function removeChart(id: string) { setActiveCharts(prev => prev.filter(c => c !== id)) }
-
-  // ── kpi calcs ────────────────────────────────────────────────────────────
-  const completed    = bookings.filter(b => b.status === 'Completed')
-  const totalRevenue = completed.reduce((s, b) => s + (b.price ?? 0), 0)
-  const totalProfit  = totalRevenue * 0.65
-  const totalExpenses= totalRevenue * 0.35
-  const lowStock     = inventory.filter(i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0)).length
-  const now          = new Date()
-  const mtd          = completed.filter(b => { const d = new Date(b.created_at); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() })
-  const revenueMTD   = mtd.reduce((s, b) => s + (b.price ?? 0), 0)
-  const activeBookN  = bookings.filter(b => STATUS_ACTIVE.includes(b.status)).length
-  const avgOrder     = completed.length ? totalRevenue / completed.length : 0
-
-  const displayBookings = loading ? [] : (bookings.length > 0 ? bookings.slice(0, 10) : DEMO_BOOKINGS)
-  const displayActivity = loading ? [] : (bookings.length > 0
-    ? bookings.slice(0, 5).map(b => ({ id: b.id, name: b.contacts?.name ?? 'Unknown', desc: `${b.services?.name ?? 'Service'} — ${b.status}`, status: b.status, time: timeAgo(b.created_at) }))
-    : DEMO_ACTIVITY)
-
+  // ── KPI row data ──
   const row1 = [
-    { key:'totalProfit',   label:t('totalProfit'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:TrendingUp,  value: bookings.length>0 ? fmt(totalProfit).replace('AED ','') : '0.00',   sub:`— ${bookings.length>0?fmt(totalProfit):'AED 0.00'} este mes` },
-    { key:'totalRevenue',  label:t('totalRevenue'),  color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,  value: bookings.length>0 ? fmt(totalRevenue).replace('AED ','') : '0.00',  sub:`— ${bookings.length>0?fmt(totalRevenue):'AED 0.00'} este mes` },
-    { key:'totalExpenses', label:t('totalExpenses'), color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown, value: bookings.length>0 ? fmt(totalExpenses).replace('AED ','') : '0.00', sub:`— ${bookings.length>0?fmt(totalExpenses):'AED 0.00'} este mes` },
-    { key:'lowStock',      label:t('lowStockAlerts'),color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆',     value: String(lowStock), bigNum: true, sub:`— ${t('allInStock')}` },
+    { key:'totalProfit',   label:t('totalProfit'),    color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:TrendingUp,   value: formatAED(kpis.totalProfit),   sub:`— ${formatAED(kpis.totalRevenue - kpis.totalExpenses)} este mes` },
+    { key:'totalRevenue',  label:t('totalRevenue'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,   value: formatAED(kpis.totalRevenue),  sub:`— ${formatAED(kpis.totalRevenue)} este mes` },
+    { key:'totalExpenses', label:t('totalExpenses'),  color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown, value: formatAED(kpis.totalExpenses), sub:`— ${formatAED(kpis.totalExpenses)} este mes` },
+    { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆',      value: String(kpis.lowStockAlerts), bigNum: true,
+      sub: kpis.lowStockAlerts === 0 ? `— ${t('allInStock')}` : `— ${kpis.lowStockAlerts} items bajo mínimo` },
   ]
   const row2 = [
-    { key:'mtd',  label:t('revenueMTD'),    value: bookings.length>0 ? fmt(revenueMTD) : 'AED 847K', delta:'↑ +18.4%', sub:'vs mes anterior' },
-    { key:'act',  label:t('activeBookings'),value: bookings.length>0 ? String(activeBookN) : '23',   delta:'↑ +3',     sub:'desde ayer' },
-    { key:'avg',  label:t('avgOrderValue'), value: bookings.length>0 ? fmt(avgOrder) : 'AED 2,890',  delta:'↑ +6.2%',  sub:'vs mes anterior' },
-    { key:'csat', label:t('csatScore'),     value:'4.93', suffix:' / 5', delta:'↑ +0.07', sub:'este trimestre' },
+    { key:'mtd',  label:t('revenueMTD'),     value: formatAED(kpis.revenueMTD),
+      delta: kpis.deltaRevenue >= 0 ? `↑ +${kpis.deltaRevenue}%` : `↓ ${kpis.deltaRevenue}%`,
+      deltaPos: kpis.deltaRevenue >= 0, sub:'vs mes anterior' },
+    { key:'act',  label:t('activeBookings'), value: String(kpis.activeBookings), delta:'reservas activas', deltaPos:true, sub:'confirmadas / en curso' },
+    { key:'avg',  label:t('avgOrderValue'),  value: formatAED(kpis.avgOrderValue), delta:'ticket promedio', deltaPos:true, sub:'bookings completados' },
+    { key:'csat', label:t('csatScore'),
+      value: kpis.csatScore > 0 ? `${kpis.csatScore.toFixed(2)} / 5` : 'Sin datos',
+      delta:'este trimestre', deltaPos:true, sub:'valoración clientes' },
   ]
 
-  // ── opt-item style fn ─────────────────────────────────────────────────────
   function optStyle(active: boolean): React.CSSProperties {
     return {
       display:'block', width:'100%', textAlign:'left', border:'none', cursor:'pointer',
@@ -291,82 +419,65 @@ export default function DashboardPage() {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
     <div style={{ padding:24, minHeight:'100%' }}>
+      <style>{`
+        @keyframes shimmer {
+          0%   { background-position: 200% 0 }
+          100% { background-position: -200% 0 }
+        }
+      `}</style>
 
       {/* ── top action bar ── */}
       <div style={{ display:'flex', justifyContent:'flex-end', gap:10, marginBottom:20 }}>
 
-        {/* Period button */}
+        {/* Period */}
         <div ref={periodRef} style={{ position:'relative' }}>
-          <button
-            onClick={openPeriod}
-            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:'var(--bg3)', border:`1px solid ${GOLD}40`, color:GOLD, fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif' }}
-          >
+          <button onClick={openPeriod}
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:'var(--bg3)', border:`1px solid ${GOLD}40`, color:GOLD, fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif' }}>
             {appliedLabel} <ChevronDown size={12} />
           </button>
 
           {showPeriod && (
             <div style={dropdownStyle}>
               {periodView === 'list' ? (
-                /* list view */
                 <div style={{ padding:4 }}>
                   {PERIOD_OPTIONS.map(p => (
-                    <button
-                      key={p.key}
-                      onClick={() => selectPeriod(p.key, p.label)}
+                    <button key={p.key} onClick={() => selectPeriod(p.key, p.label)}
                       style={optStyle(period === p.key)}
-                      onMouseEnter={e => { if (period !== p.key) (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' }}
-                      onMouseLeave={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}
-                    >
+                      onMouseEnter={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
+                      onMouseLeave={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
                       {p.label}
                     </button>
                   ))}
                   <div style={{ height:1, background:'rgba(255,255,255,0.06)', margin:'4px 0' }} />
-                  <button
-                    onClick={() => setPeriodView('custom')}
-                    style={optStyle(period === 'custom')}
+                  <button onClick={() => setPeriodView('custom')} style={optStyle(period === 'custom')}
                     onMouseEnter={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
-                    onMouseLeave={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}
-                  >
+                    onMouseLeave={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
                     Rango Personalizado
                   </button>
                 </div>
               ) : (
-                /* custom range view */
                 <div style={{ padding:16, display:'flex', flexDirection:'column', gap:12, minWidth:240 }}>
                   <div style={{ fontSize:12, fontWeight:600, color:'var(--text)', marginBottom:4 }}>Rango Personalizado</div>
                   <div>
                     <label style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Desde</label>
-                    <input
-                      type="date"
-                      value={customFrom}
-                      onChange={e => setCustomFrom(e.target.value)}
-                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }}
-                    />
+                    <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
                   </div>
                   <div>
                     <label style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Hasta</label>
-                    <input
-                      type="date"
-                      value={customTo}
-                      onChange={e => setCustomTo(e.target.value)}
-                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }}
-                    />
+                    <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
                   </div>
                   <div style={{ display:'flex', gap:8, marginTop:4 }}>
-                    <button
-                      onClick={applyCustom}
-                      disabled={!customFrom || !customTo}
-                      style={{ flex:1, padding:'8px 0', borderRadius:8, border:'none', cursor: customFrom && customTo ? 'pointer' : 'not-allowed', background: customFrom && customTo ? GOLD : `${GOLD}40`, color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif' }}
-                    >
+                    <button onClick={applyCustom} disabled={!customFrom || !customTo}
+                      style={{ flex:1, padding:'8px 0', borderRadius:8, border:'none', cursor: customFrom && customTo ? 'pointer' : 'not-allowed', background: customFrom && customTo ? GOLD : `${GOLD}40`, color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif' }}>
                       Aplicar
                     </button>
-                    <button
-                      onClick={() => { setShowPeriod(false); setPeriodView('list') }}
-                      style={{ flex:1, padding:'8px 0', borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', cursor:'pointer', background:'transparent', color:'var(--text2)', fontSize:12, fontFamily:'Outfit,sans-serif' }}
-                    >
+                    <button onClick={() => { setShowPeriod(false); setPeriodView('list') }}
+                      style={{ flex:1, padding:'8px 0', borderRadius:8, border:'1px solid rgba(255,255,255,0.08)', cursor:'pointer', background:'transparent', color:'var(--text2)', fontSize:12, fontFamily:'Outfit,sans-serif' }}>
                       Cancelar
                     </button>
                   </div>
@@ -376,26 +487,20 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Add Chart button */}
+        {/* Add Chart */}
         <div ref={chartRef} style={{ position:'relative' }}>
-          <button
-            onClick={openAddChart}
-            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:GOLD, border:'none', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif' }}
-          >
+          <button onClick={openAddChart}
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:GOLD, border:'none', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif' }}>
             <Plus size={13} /> {t('addChart')}
           </button>
-
           {showAddChart && (
             <div style={dropdownStyle}>
               <div style={{ padding:4 }}>
                 {CHART_OPTIONS.map(opt => (
-                  <button
-                    key={opt.id}
-                    onClick={() => addChart(opt.id)}
+                  <button key={opt.id} onClick={() => addChart(opt.id)}
                     style={{ ...optStyle(activeCharts.includes(opt.id)), display:'flex', alignItems:'center', gap:10 }}
                     onMouseEnter={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
-                    onMouseLeave={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}
-                  >
+                    onMouseLeave={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
                     <span style={{ fontSize:15 }}>{opt.emoji}</span>
                     <span>{opt.label}</span>
                     {activeCharts.includes(opt.id) && <span style={{ marginLeft:'auto', fontSize:10, color:GOLD }}>✓</span>}
@@ -409,51 +514,49 @@ export default function DashboardPage() {
 
       {/* ── KPI Row 1 ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:12 }}>
-        {row1.map(card => (
-          <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px' }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-              <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{card.label}</div>
-              <div style={{ width:28, height:28, borderRadius:8, background:card.iconBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                {card.iconChar
-                  ? <span style={{ fontSize:14, color:card.color }}>{card.iconChar}</span>
-                  : card.icon && <card.icon size={14} color={card.color} strokeWidth={2} />}
-              </div>
-            </div>
-            {card.bigNum
-              ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
-              : <div style={{ display:'flex', alignItems:'baseline', gap:4 }}>
-                  <span style={{ fontSize:11, fontWeight:600, color:card.color }}>AED</span>
-                  <span style={{ fontSize:28, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</span>
+        {loading
+          ? [0,1,2,3].map(i => <KpiSkeleton key={i} />)
+          : row1.map(card => (
+            <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{card.label}</div>
+                <div style={{ width:28, height:28, borderRadius:8, background:card.iconBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  {card.iconChar
+                    ? <span style={{ fontSize:14, color:card.color }}>{card.iconChar}</span>
+                    : card.icon && <card.icon size={14} color={card.color} strokeWidth={2} />}
                 </div>
-            }
-            <div style={{ fontSize:10, color:'#3a3836', marginTop:6 }}>{card.sub}</div>
-          </div>
-        ))}
+              </div>
+              {card.bigNum
+                ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
+                : <div style={{ fontSize:22, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</div>
+              }
+              <div style={{ fontSize:10, color:'#3a3836', marginTop:6 }}>{card.sub}</div>
+            </div>
+          ))
+        }
       </div>
 
       {/* ── KPI Row 2 ── */}
       <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:16 }}>
-        {row2.map(card => (
-          <div key={card.key} style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 16px' }}>
-            <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:8 }}>{card.label}</div>
-            <div style={{ display:'flex', alignItems:'baseline', gap:3, marginBottom:6 }}>
-              <span style={{ fontSize:22, fontWeight:800, color:'var(--text)' }}>{card.value}</span>
-              {card.suffix && <span style={{ fontSize:14, color:'var(--text2)' }}>{card.suffix}</span>}
+        {loading
+          ? [0,1,2,3].map(i => <KpiSkeleton2 key={i} />)
+          : row2.map(card => (
+            <div key={card.key} style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 16px' }}>
+              <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:8 }}>{card.label}</div>
+              <div style={{ fontSize:22, fontWeight:800, color:'var(--text)', marginBottom:6 }}>{card.value}</div>
+              <div style={{ display:'flex', gap:5, alignItems:'center' }}>
+                <span style={{ fontSize:11, fontWeight:700, color: card.deltaPos ? '#34d399' : '#ff4f4f' }}>{card.delta}</span>
+                <span style={{ fontSize:10, color:'var(--text2)' }}>{card.sub}</span>
+              </div>
             </div>
-            <div style={{ display:'flex', gap:5, alignItems:'center' }}>
-              <span style={{ fontSize:11, fontWeight:700, color:'#34d399' }}>{card.delta}</span>
-              <span style={{ fontSize:10, color:'var(--text2)' }}>{card.sub}</span>
-            </div>
-          </div>
-        ))}
+          ))
+        }
       </div>
 
-      {/* ── Chart widgets (injected by "+ Add Chart") ── */}
+      {/* ── Chart widgets ── */}
       {mounted && activeCharts.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns: activeCharts.length === 1 ? '1fr' : 'repeat(2,1fr)', gap:14, marginBottom:16 }}>
-          {activeCharts.map(id => (
-            <ChartWidget key={id} id={id} onRemove={() => removeChart(id)} />
-          ))}
+          {activeCharts.map(id => <ChartWidget key={id} id={id} onRemove={() => removeChart(id)} />)}
         </div>
       )}
 
@@ -466,7 +569,16 @@ export default function DashboardPage() {
             <div style={{ fontSize:13, fontWeight:700 }}>{t('recentBookings')}</div>
             <span style={{ fontSize:11, color:'var(--text2)' }}>{t('last10')}</span>
           </div>
-          {loading ? <SkeletonTable rows={3} cols={5} /> : (
+          {loading ? <SkeletonTable rows={3} cols={5} /> : recentBookings.length === 0 ? (
+            <div style={{ padding:'48px 24px', textAlign:'center' }}>
+              <div style={{ fontSize:32, marginBottom:12 }}>📋</div>
+              <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:6 }}>No hay reservas registradas aún</div>
+              <div style={{ fontSize:12, color:'var(--text2)', marginBottom:20 }}>Las reservas aparecerán aquí una vez que las crees</div>
+              <a href="/bookings" style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:GOLD, color:'#0d0d0f', fontSize:12, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>
+                → Crear primera reserva
+              </a>
+            </div>
+          ) : (
             <div className="scroll" style={{ maxHeight:360 }}>
               <table style={{ width:'100%', borderCollapse:'collapse' }}>
                 <thead>
@@ -477,9 +589,10 @@ export default function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayBookings.map(b => {
-                    const name = b.contacts?.name ?? 'Unknown'
+                  {recentBookings.map(b => {
+                    const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
                     const bg = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
+                    const amount = (b.price ?? 0) - (b.discount ?? 0)
                     return (
                       <tr key={b.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding:'10px 16px' }}>
@@ -489,9 +602,11 @@ export default function DashboardPage() {
                           </div>
                         </td>
                         <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text2)' }}>{b.services?.name ?? '—'}</td>
-                        <td style={{ padding:'10px 16px', fontSize:11, color:'var(--text2)' }}>{b.vehicles ? `${b.vehicles.make} ${b.vehicles.model}` : '—'}</td>
-                        <td style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--gold)' }}>{fmt(b.price ?? 0)}</td>
-                        <td style={{ padding:'10px 16px' }}><StatusBadge status={b.status ?? 'Pending'} /></td>
+                        <td style={{ padding:'10px 16px', fontSize:11, color:'var(--text2)' }}>
+                          {b.vehicles ? `${b.vehicles.make ?? ''} ${b.vehicles.model ?? ''}`.trim() || '—' : '—'}
+                        </td>
+                        <td style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--gold)' }}>{formatAED(amount)}</td>
+                        <td style={{ padding:'10px 16px' }}><StatusBadge status={b.status ?? 'pending'} /></td>
                       </tr>
                     )
                   })}
@@ -508,23 +623,26 @@ export default function DashboardPage() {
           </div>
           <div className="scroll" style={{ flex:1, padding:'8px 0' }}>
             {loading
-              ? <div style={{ padding:'12px 18px', display:'flex', flexDirection:'column', gap:14 }}>{[1,2,3,4].map(i=><div key={i} className="skeleton" style={{ height:36, borderRadius:8 }} />)}</div>
-              : displayActivity.map((item, idx) => (
-                <div key={item.id} style={{ display:'flex', gap:12, padding:'12px 18px', borderBottom: idx < displayActivity.length-1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, marginTop:4, background:DOT_COLOR[item.status] ?? 'var(--text2)' }} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:'var(--text)', marginBottom:2 }}>{item.name}</div>
-                    <div style={{ fontSize:11, color:'var(--text2)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.desc}</div>
-                    <div style={{ fontSize:10, color:'#444' }}>{item.time}</div>
-                  </div>
+              ? <div style={{ padding:'12px 18px', display:'flex', flexDirection:'column', gap:14 }}>
+                  {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height:36, borderRadius:8 }} />)}
                 </div>
-              ))
+              : activityFeed.length === 0
+                ? <div style={{ padding:'32px 18px', textAlign:'center', fontSize:12, color:'var(--text2)' }}>Sin actividad reciente</div>
+                : activityFeed.map((item, idx) => (
+                  <div key={item.id ?? idx} style={{ display:'flex', gap:12, padding:'12px 18px', borderBottom: idx < activityFeed.length-1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, marginTop:4, background:DOT_COLOR[item.status] ?? 'var(--text2)' }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:11, fontWeight:600, color:'var(--text)', marginBottom:2 }}>{item.name}</div>
+                      <div style={{ fontSize:11, color:'var(--text2)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.desc}</div>
+                      <div style={{ fontSize:10, color:'#444' }}>{item.time ? timeAgo(item.time) : ''}</div>
+                    </div>
+                  </div>
+                ))
             }
           </div>
         </div>
       </div>
 
-      {/* Toast */}
       {toast && (
         <div style={{ position:'fixed', bottom:24, right:24, zIndex:9999, background:'var(--bg3)', border:`1px solid ${GOLD}40`, borderRadius:10, padding:'12px 18px', color:'var(--text)', fontSize:13, fontWeight:500, boxShadow:'0 8px 24px rgba(0,0,0,0.4)' }}>
           {toast}
