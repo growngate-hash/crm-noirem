@@ -1,7 +1,9 @@
 'use client'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings } from 'lucide-react'
+import { usePathname, useRouter } from 'next/navigation'
+import { useEffect, useRef, useState } from 'react'
+import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings, LogOut, User as UserIcon } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
 import { useCompany } from '@/contexts/CompanyContext'
@@ -19,8 +21,35 @@ const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { t } = useLanguage()
   const { logoUrl } = useCompany()
+
+  const [authUser, setAuthUser] = useState<any>(null)
+  const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    createClient().auth.getUser().then(({ data: { user } }) => setAuthUser(user))
+  }, [])
+
+  useEffect(() => {
+    function onOut(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false)
+    }
+    document.addEventListener('mousedown', onOut)
+    return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  async function handleLogout() {
+    await createClient().auth.signOut()
+    router.push('/auth')
+    router.refresh()
+  }
+
+  const displayName = authUser?.user_metadata?.full_name ?? authUser?.email?.split('@')[0] ?? 'Usuario'
+  const displayRole = authUser?.user_metadata?.role ?? 'Admin'
+  const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
     <div style={{
@@ -68,18 +97,62 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* User footer */}
-      <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-        <div style={{
-          width: 32, height: 32, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #c9a84c, #8b6914)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 11, fontWeight: 700, color: '#000', flexShrink: 0,
-        }}>AH</div>
-        <div style={{ overflow: 'hidden' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Ahmed Hassan</div>
-          <div style={{ fontSize: 9, color: 'var(--text2)' }}>Ops Manager</div>
-        </div>
+      {/* User footer with dropdown */}
+      <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
+        {/* Dropdown menu */}
+        {showMenu && (
+          <div style={{
+            position: 'absolute', bottom: 'calc(100% + 6px)', left: 10, right: 10, zIndex: 300,
+            background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)',
+            borderRadius: 10, overflow: 'hidden',
+            boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
+          }}>
+            <Link href="/settings" onClick={() => setShowMenu(false)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                fontSize: 12, color: 'var(--text)', textDecoration: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <UserIcon size={13} color="var(--text2)"/> Mi perfil
+            </Link>
+            <Link href="/settings" onClick={() => setShowMenu(false)}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                fontSize: 12, color: 'var(--text)', textDecoration: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <Settings size={13} color="var(--text2)"/> Configuración
+            </Link>
+            <button onClick={handleLogout}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 12, color: '#ff4f4f', fontFamily: 'Outfit, sans-serif', textAlign: 'left',
+                transition: 'background 0.1s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,79,79,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <LogOut size={13}/> Cerrar sesión
+            </button>
+          </div>
+        )}
+
+        {/* User pill */}
+        <button onClick={() => setShowMenu(v => !v)}
+          style={{ width: '100%', padding: '12px 14px', borderTop: '1px solid var(--border)',
+            display: 'flex', gap: 10, alignItems: 'center',
+            background: showMenu ? 'rgba(255,255,255,0.02)' : 'none',
+            border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+            background: 'linear-gradient(135deg, #c9a84c, #8b6914)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 11, fontWeight: 700, color: '#000',
+          }}>{initials}</div>
+          <div style={{ overflow: 'hidden', flex: 1 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+            <div style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'capitalize' }}>{displayRole}</div>
+          </div>
+          <span style={{ fontSize: 9, color: 'var(--text2)', flexShrink: 0 }}>{showMenu ? '▴' : '▾'}</span>
+        </button>
       </div>
     </div>
   )
