@@ -1,6 +1,6 @@
 'use client'
 import { usePathname } from 'next/navigation'
-import { Bell, Settings } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
@@ -63,18 +63,6 @@ export default function TopBar() {
 
       {/* Right controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-
-        {/* LIVE badge */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 6,
-          background: 'rgba(0,212,170,0.1)',
-          border: '1px solid rgba(0,212,170,0.25)',
-          borderRadius: 20, padding: '4px 10px',
-          fontSize: 10, fontWeight: 700, color: 'var(--cyan)',
-        }}>
-          <span className="live-dot" />
-          LIVE
-        </div>
 
         {/* Language toggle */}
         <div style={{
@@ -152,8 +140,6 @@ export default function TopBar() {
           )}
         </div>
 
-        {/* Settings */}
-        <Settings size={16} color="var(--text2)" style={{ cursor: 'pointer' }} />
       </div>
     </div>
   )
