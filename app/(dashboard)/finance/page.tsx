@@ -570,6 +570,281 @@ function BanksTab() {
   )
 }
 
+// ─── CHART OF ACCOUNTS ────────────────────────────────────────────────────────
+const GROUP_CFG: Record<string, { color: string; icon: string }> = {
+  '1': { color: '#00d4aa', icon: '▲' },
+  '2': { color: '#ff4f4f', icon: '▼' },
+  '3': { color: '#c9a84c', icon: '◆' },
+  '4': { color: '#34d399', icon: '↑' },
+  '5': { color: '#f87171', icon: '↓' },
+  '6': { color: '#fb923c', icon: '🏷' },
+  '7': { color: '#a78bfa', icon: '⚙' },
+  '8': { color: '#38bdf8', icon: 'D' },
+  '9': { color: '#f472b6', icon: 'A' },
+}
+const FILTER_TYPES   = ['All', 'Activo', 'Pasivo', 'Patrimonio', 'Ingreso', 'Gasto', 'Costo']
+const COA_ALL_TYPES  = ['Activo', 'Pasivo', 'Patrimonio', 'Ingreso', 'Gasto', 'Costo de Ventas', 'Costo Produccion', 'Orden Deudora', 'Orden Acreedora']
+const EMPTY_COA      = { code: '', name: '', type: 'Activo', description: '', currency: 'AED' }
+const COA_GROUPS     = ['1','2','3','4','5','6','7','8','9']
+
+function hexRgba(hex: string, a: number): string {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
+  return `rgba(${r},${g},${b},${a})`
+}
+
+function ChartOfAccountsTab() {
+  const [accounts, setAccounts] = useState<any[]>([])
+  const [loading,  setLoading]  = useState(true)
+  const [search,   setSearch]   = useState('')
+  const [typeFil,  setTypeFil]  = useState('All')
+  const [expanded, setExpanded] = useState<Record<string,boolean>>({})
+  const [hovL2,    setHovL2]    = useState<string|null>(null)
+  const [hovL3,    setHovL3]    = useState<string|null>(null)
+  const [showAdd,  setShowAdd]  = useState(false)
+  const [form,     setForm]     = useState({ ...EMPTY_COA })
+  const [saving,   setSaving]   = useState(false)
+  const [toasts,   setToasts]   = useState<Toast[]>([])
+
+  function addToast(msg: string, type: Toast['type'] = 'success') {
+    const id = ++_toastId
+    setToasts(prev => [...prev, { id, msg, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }
+
+  async function fetchAccounts() {
+    setLoading(true)
+    const { data } = await createClient().from('chart_of_accounts').select('*').order('code', { ascending: true })
+    setAccounts(data ?? [])
+    setLoading(false)
+  }
+  useEffect(() => { fetchAccounts() }, [])
+
+  function toggle(g: string) { setExpanded(p => ({ ...p, [g]: !p[g] })) }
+
+  function suggestCode(parentCode: string): string {
+    const depth = parentCode.split('.').length + 1
+    const children = accounts.filter(a => a.code.split('.').length === depth && a.code.startsWith(parentCode + '.'))
+    const maxN = children.length === 0 ? 0 : Math.max(...children.map(c => parseInt(c.code.split('.').pop() ?? '0') || 0))
+    return `${parentCode}.${maxN + 1}`
+  }
+
+  async function saveAccount() {
+    if (!form.code.trim() || !form.name.trim()) return
+    setSaving(true)
+    const { error } = await createClient().from('chart_of_accounts').insert({
+      code: form.code.trim(), name: form.name.trim(), type: form.type,
+      level: form.code.trim().split('.').length,
+      description: form.description || null, currency: form.currency || 'AED',
+    })
+    setSaving(false)
+    if (error) { addToast(error.message, 'error'); return }
+    addToast('Cuenta creada', 'success')
+    setShowAdd(false); setForm({ ...EMPTY_COA }); fetchAccounts()
+  }
+
+  // filtering
+  const q        = search.toLowerCase()
+  const filtered = accounts.filter(a => {
+    const typeOk   = typeFil === 'All' || (typeFil === 'Costo' ? a.type?.startsWith('Costo') : a.type === typeFil)
+    const searchOk = !q || a.name?.toLowerCase().includes(q) || a.code?.includes(q)
+    return typeOk && searchOk
+  })
+  const isFiltering  = q.length > 0 || typeFil !== 'All'
+  const activeGroups = new Set(filtered.map((a: any) => a.code.split('.')[0]))
+
+  function l1(g: string)         { return accounts.find(a => a.code === g) }
+  function l2s(g: string)        { return filtered.filter(a => { const p = a.code.split('.'); return p.length === 2 && p[0] === g }) }
+  function l3s(l2code: string)   { return filtered.filter(a => { const p = a.code.split('.'); return p.length === 3 && p.slice(0,-1).join('.') === l2code }) }
+
+  return (
+    <div>
+      {/* header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:18 }}>
+        <div>
+          <div style={{ fontSize:20, fontWeight:700, color:'#f0ede8' }}>Plan de Cuentas</div>
+          <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>Estándar Internacional IFRS/NIIF</div>
+        </div>
+        <button onClick={() => { setForm({ ...EMPTY_COA }); setShowAdd(true) }}
+          style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+          + Agregar Cuenta
+        </button>
+      </div>
+
+      {/* search + type filter */}
+      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap', alignItems:'center' }}>
+        <FInput placeholder="Buscar cuenta por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth:320, flex:'0 0 auto' }}/>
+        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+          {FILTER_TYPES.map(f => (
+            <button key={f} onClick={() => setTypeFil(f)}
+              style={{ padding:'5px 12px', borderRadius:99, fontSize:11, fontWeight: typeFil===f?700:500,
+                fontFamily:'Outfit,sans-serif', cursor:'pointer', transition:'all 0.15s',
+                background: typeFil===f?'#c9a84c':'#1a1a1e', color: typeFil===f?'#0d0d0f':'#888580',
+                border: typeFil===f?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* accordion */}
+      {loading ? (
+        <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando plan de cuentas…</div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
+          {COA_GROUPS.filter(g => !isFiltering || activeGroups.has(g)).map(g => {
+            const cfg    = GROUP_CFG[g]
+            const grp    = l1(g)
+            const isOpen = isFiltering ? true : (expanded[g] ?? false)
+            const subs   = l2s(g)
+            const total  = filtered.filter(a => a.code !== g && (a.code.startsWith(g+'.') || a.code === g)).length
+
+            return (
+              <div key={g}>
+                {/* ── group header ── */}
+                <div onClick={() => !isFiltering && toggle(g)}
+                  style={{ display:'flex', alignItems:'center', gap:10, background:'#1a1a1e',
+                    borderLeft:`4px solid ${cfg.color}`, borderRadius: isOpen ? '8px 8px 0 0' : 8,
+                    padding:'12px 16px', cursor: isFiltering ? 'default' : 'pointer', userSelect:'none' }}>
+                  <span style={{ color:cfg.color, width:20, textAlign:'center', fontSize:13, flexShrink:0 }}>{cfg.icon}</span>
+                  <span style={{ fontFamily:'monospace', color:'#888580', fontSize:12, flexShrink:0 }}>{g}</span>
+                  <span style={{ fontWeight:700, color:'#f0ede8', fontSize:14, flex:1 }}>{grp?.name ?? `Grupo ${g}`}</span>
+                  <span style={{ fontSize:11, color:'#888580', background:'rgba(255,255,255,0.06)', borderRadius:99, padding:'2px 8px', flexShrink:0 }}>
+                    {total} cuentas
+                  </span>
+                  {!isFiltering && (
+                    <span style={{ color:'#888580', fontSize:11, display:'inline-block', transition:'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'none', flexShrink:0 }}>▸</span>
+                  )}
+                </div>
+
+                {/* ── expanded body ── */}
+                {isOpen && subs.length > 0 && (
+                  <div style={{ background:'#141416', borderRadius:'0 0 8px 8px', border:`1px solid ${hexRgba(cfg.color,0.12)}`, borderTop:'none', overflow:'hidden' }}>
+                    {subs.map(l2 => {
+                      const sub3s = l3s(l2.code)
+                      return (
+                        <div key={l2.id}>
+                          {/* level-2 row */}
+                          <div onMouseEnter={() => setHovL2(l2.code)} onMouseLeave={() => setHovL2(null)}
+                            style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px 10px 32px',
+                              borderLeft:`2px solid ${hexRgba(cfg.color,0.3)}`,
+                              borderBottom:'1px solid rgba(255,255,255,0.04)',
+                              background: hovL2===l2.code ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
+                            <span style={{ fontFamily:'monospace', color:'#888580', fontSize:11, flexShrink:0 }}>{l2.code}</span>
+                            <span style={{ color:'#c0bdb8', fontSize:13, fontWeight:500, flex:1 }}>{l2.name}</span>
+                            {hovL2 === l2.code && (
+                              <button onClick={e => { e.stopPropagation(); setForm({ ...EMPTY_COA, code: suggestCode(l2.code), type: grp?.type ?? 'Activo' }); setShowAdd(true) }}
+                                style={{ fontSize:11, color:'#c9a84c', background:'none', border:'none', cursor:'pointer', fontFamily:'Outfit,sans-serif', padding:'2px 8px', whiteSpace:'nowrap', flexShrink:0 }}>
+                                + Subcuenta
+                              </button>
+                            )}
+                          </div>
+
+                          {/* level-3 rows */}
+                          {sub3s.map(l3 => (
+                            <div key={l3.id} onMouseEnter={() => setHovL3(l3.id)} onMouseLeave={() => setHovL3(null)}
+                              style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px 8px 52px',
+                                borderLeft:'1px solid rgba(255,255,255,0.04)',
+                                borderBottom:'1px solid rgba(255,255,255,0.03)',
+                                background: hovL3===l3.id ? 'rgba(255,255,255,0.015)' : 'transparent',
+                                transition:'background 0.1s' }}>
+                              <span style={{ fontFamily:'monospace', color:'#3a3836', fontSize:11, flexShrink:0 }}>{l3.code}</span>
+                              <span style={{ color:'#888580', fontSize:12, flex:1 }}>{l3.name}</span>
+                              <span style={{ fontSize:12, color:cfg.color, fontVariantNumeric:'tabular-nums', flexShrink:0 }}>AED 0</span>
+                              {hovL3 === l3.id && (
+                                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
+                                  <IconBtn onClick={() => {}}><Pencil size={9}/></IconBtn>
+                                  <IconBtn danger onClick={() => {}}><X size={9}/></IconBtn>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Add Account modal */}
+      {showAdd && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_COA }) }}>
+          <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:28, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto' }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
+              <span style={{ fontSize:16, fontWeight:700, color:'#f0ede8' }}>Nueva Cuenta Contable</span>
+              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_COA }) }} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ display:'grid', gridTemplateColumns:'120px 1fr', gap:12 }}>
+                <div>
+                  <FLabel>Código *</FLabel>
+                  <FInput placeholder="1.1.5" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} style={{ fontFamily:'monospace' }}/>
+                </div>
+                <div>
+                  <FLabel>Nombre de la Cuenta *</FLabel>
+                  <FInput placeholder="Ej: Cuentas por Cobrar Clientes" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}/>
+                </div>
+              </div>
+              <div>
+                <FLabel>Tipo *</FLabel>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {COA_ALL_TYPES.map(t => (
+                    <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
+                      style={{ padding:'6px 12px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif',
+                        background: form.type===t?'#c9a84c':'#1a1a1e', color: form.type===t?'#0d0d0f':'#888580',
+                        border: form.type===t?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <FLabel>Cuenta Padre</FLabel>
+                <select value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+                  style={{ ...INP, border:'1px solid rgba(255,255,255,0.08)', cursor:'pointer' }}>
+                  <option value="">Sin cuenta padre (nivel raíz)</option>
+                  {accounts.filter(a => a.level <= 2).map(a => (
+                    <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <FLabel>Descripción</FLabel>
+                <FTextarea placeholder="Descripción opcional de la cuenta…" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}/>
+              </div>
+              <div>
+                <FLabel>Moneda</FLabel>
+                <FInput placeholder="AED" value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} style={{ maxWidth:120 }}/>
+              </div>
+            </div>
+            <button onClick={saveAccount} disabled={saving || !form.code.trim() || !form.name.trim()}
+              style={{ width:'100%', padding:14, borderRadius:10, border:'none', marginTop:22, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer',
+                opacity: form.code.trim() && form.name.trim() ? 1 : 0.5 }}>
+              {saving ? 'Creando…' : 'Crear Cuenta'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* toasts */}
+      <div style={{ position:'fixed', bottom:24, right:24, zIndex:900, display:'flex', flexDirection:'column', gap:8 }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{ padding:'12px 18px', borderRadius:10, fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', color:'#fff',
+            background: t.type==='success'?'rgba(34,197,94,0.95)':t.type==='warn'?'rgba(251,191,36,0.95)':'rgba(255,79,79,0.95)',
+            boxShadow:'0 4px 20px rgba(0,0,0,0.4)', backdropFilter:'blur(8px)' }}>
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── placeholder ───────────────────────────────────────────────────────────────
 function ComingSoon({ label }: { label: string }) {
   return (
@@ -615,7 +890,7 @@ export default function FinancePage() {
       {/* content */}
       {activeTab === 'Costs & Expenses'  && <CostsTab />}
       {activeTab === 'Banks'             && <BanksTab />}
-      {activeTab === 'Chart of Accounts' && <ComingSoon label="Chart of Accounts" />}
+      {activeTab === 'Chart of Accounts' && <ChartOfAccountsTab />}
       {activeTab === 'VAT Calculator'    && <ComingSoon label="VAT Calculator" />}
       {activeTab === 'VIP Loyalty'       && <ComingSoon label="VIP Loyalty" />}
     </div>
