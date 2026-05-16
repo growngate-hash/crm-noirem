@@ -92,7 +92,10 @@ function CostsTab() {
     variableCosts: { amount: 0, pct: 0 },
     operational: { amount: 0, pct: 0 },
   })
-  const [cuentasContables, setCuentasContables] = useState<any[]>([])
+  const [cuentasContables,  setCuentasContables]  = useState<any[]>([])
+  const [dropdownAbierto,   setDropdownAbierto]   = useState(false)
+  const [cuentaSeleccionada, setCuentaSeleccionada] = useState<any>(null)
+  const [busqueda,           setBusqueda]           = useState('')
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -183,7 +186,9 @@ function CostsTab() {
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
     addToast('Gasto guardado', 'success')
-    setShowAdd(false); setForm({ ...EMPTY_EXP }); fetchExpenses(); fetchFinanceKPIs()
+    setShowAdd(false); setForm({ ...EMPTY_EXP })
+    setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false)
+    fetchExpenses(); fetchFinanceKPIs()
   }
 
   function getCuentasFiltradas(categoria: string): any[] {
@@ -335,59 +340,144 @@ function CostsTab() {
       {/* Add Expense modal */}
       {showAdd && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }) }}>
+          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}>
           <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Add Expense</span>
-              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
+              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div><FLabel>Description *</FLabel><FInput placeholder="e.g. Office Rent — June" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <FLabel>Category</FLabel>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    {['Fixed', 'Variable', 'Operational'].map(c => (
-                      <button key={c} type="button" onClick={() => setForm({ ...form, category: c })}
-                        style={{ padding: '6px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', flex: 1,
-                          background: form.category === c ? '#c9a84c' : '#1a1a1e',
-                          color:      form.category === c ? '#0d0d0f' : '#888580',
-                          border:     form.category === c ? '1px solid #c9a84c' : '1px solid rgba(255,255,255,0.1)' }}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
+
+              {/* Category */}
+              <div>
+                <FLabel>Category</FLabel>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {['Fixed', 'Variable', 'Operational'].map(c => (
+                    <button key={c} type="button"
+                      onClick={() => {
+                        setForm({ ...form, category: c, subcat: '' })
+                        setCuentaSeleccionada(null)
+                        setDropdownAbierto(false)
+                        setBusqueda('')
+                      }}
+                      style={{ padding: '6px 10px', borderRadius: 99, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', flex: 1,
+                        background: form.category === c ? '#c9a84c' : '#1a1a1e',
+                        color:      form.category === c ? '#0d0d0f' : '#888580',
+                        border:     form.category === c ? '1px solid #c9a84c' : '1px solid rgba(255,255,255,0.1)' }}>
+                      {c}
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <FLabel>Sub-Categoría</FLabel>
-                  <select
-                    value={form.subcat}
-                    onChange={e => setForm({ ...form, subcat: e.target.value })}
-                    style={{
-                      ...INP,
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      cursor: 'pointer',
-                      color: form.subcat ? '#f0ede8' : '#3a3836',
-                    }}
-                  >
-                    <option value="" disabled>Seleccionar cuenta…</option>
-                    {(['Gasto', 'Costo de Ventas', 'Costo Produccion'] as const).map(tipo => {
-                      const cuentasTipo = getCuentasFiltradas(form.category).filter(c => c.type === tipo)
-                      if (cuentasTipo.length === 0) return null
-                      const label = tipo === 'Costo de Ventas' ? '— Costos de Ventas'
-                        : tipo === 'Costo Produccion' ? '— Costos de Producción'
-                        : '— Gastos'
-                      return (
-                        <optgroup key={tipo} label={label}>
-                          {cuentasTipo.map((cuenta: any) => (
-                            <option key={cuenta.id} value={cuenta.id}>
-                              {cuenta.level === 3 ? '  ' : ''}{cuenta.code} — {cuenta.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      )
-                    })}
-                  </select>
+              </div>
+
+              {/* Sub-Categoría — custom dropdown */}
+              <div>
+                <FLabel>Sub-Categoría</FLabel>
+                <div style={{ position: 'relative' }}>
+                  {/* Trigger */}
+                  <div onClick={() => setDropdownAbierto(p => !p)}
+                    style={{ background: '#1a1a1e', borderRadius: 8, padding: '10px 12px', cursor: 'pointer',
+                      border: `1px solid ${dropdownAbierto ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 13,
+                      color: cuentaSeleccionada ? '#f0ede8' : '#3a3836' }}>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+                      {cuentaSeleccionada
+                        ? <><span style={{ fontFamily: 'monospace', color: '#c9a84c', marginRight: 6 }}>{cuentaSeleccionada.code}</span>{cuentaSeleccionada.name}</>
+                        : 'Seleccionar cuenta…'}
+                    </span>
+                    <span style={{ color: '#888580', fontSize: 10, flexShrink: 0, marginLeft: 8,
+                      display: 'inline-block', transition: 'transform 0.2s',
+                      transform: dropdownAbierto ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                  </div>
+
+                  {/* Dropdown panel */}
+                  {dropdownAbierto && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 100,
+                      background: '#1a1a1e', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 10,
+                      maxHeight: 280, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+
+                      {/* Search */}
+                      <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                        <input autoFocus type="text" value={busqueda}
+                          onChange={e => setBusqueda(e.target.value)}
+                          placeholder="🔍 Buscar cuenta…"
+                          style={{ width: '100%', boxSizing: 'border-box', background: '#141416',
+                            border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
+                            padding: '7px 10px', fontSize: 12, color: '#f0ede8',
+                            outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
+                      </div>
+
+                      {/* List */}
+                      <div style={{ overflowY: 'auto', maxHeight: 220 }}>
+                        {(() => {
+                          const todas = getCuentasFiltradas(form.category)
+                            .filter(c =>
+                              c.name.toLowerCase().includes(busqueda.toLowerCase()) ||
+                              c.code.includes(busqueda)
+                            )
+                          if (todas.length === 0) return (
+                            <div style={{ padding: 20, textAlign: 'center', color: '#3a3836', fontSize: 12 }}>
+                              No se encontraron cuentas
+                            </div>
+                          )
+                          return (['Gasto', 'Costo de Ventas', 'Costo Produccion'] as const).map(tipo => {
+                            const grupo = todas.filter(c => c.type === tipo)
+                            if (grupo.length === 0) return null
+                            const grupoLabel = tipo === 'Costo de Ventas' ? '💰 Costos de Ventas'
+                              : tipo === 'Costo Produccion' ? '⚙️ Costos de Producción'
+                              : '📋 Gastos'
+                            return (
+                              <div key={tipo}>
+                                <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700,
+                                  color: '#888580', textTransform: 'uppercase', letterSpacing: '0.1em',
+                                  background: '#141416', position: 'sticky', top: 0 }}>
+                                  {grupoLabel}
+                                </div>
+                                {grupo.map((cuenta: any) => {
+                                  const selected = cuentaSeleccionada?.id === cuenta.id
+                                  return (
+                                    <div key={cuenta.id}
+                                      onClick={() => {
+                                        setCuentaSeleccionada(cuenta)
+                                        setForm(f => ({ ...f, subcat: cuenta.id }))
+                                        setDropdownAbierto(false)
+                                        setBusqueda('')
+                                      }}
+                                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)' }}
+                                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = selected ? 'rgba(201,168,76,0.1)' : 'transparent' }}
+                                      style={{ padding: cuenta.level === 2 ? '9px 14px' : '7px 14px 7px 28px',
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
+                                        borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                        background: selected ? 'rgba(201,168,76,0.1)' : 'transparent',
+                                        transition: 'background 0.15s' }}>
+                                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c9a84c', minWidth: 44, flexShrink: 0 }}>
+                                        {cuenta.code}
+                                      </span>
+                                      <span style={{ color: '#3a3836', fontSize: 10 }}>—</span>
+                                      <span style={{ fontSize: cuenta.level === 2 ? 13 : 12,
+                                        fontWeight: cuenta.level === 2 ? 600 : 400,
+                                        color: cuenta.level === 2 ? '#f0ede8' : '#c0bdb8', flex: 1 }}>
+                                        {cuenta.name}
+                                      </span>
+                                      {selected && <span style={{ color: '#c9a84c', fontSize: 12, flexShrink: 0 }}>✓</span>}
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            )
+                          })
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Click-outside backdrop */}
+                  {dropdownAbierto && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+                      onClick={() => { setDropdownAbierto(false); setBusqueda('') }} />
+                  )}
                 </div>
               </div>
               <div><FLabel>Amount (AED) *</FLabel><FInput type="number" min={0} placeholder="0" value={form.amount as any} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
