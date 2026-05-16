@@ -14,7 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) router.replace('/auth')
+      if (!user) router.replace('/login')
       else setReady(true)
     })
   }, [router])
