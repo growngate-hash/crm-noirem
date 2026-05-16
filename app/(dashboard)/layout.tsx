@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
 import { LanguageProvider } from '@/contexts/LanguageContext'
+import { CompanyProvider } from '@/contexts/CompanyContext'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -30,14 +31,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <LanguageProvider>
-      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-        <Sidebar />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <TopBar />
-          <div className="scroll" style={{ flex: 1 }}>{children}</div>
+    <CompanyProvider>
+      <LanguageProvider>
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
+          <Sidebar />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <TopBar />
+            <div className="scroll" style={{ flex: 1 }}>{children}</div>
+          </div>
         </div>
-      </div>
-    </LanguageProvider>
+      </LanguageProvider>
+    </CompanyProvider>
   )
 }

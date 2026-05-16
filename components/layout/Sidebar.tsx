@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
+import { useCompany } from '@/contexts/CompanyContext'
 
 const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
   { labelKey: 'dashboard',         href: '/',          icon: LayoutDashboard },
@@ -19,6 +20,7 @@ const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
 export default function Sidebar() {
   const pathname = usePathname()
   const { t } = useLanguage()
+  const { logoUrl } = useCompany()
 
   return (
     <div style={{
@@ -33,7 +35,12 @@ export default function Sidebar() {
           width: 32, height: 32, background: 'var(--gold)', borderRadius: 6,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontWeight: 900, color: '#000', fontSize: 16, flexShrink: 0,
-        }}>N</div>
+          overflow: 'hidden',
+        }}>
+          {logoUrl
+            ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+            : 'N'}
+        </div>
         <div>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>NOIREM</div>
           <div style={{ fontSize: 8, color: 'var(--text2)', letterSpacing: '0.05em', marginTop: 1 }}>DUBAI · LUXURY DETAILING</div>

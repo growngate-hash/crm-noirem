@@ -1,11 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { useCompany } from '@/contexts/CompanyContext'
 import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
   User, Users, Plug, CreditCard, BarChart2,
-  Save, Plus, Trash2, Check, X,
+  Save, Plus, Trash2, Check, X, Upload, Trash,
 } from 'lucide-react'
 
 type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing'
@@ -315,13 +316,163 @@ const INTEGRATIONS = [
 
 // ─── Profile section ──────────────────────────────────────────────────────────
 function ProfileSection() {
+  const { logoUrl, setLogoUrl } = useCompany()
   const [form, setForm] = useState({ businessName:'Noirem Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [toast, setToast] = useState<{ msg: string; type: 'success'|'error' } | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  function showToast(msg: string, type: 'success'|'error') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   function save() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+
+  function processFile(file: File) {
+    if (file.size > 2 * 1024 * 1024) { showToast('El archivo es muy grande. Máximo 2MB', 'error'); return }
+    const validTypes = ['image/png', 'image/svg+xml', 'image/jpeg']
+    if (!validTypes.includes(file.type)) { showToast('Formato no válido. Usa PNG, SVG o JPG', 'error'); return }
+    const reader = new FileReader()
+    reader.onload = e => setLogoPreview(e.target?.result as string)
+    reader.readAsDataURL(file)
+    setPendingFile(file)
+  }
+
+  function handleFileInput(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) processFile(file)
+    e.target.value = ''
+  }
+
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setIsDragging(true) }
+  function handleDragLeave() { setIsDragging(false) }
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault(); setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) processFile(file)
+  }
+
+  async function uploadLogo() {
+    if (!pendingFile) return
+    setUploading(true)
+    try {
+      const supabase = createClient()
+      const ext = pendingFile.name.split('.').pop()
+      const fileName = `company-logo-${Date.now()}.${ext}`
+      const { error } = await supabase.storage
+        .from('company-assets')
+        .upload(fileName, pendingFile, { cacheControl: '3600', upsert: true })
+      if (error) throw error
+      const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(fileName)
+      const url = urlData.publicUrl
+      await supabase.from('company_settings').upsert(
+        { key: 'logo_url', value: url, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      )
+      setLogoUrl(url)
+      setLogoPreview(null)
+      setPendingFile(null)
+      showToast('Logo actualizado correctamente ✓', 'success')
+    } catch {
+      showToast('Error al subir el logo. Intenta de nuevo', 'error')
+    }
+    setUploading(false)
+  }
+
+  function cancelPreview() { setLogoPreview(null); setPendingFile(null) }
+
+  async function removeLogo() {
+    if (!window.confirm('¿Eliminar el logo actual?')) return
+    const supabase = createClient()
+    await supabase.from('company_settings').upsert(
+      { key: 'logo_url', value: null, updated_at: new Date().toISOString() },
+      { onConflict: 'key' }
+    )
+    setLogoUrl(null)
+    showToast('Logo eliminado', 'success')
+  }
+
+  const displayLogo = logoPreview ?? logoUrl
+  const hasPending = !!pendingFile
+
   return (
     <div style={{ maxWidth: 540 }}>
       <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Business Profile</div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>General settings for your CRM</div>
+
+      {/* ── Logo upload ── */}
+      <div style={{ marginBottom: 28, padding: 20, background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 16 }}>Logo de la empresa</div>
+
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          {/* Logo square */}
+          <div style={{ width: 72, height: 72, borderRadius: 14, border: '2px solid rgba(201,168,76,0.3)',
+            background: displayLogo ? 'transparent' : '#c9a84c',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            overflow: 'hidden', flexShrink: 0 }}>
+            {displayLogo
+              ? <img src={displayLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+              : <span style={{ fontSize: 28, fontWeight: 900, color: '#0d0d0f' }}>N</span>}
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {hasPending ? (
+              <>
+                <button onClick={uploadLogo} disabled={uploading}
+                  style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
+                    fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: uploading ? 'default' : 'pointer',
+                    opacity: uploading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={12}/>{uploading ? 'Subiendo…' : 'Guardar logo'}
+                </button>
+                <button onClick={cancelPreview}
+                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+                    color: '#888580', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={() => fileRef.current?.click()}
+                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(201,168,76,0.25)', background: '#141416',
+                    color: '#c9a84c', fontSize: 12, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Upload size={12}/> Subir logo
+                </button>
+                {logoUrl && (
+                  <button onClick={removeLogo}
+                    style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: 'transparent',
+                      color: '#ff4f4f', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Trash size={12}/> Eliminar logo
+                  </button>
+                )}
+              </>
+            )}
+            <input ref={fileRef} type="file" accept="image/png,image/svg+xml,image/jpeg" style={{ display: 'none' }} onChange={handleFileInput}/>
+            <div style={{ fontSize: 11, color: '#3a3836', marginTop: 2 }}>Formatos: PNG, SVG, JPG · Máximo 2MB · 256×256px recomendado</div>
+          </div>
+        </div>
+
+        {/* Drag & drop zone */}
+        <div
+          onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
+          onClick={() => fileRef.current?.click()}
+          style={{ marginTop: 16, padding: 20, borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
+            border: `2px dashed ${isDragging ? 'rgba(201,168,76,0.6)' : 'rgba(201,168,76,0.25)'}`,
+            background: isDragging ? 'rgba(201,168,76,0.05)' : '#141416' }}>
+          <div style={{ fontSize: 20, marginBottom: 6 }}>📁</div>
+          <div style={{ fontSize: 13, color: '#888580' }}>Arrastra tu logo aquí</div>
+          <div style={{ fontSize: 11, color: '#3a3836', marginTop: 4 }}>o haz clic para seleccionar</div>
+        </div>
+      </div>
+
+      {/* ── Form fields ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <label className="label">Business Name</label>
@@ -365,6 +516,16 @@ function ProfileSection() {
           {saved ? <><Check size={13}/> Saved!</> : <><Save size={13}/> Save Changes</>}
         </button>
       </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900, padding: '12px 18px', borderRadius: 10,
+          fontSize: 13, fontWeight: 600, fontFamily: 'Outfit,sans-serif', color: '#fff',
+          background: toast.type === 'success' ? 'rgba(34,197,94,0.95)' : 'rgba(255,79,79,0.95)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
+          {toast.msg}
+        </div>
+      )}
     </div>
   )
 }
