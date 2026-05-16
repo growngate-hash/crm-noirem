@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
-import { generateInvoiceFromBooking } from '@/utils/generateInvoice'
 import {
   toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
   dubaiToUTC, getDubaiToday, dubaiDayRange,
@@ -373,25 +372,86 @@ export default function BookingsPage() {
 
   async function updateStatus(id:string,status:string){
     console.log('✅ updateStatus llamado — id:', id, 'status:', status)
-    const{error}=await createClient().from('bookings')
-      .update({ status, ...(status==='completed' ? { completed_at: new Date().toISOString() } : {}) })
-      .eq('id',id)
-    console.log('📋 Status actualizado, error:', error)
-    if(error){addToast(error.message,'error');return}
 
-    if (status === 'completed') {
-      console.log('🧾 Llamando generateInvoiceFromBooking para id:', id)
-      const invoice = await generateInvoiceFromBooking(id)
-      console.log('🧾 Resultado generateInvoice:', invoice)
-      if (invoice) {
-        addToast(`✓ ${t('bookingCompleted')} · Factura ${invoice.invoice_no} generada`, 'success')
+    if (!id) { console.error('❌ No hay booking id'); return }
+
+    const sb = createClient()
+
+    // PASO 1: Actualizar status
+    const { error: updateError } = await sb.from('bookings')
+      .update({ status, ...(status==='completed' ? { completed_at: new Date().toISOString() } : {}) })
+      .eq('id', id)
+    console.log('📋 Status actualizado, error:', updateError)
+    if (updateError) { addToast(updateError.message, 'error'); return }
+
+    if (status !== 'completed') {
+      addToast(t('bookingCancelled'), 'warn')
+      setDetailBooking(null)
+      fetchBookings(selectedDay)
+      return
+    }
+
+    try {
+      // PASO 2: Obtener datos del booking
+      const { data: booking, error: bookingError } = await sb.from('bookings')
+        .select('*, contacts(name), services(name)')
+        .eq('id', id)
+        .single()
+      console.log('📋 Booking data:', booking)
+      console.log('❌ Booking error:', bookingError)
+      if (bookingError || !booking) { console.error('❌ No se pudo obtener booking:', bookingError); return }
+
+      // PASO 3: Número de factura
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const { count } = await sb.from('invoices')
+        .select('id', { count: 'exact' })
+        .gte('created_at', `${year}-${month}-01`)
+      const invoiceNo = `INV-${year}${month}-${String((count || 0) + 1).padStart(3, '0')}`
+      console.log('🔢 Invoice No:', invoiceNo)
+
+      // PASO 4: Montos
+      const subtotal = Number(booking.price) || 0
+      const discount = Number(booking.discount) || 0
+      const tax      = Number(((subtotal - discount) * 0.05).toFixed(2))
+      const total    = Number((subtotal - discount + tax).toFixed(2))
+      console.log('💰 Montos:', { subtotal, discount, tax, total })
+
+      // PASO 5: Insertar factura
+      const invoiceData = {
+        booking_id: id,
+        contact_id: booking.contact_id,
+        invoice_no: invoiceNo,
+        subtotal, discount, tax, total,
+        status: 'draft',
+        issued_at: now.toISOString(),
+        due_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      }
+      console.log('📝 Datos a insertar:', invoiceData)
+      const { data: invoice, error: invoiceError } = await sb.from('invoices')
+        .insert(invoiceData).select().single()
+      console.log('✅ Invoice creado:', invoice)
+      console.log('❌ Invoice error:', invoiceError)
+
+      if (invoiceError) {
+        console.error('❌ Error creando factura:', invoiceError)
+        addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
+      } else if (invoice) {
+        // PASO 6: Notificación
+        await sb.from('notifications').insert({
+          type: 'payment',
+          title: 'Factura generada automáticamente',
+          message: `${invoiceNo} · ${booking.contacts?.name ?? '—'} · AED ${total}`,
+          read: false,
+        })
+        addToast(`✓ ${t('bookingCompleted')} · Factura ${invoiceNo} generada`, 'success')
         setCompletedInvoice(invoice)
         setShowInvoiceModal(true)
-      } else {
-        addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
       }
-    } else {
-      addToast(t('bookingCancelled'), 'warn')
+    } catch (err) {
+      console.error('❌ Error general en generación de factura:', err)
+      addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
     }
 
     setDetailBooking(null)
