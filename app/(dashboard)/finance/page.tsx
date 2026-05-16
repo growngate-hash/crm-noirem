@@ -79,13 +79,20 @@ const EXP_FILTERS = ['All', 'Fixed', 'Variable', 'Operational']
 const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false }
 
 function CostsTab() {
-  const [expenses,  setExpenses]  = useState<any[]>([])
-  const [loading,   setLoading]   = useState(true)
-  const [expFilter, setExpFilter] = useState('All')
-  const [showAdd,   setShowAdd]   = useState(false)
-  const [form,      setForm]      = useState({ ...EMPTY_EXP })
-  const [saving,    setSaving]    = useState(false)
-  const [toasts,    setToasts]    = useState<Toast[]>([])
+  const [expenses,         setExpenses]         = useState<any[]>([])
+  const [loading,          setLoading]          = useState(true)
+  const [expFilter,        setExpFilter]        = useState('All')
+  const [showAdd,          setShowAdd]          = useState(false)
+  const [form,             setForm]             = useState({ ...EMPTY_EXP })
+  const [saving,           setSaving]           = useState(false)
+  const [toasts,           setToasts]           = useState<Toast[]>([])
+  const [financeKPIs,      setFinanceKPIs]      = useState({
+    totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: '0.0',
+    fixedCosts: { amount: 0, pct: 0 },
+    variableCosts: { amount: 0, pct: 0 },
+    operational: { amount: 0, pct: 0 },
+  })
+  const [cuentasContables, setCuentasContables] = useState<any[]>([])
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -100,48 +107,108 @@ function CostsTab() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchExpenses() }, [])
+  async function fetchFinanceKPIs() {
+    const supabase = createClient()
+    const ahora = new Date()
+    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
+    const inicioMesUTC = new Date(inicioMes.getTime() - 4 * 3600000).toISOString()
+    const finMesUTC = new Date(finMes.getTime() - 4 * 3600000).toISOString()
+    const inicioMesStr = inicioMes.toISOString().split('T')[0]
+    const finMesStr = finMes.toISOString().split('T')[0]
+
+    const [{ data: bookings }, { data: gastos }] = await Promise.all([
+      supabase
+        .from('bookings')
+        .select('price, discount')
+        .eq('status', 'completed')
+        .gte('scheduled_at', inicioMesUTC)
+        .lte('scheduled_at', finMesUTC),
+      supabase
+        .from('expenses')
+        .select('amount, category')
+        .gte('date', inicioMesStr)
+        .lte('date', finMesStr),
+    ])
+
+    const totalRevenue = (bookings ?? []).reduce(
+      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
+    )
+    const totalExpenses = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
+    const netProfit = totalRevenue - totalExpenses
+    const profitMargin = totalRevenue > 0
+      ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0'
+
+    const fixed = (gastos ?? []).filter(e => e.category === 'Fixed').reduce((s, e) => s + (e.amount ?? 0), 0)
+    const variable = (gastos ?? []).filter(e => e.category === 'Variable').reduce((s, e) => s + (e.amount ?? 0), 0)
+    const operational = (gastos ?? []).filter(e => e.category === 'Operational').reduce((s, e) => s + (e.amount ?? 0), 0)
+    const expTotal = totalExpenses || 1
+
+    setFinanceKPIs({
+      totalRevenue, totalExpenses, netProfit, profitMargin,
+      fixedCosts: { amount: fixed, pct: Math.round(fixed / expTotal * 100) },
+      variableCosts: { amount: variable, pct: Math.round(variable / expTotal * 100) },
+      operational: { amount: operational, pct: Math.round(operational / expTotal * 100) },
+    })
+  }
+
+  async function fetchCuentasContables() {
+    const { data } = await createClient()
+      .from('chart_of_accounts')
+      .select('id, code, name, type, level')
+      .order('code', { ascending: true })
+    setCuentasContables(data ?? [])
+  }
+
+  useEffect(() => {
+    fetchExpenses()
+    fetchFinanceKPIs()
+    fetchCuentasContables()
+  }, [])
 
   async function saveExpense() {
     if (!form.description.trim() || !form.amount) return
     setSaving(true)
-    const { error } = await createClient().from('expenses').insert({
-      description: form.description, category: form.category,
-      subcat: form.subcat, amount: Number(form.amount),
-      recurring: form.recurring, date: new Date().toISOString().split('T')[0],
-    })
+    const selectedAccount = cuentasContables.find(c => c.id === form.subcat)
+    const payload: any = {
+      description: form.description,
+      category: form.category,
+      subcat: selectedAccount?.name ?? (form.subcat || null),
+      amount: Number(form.amount),
+      recurring: form.recurring,
+      date: new Date().toISOString().split('T')[0],
+    }
+    if (selectedAccount) payload.account_id = form.subcat
+    const { error } = await createClient().from('expenses').insert(payload)
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
     addToast('Gasto guardado', 'success')
-    setShowAdd(false); setForm({ ...EMPTY_EXP }); fetchExpenses()
+    setShowAdd(false); setForm({ ...EMPTY_EXP }); fetchExpenses(); fetchFinanceKPIs()
+  }
+
+  function getCuentasFiltradas(categoria: string): any[] {
+    const typeMap: Record<string, string[]> = {
+      'Fixed': ['Gasto', 'Costo de Ventas'],
+      'Variable': ['Gasto', 'Costo de Ventas', 'Costo Produccion'],
+      'Operational': ['Gasto', 'Costo Produccion'],
+    }
+    const tipos = typeMap[categoria] ?? ['Gasto']
+    return cuentasContables.filter(c => tipos.includes(c.type) && c.level >= 2)
   }
 
   const displayed = expFilter === 'All' ? expenses : expenses.filter(e => e.category === expFilter)
   const total = displayed.reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-
-  // KPI totals from all expenses
-  const totalRev  = 847250  // static headline figure
-  const totalExp  = expenses.reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const netProfit = totalRev - totalExp
-  const margin    = totalRev > 0 ? ((netProfit / totalRev) * 100).toFixed(1) : '0.0'
-
-  const fixed = expenses.filter((e: any) => e.category === 'Fixed').reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const variable = expenses.filter((e: any) => e.category === 'Variable').reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const operational = expenses.filter((e: any) => e.category === 'Operational').reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const expTotal = fixed + variable + operational || 1
-  const fixedPct = Math.round((fixed / expTotal) * 100)
-  const varPct   = Math.round((variable / expTotal) * 100)
-  const opPct    = Math.round((operational / expTotal) * 100)
+  const { totalRevenue, totalExpenses, netProfit, profitMargin, fixedCosts, variableCosts, operational } = financeKPIs
 
   return (
     <>
       {/* KPI row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 10 }}>
         {[
-          { dot: '#00d4aa', label: 'Total Revenue MTD',  value: aed(totalRev),  color: '#00d4aa' },
-          { dot: '#ff4f4f', label: 'Total Expenses MTD', value: aed(totalExp),  color: '#ff4f4f' },
-          { dot: '#c9a84c', label: 'Net Profit MTD',     value: aed(netProfit), color: '#c9a84c' },
-          { dot: '#00d4aa', label: 'Profit Margin',      value: `${margin}%`,   color: '#00d4aa' },
+          { dot: '#00d4aa', label: 'Total Revenue MTD',  value: aed(totalRevenue),   color: '#00d4aa' },
+          { dot: '#ff4f4f', label: 'Total Expenses MTD', value: aed(totalExpenses),  color: '#ff4f4f' },
+          { dot: '#c9a84c', label: 'Net Profit MTD',     value: aed(netProfit),      color: '#c9a84c' },
+          { dot: '#00d4aa', label: 'Profit Margin',      value: `${profitMargin}%`,  color: '#00d4aa' },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -156,9 +223,9 @@ function CostsTab() {
       {/* KPI row 2 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 22 }}>
         {[
-          { icon: <BarChart2 size={14} color="#4fa3ff" />, iconBg: 'rgba(79,163,255,0.15)',   label: 'Fixed Costs',    sub: `${fixedPct}% of expenses`, value: aed(fixed),       bar: '#4fa3ff', pct: fixedPct },
-          { icon: <Droplets  size={14} color="#c9a84c" />, iconBg: 'rgba(201,168,76,0.15)',  label: 'Variable Costs', sub: `${varPct}% of expenses`,   value: aed(variable),    bar: '#c9a84c', pct: varPct   },
-          { icon: <Settings  size={14} color="#888580" />, iconBg: 'rgba(136,133,128,0.12)', label: 'Operational',    sub: `${opPct}% of expenses`,    value: aed(operational), bar: '#888580', pct: opPct    },
+          { icon: <BarChart2 size={14} color="#4fa3ff" />, iconBg: 'rgba(79,163,255,0.15)',   label: 'Fixed Costs',    sub: `${fixedCosts.pct}% of expenses`,    value: aed(fixedCosts.amount),    bar: '#4fa3ff', pct: fixedCosts.pct    },
+          { icon: <Droplets  size={14} color="#c9a84c" />, iconBg: 'rgba(201,168,76,0.15)',  label: 'Variable Costs', sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#c9a84c', pct: variableCosts.pct },
+          { icon: <Settings  size={14} color="#888580" />, iconBg: 'rgba(136,133,128,0.12)', label: 'Operational',    sub: `${operational.pct}% of expenses`,    value: aed(operational.amount),   bar: '#888580', pct: operational.pct   },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: '14px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -291,7 +358,37 @@ function CostsTab() {
                     ))}
                   </div>
                 </div>
-                <div><FLabel>Sub-Category</FLabel><FInput placeholder="Payroll, Rent…" value={form.subcat} onChange={e => setForm({ ...form, subcat: e.target.value })} /></div>
+                <div>
+                  <FLabel>Sub-Categoría</FLabel>
+                  <select
+                    value={form.subcat}
+                    onChange={e => setForm({ ...form, subcat: e.target.value })}
+                    style={{
+                      ...INP,
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      cursor: 'pointer',
+                      color: form.subcat ? '#f0ede8' : '#3a3836',
+                    }}
+                  >
+                    <option value="" disabled>Seleccionar cuenta…</option>
+                    {(['Gasto', 'Costo de Ventas', 'Costo Produccion'] as const).map(tipo => {
+                      const cuentasTipo = getCuentasFiltradas(form.category).filter(c => c.type === tipo)
+                      if (cuentasTipo.length === 0) return null
+                      const label = tipo === 'Costo de Ventas' ? '— Costos de Ventas'
+                        : tipo === 'Costo Produccion' ? '— Costos de Producción'
+                        : '— Gastos'
+                      return (
+                        <optgroup key={tipo} label={label}>
+                          {cuentasTipo.map((cuenta: any) => (
+                            <option key={cuenta.id} value={cuenta.id}>
+                              {cuenta.level === 3 ? '  ' : ''}{cuenta.code} — {cuenta.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )
+                    })}
+                  </select>
+                </div>
               </div>
               <div><FLabel>Amount (AED) *</FLabel><FInput type="number" min={0} placeholder="0" value={form.amount as any} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
