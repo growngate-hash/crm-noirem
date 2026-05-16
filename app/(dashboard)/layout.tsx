@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Sidebar from '@/components/layout/Sidebar'
-import TopBar from '@/components/layout/TopBar'
+import TopBar from '@/components/layout/Topbar'
 import { LanguageProvider } from '@/contexts/LanguageContext'
 import { CompanyProvider } from '@/contexts/CompanyContext'
 

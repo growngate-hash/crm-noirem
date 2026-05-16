@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createNotification } from '@/utils/createNotification'
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
 const INP_BASE: React.CSSProperties = {
@@ -376,6 +377,15 @@ export default function ServicesPage() {
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
     addToast(t('itemAdded'), 'success')
+    const stockNum   = invForm.stock_qty ? Number(invForm.stock_qty)  : 0
+    const minStock   = invForm.min_stock  ? Number(invForm.min_stock)  : 0
+    if (stockNum <= minStock) {
+      createNotification({
+        type: 'stock',
+        title: 'Stock bajo detectado',
+        message: `${invForm.name} está por debajo del mínimo recomendado (${stockNum} ${invForm.unit})`,
+      })
+    }
     closeInv(); fetchInventory()
   }
 

@@ -1,9 +1,9 @@
 'use client'
 import { usePathname } from 'next/navigation'
-import { Bell } from 'lucide-react'
 import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
+import NotificationsPanel from '@/components/ui/NotificationsPanel'
 
 const PAGE_KEY: Record<string, string> = {
   '/':         'dashboard',
@@ -23,7 +23,6 @@ export default function TopBar() {
   const { lang, setLang, t } = useLanguage()
   const [currency, setCurrency] = useState('AED')
   const [showCurrency, setShowCurrency] = useState(false)
-  const [hasAlert] = useState(true)
   const currRef = useRef<HTMLDivElement>(null)
 
   const pageKey = Object.entries(PAGE_KEY).find(([key]) =>
@@ -128,17 +127,7 @@ export default function TopBar() {
         </div>
 
         {/* Notification bell */}
-        <div style={{ position: 'relative', cursor: 'pointer' }}>
-          <Bell size={16} color="var(--text2)" />
-          {hasAlert && (
-            <div style={{
-              position: 'absolute', top: -3, right: -3,
-              width: 7, height: 7, borderRadius: '50%',
-              background: 'var(--red)',
-              border: '1px solid var(--bg2)',
-            }} />
-          )}
-        </div>
+        <NotificationsPanel />
 
       </div>
     </div>

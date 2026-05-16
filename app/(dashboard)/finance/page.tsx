@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createNotification } from '@/utils/createNotification'
 
 // ─── shared inputs ─────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -188,6 +189,11 @@ function CostsTab() {
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
     addToast(t('expenseAdded'), 'success')
+    createNotification({
+      type: 'payment',
+      title: 'Gasto registrado',
+      message: `${form.description || form.category}${form.amount ? ` · AED ${form.amount}` : ''}`,
+    })
     setShowAdd(false); setForm({ ...EMPTY_EXP })
     setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false)
     fetchExpenses(); fetchFinanceKPIs()

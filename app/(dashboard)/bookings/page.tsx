@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { createNotification } from '@/utils/createNotification'
 import {
   toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
   dubaiToUTC, getDubaiToday, dubaiDayRange,
@@ -338,6 +339,15 @@ export default function BookingsPage() {
     setSaving(false)
     if(error){addToast(error.message,'error');return}
     addToast(editId ? t('bookingUpdated') : t('bookingCreated'), 'success')
+    if (!editId) {
+      const contact = contacts.find(c => c.id === newForm.contact_id)
+      const service = services.find(s => s.id === newForm.service_id)
+      createNotification({
+        type: 'booking',
+        title: 'Nueva reserva creada',
+        message: `${contact?.name ?? '—'} · ${service?.name ?? '—'}${newForm.price ? ` · AED ${newForm.price}` : ''}`,
+      })
+    }
     setShowNew(false);resetForm()
     await fetchBookings(selectedDay) // reload immediately
   }
@@ -360,6 +370,13 @@ export default function BookingsPage() {
     const{error}=await createClient().from('bookings').update({status}).eq('id',id)
     if(error){addToast(error.message,'error');return}
     addToast(status==='completed' ? t('bookingCompleted') : t('bookingCancelled'), status==='completed'?'success':'warn')
+    if (status === 'completed' && detailBooking) {
+      createNotification({
+        type: 'booking',
+        title: 'Reserva completada',
+        message: `${detailBooking.cliente ?? '—'} · ${detailBooking.servicio ?? '—'}${detailBooking.price ? ` · AED ${detailBooking.price}` : ''}`,
+      })
+    }
     setDetailBooking(null);fetchBookings(selectedDay)
   }
 
