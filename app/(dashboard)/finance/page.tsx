@@ -358,42 +358,32 @@ function CostsTab() {
       </div>
 
       {/* SECCIÓN FACTURAS */}
-      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16, marginTop: 16 }}>
+      <div style={{ background: '#141416', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10, padding: 16, marginTop: 16 }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 15, fontWeight: 700, color: '#f0ede8' }}>
-              {lang === 'es' ? 'Facturas' : 'Invoices'}
+              {lang === 'es' ? 'Facturas Generadas' : 'Generated Invoices'}
             </span>
-            <span style={{ background: 'rgba(255,255,255,0.06)', color: '#888580', fontSize: 11, padding: '2px 8px', borderRadius: 20 }}>
-              {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
+            <span style={{ background: 'rgba(201,168,76,0.12)', color: '#c9a84c', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+              {invoices.length}
             </span>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {(['all','draft','sent','paid','overdue'] as const).map(s => (
-              <button key={s} onClick={() => setInvoiceFilter(s)} style={{
-                padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500, cursor: 'pointer', border: '1px solid', fontFamily: 'Outfit,sans-serif',
-                borderColor: invoiceFilter === s ? 'rgba(201,168,76,0.5)' : 'rgba(255,255,255,0.08)',
-                background:  invoiceFilter === s ? 'rgba(201,168,76,0.12)' : 'transparent',
-                color:       invoiceFilter === s ? '#c9a84c' : '#888580',
-              }}>
-                {s === 'all'     ? (lang === 'es' ? 'Todas'    : 'All')
-               : s === 'draft'   ? (lang === 'es' ? 'Borrador' : 'Draft')
-               : s === 'sent'    ? (lang === 'es' ? 'Enviada'  : 'Sent')
-               : s === 'paid'    ? (lang === 'es' ? 'Pagada'   : 'Paid')
-               :                   (lang === 'es' ? 'Vencida'  : 'Overdue')}
-              </button>
-            ))}
-          </div>
+          <button onClick={fetchInvoices} style={{ padding: '4px 12px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#888580', fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+            {lang === 'es' ? 'Actualizar' : 'Refresh'}
+          </button>
         </div>
 
         {/* Tabla / vacío */}
         {invoices.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 32, color: '#3a3836', fontSize: 13 }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🧾</div>
+          <div style={{ textAlign: 'center', padding: 40, color: '#888580', fontSize: 13 }}>
+            <div style={{ fontSize: 36, marginBottom: 10 }}>🧾</div>
+            <div style={{ fontWeight: 600, marginBottom: 4, color: '#f0ede8' }}>
+              {lang === 'es' ? 'Sin facturas todavía' : 'No invoices yet'}
+            </div>
             {lang === 'es'
-              ? 'No hay facturas aún. Marca una reserva como completada para generar una.'
-              : 'No invoices yet. Mark a booking as complete to generate one.'}
+              ? 'Marca una reserva como completada para generar una factura automáticamente.'
+              : 'Mark a booking as complete to generate an invoice automatically.'}
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
