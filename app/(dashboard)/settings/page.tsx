@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
@@ -9,18 +10,293 @@ import {
 
 type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing'
 
-const NAV: { key: Section; label: string; icon: any }[] = [
-  { key: 'profile', label: 'Profile', icon: User },
-  { key: 'team', label: 'Team & Roles', icon: Users },
-  { key: 'integrations', label: 'Integrations', icon: Plug },
-  { key: 'plans', label: 'Plans', icon: BarChart2 },
-  { key: 'billing', label: 'Billing', icon: CreditCard },
+// ─── permission types ──────────────────────────────────────────────────────────
+type PermOps = { view: boolean; create?: boolean; edit?: boolean; delete?: boolean }
+type Permissions = {
+  dashboard: PermOps
+  contacts:  PermOps
+  services:  PermOps
+  vehicles:  PermOps
+  bookings:  PermOps
+  finance:   PermOps
+  reports:   PermOps
+  settings:  PermOps
+}
+type TeamMember = { id: string; name: string; email: string; role: string }
+
+const MOD_CFG = [
+  { key: 'dashboard', label: 'Dashboard',       icon: '🏠', ops: ['view'] as string[] },
+  { key: 'contacts',  label: 'Contactos',        icon: '👥', ops: ['view','create','edit','delete'] },
+  { key: 'services',  label: 'Servicios e Inv.', icon: '🔧', ops: ['view','create','edit','delete'] },
+  { key: 'vehicles',  label: 'Vehículos',        icon: '🚗', ops: ['view','create','edit','delete'] },
+  { key: 'bookings',  label: 'Reservas',         icon: '📅', ops: ['view','create','edit','delete'] },
+  { key: 'finance',   label: 'Finanzas',         icon: '💰', ops: ['view','create','edit','delete'] },
+  { key: 'reports',   label: 'Reportes',         icon: '📊', ops: ['view'] },
+  { key: 'settings',  label: 'Configuración',    icon: '⚙️', ops: ['view','create','edit','delete'] },
 ]
 
-const MOCK_TEAM = [
-  { id: '1', name: 'Ahmed Al Mansouri', email: 'ahmed@noirem.ae', role: 'Admin' },
-  { id: '2', name: 'Sara Khalid', email: 'sara@noirem.ae', role: 'Manager' },
-  { id: '3', name: 'Khalid Hassan', email: 'khalid@noirem.ae', role: 'Technician' },
+function defaultPermissions(role: string): Permissions {
+  const all: PermOps = { view: true, create: true, edit: true, delete: true }
+  if (role === 'Admin') {
+    return {
+      dashboard: { view: true }, contacts: { ...all }, services: { ...all },
+      vehicles: { ...all }, bookings: { ...all }, finance: { ...all },
+      reports: { view: true }, settings: { ...all },
+    }
+  }
+  if (role === 'Manager') {
+    const mgr: PermOps = { view: true, create: true, edit: true, delete: false }
+    return {
+      dashboard: { view: true }, contacts: { ...mgr }, services: { ...mgr },
+      vehicles: { ...mgr }, bookings: { ...mgr }, finance: { ...mgr },
+      reports: { view: true }, settings: { view: false, create: false, edit: false, delete: false },
+    }
+  }
+  return {
+    dashboard: { view: true },
+    contacts:  { view: false, create: false, edit: false, delete: false },
+    services:  { view: false, create: false, edit: false, delete: false },
+    vehicles:  { view: true,  create: false, edit: false, delete: false },
+    bookings:  { view: true,  create: false, edit: false, delete: false },
+    finance:   { view: false, create: false, edit: false, delete: false },
+    reports:   { view: false },
+    settings:  { view: false, create: false, edit: false, delete: false },
+  }
+}
+
+function permChipInfo(perms: Permissions | undefined): { type: 'all' | 'readonly' | 'chips'; chips: string[] } {
+  if (!perms) return { type: 'chips', chips: [] }
+  const isTotal = MOD_CFG.every(m => {
+    const p = perms[m.key as keyof Permissions] as any
+    if (!p?.view) return false
+    if (m.ops.includes('create') && !p.create) return false
+    if (m.ops.includes('edit')   && !p.edit)   return false
+    if (m.ops.includes('delete') && !p.delete) return false
+    return true
+  })
+  if (isTotal) return { type: 'all', chips: [] }
+  const allView = MOD_CFG.every(m => (perms[m.key as keyof Permissions] as any)?.view)
+  const noWrite = Object.values(perms).every((p: any) => !p.create && !p.edit && !p.delete)
+  if (allView && noWrite) return { type: 'readonly', chips: [] }
+  const labelMap: Record<string, string> = {
+    dashboard:'Dashboard', contacts:'Contactos', services:'Servicios',
+    vehicles:'Vehículos', bookings:'Reservas', finance:'Finanzas',
+    reports:'Reportes', settings:'Config.',
+  }
+  const chips = MOD_CFG.filter(m => (perms[m.key as keyof Permissions] as any)?.view).map(m => labelMap[m.key])
+  return { type: 'chips', chips }
+}
+
+// ─── Toggle switch ─────────────────────────────────────────────────────────────
+function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
+  return (
+    <div onClick={onChange} style={{
+      width: 36, height: 20, borderRadius: 20, cursor: 'pointer', position: 'relative',
+      background: on ? '#c9a84c' : '#2a2a2e',
+      border: `1px solid ${on ? '#c9a84c' : 'rgba(255,255,255,0.1)'}`,
+      transition: 'all 0.2s ease', flexShrink: 0, display: 'inline-block',
+    }}>
+      <div style={{
+        position: 'absolute', top: 2, width: 14, height: 14, borderRadius: '50%',
+        background: 'white', transition: 'transform 0.2s ease',
+        transform: `translateX(${on ? 18 : 2}px)`,
+      }}/>
+    </div>
+  )
+}
+
+// ─── Permission chips ──────────────────────────────────────────────────────────
+function PermChips({ perms }: { perms: Permissions | undefined }) {
+  const info = permChipInfo(perms)
+  if (info.type === 'all') return (
+    <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 20, padding: '2px 8px' }}>Acceso total</span>
+  )
+  if (info.type === 'readonly') return (
+    <span style={{ fontSize: 10, fontWeight: 700, color: '#888580', background: 'rgba(136,133,128,0.12)', border: '1px solid rgba(136,133,128,0.2)', borderRadius: 20, padding: '2px 8px' }}>Solo lectura</span>
+  )
+  if (info.chips.length === 0) return <span style={{ fontSize: 11, color: '#3a3836' }}>Sin acceso</span>
+  const visible = info.chips.slice(0, 3)
+  const extra = info.chips.length - 3
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+      {visible.map(c => (
+        <span key={c} style={{ fontSize: 10, color: '#c9a84c', background: 'rgba(201,168,76,0.12)', borderRadius: 20, padding: '2px 8px' }}>{c}</span>
+      ))}
+      {extra > 0 && <span style={{ fontSize: 10, color: '#888580' }}>+{extra} más</span>}
+    </div>
+  )
+}
+
+// ─── Preset button ─────────────────────────────────────────────────────────────
+function PresetBtn({ label, onClick }: { label: string; onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
+      style={{ padding: '6px 12px', borderRadius: 6, fontFamily: 'Outfit,sans-serif', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
+        border: `1px solid ${hov ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}`,
+        background: '#1a1a1e', color: hov ? '#c9a84c' : '#888580' }}>
+      {label}
+    </button>
+  )
+}
+
+// ─── Permissions modal ─────────────────────────────────────────────────────────
+function PermissionsModal({
+  member, currentRole, currentPerms, onSave, onClose,
+}: {
+  member: TeamMember; currentRole: string; currentPerms: Permissions
+  onSave: (role: string, perms: Permissions) => void; onClose: () => void
+}) {
+  const [editRole, setEditRole] = useState(currentRole)
+  const [editPerms, setEditPerms] = useState<Permissions>(JSON.parse(JSON.stringify(currentPerms)))
+  const [saving, setSaving] = useState(false)
+
+  const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
+    Admin:      { bg: 'rgba(201,168,76,0.15)',  color: '#c9a84c' },
+    Manager:    { bg: 'rgba(0,212,170,0.15)',   color: '#00d4aa' },
+    Technician: { bg: 'rgba(136,133,128,0.15)', color: '#888580' },
+  }
+
+  function toggleOp(modKey: string, op: string) {
+    setEditPerms(prev => {
+      const clone: Permissions = JSON.parse(JSON.stringify(prev))
+      const mod = clone[modKey as keyof Permissions] as any
+      mod[op] = !mod[op]
+      return clone
+    })
+  }
+
+  function applyPreset(role: string) {
+    setEditRole(role)
+    setEditPerms(defaultPermissions(role))
+  }
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      await createClient().from('user_permissions').upsert({
+        user_id: member.id,
+        role: editRole.toLowerCase(),
+        permissions: editPerms,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+    } catch { /* local state still updated */ }
+    onSave(editRole, editPerms)
+    setSaving(false)
+  }
+
+  const sep = <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', margin: '16px 0' }}/>
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={onClose}>
+      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, width: '100%', maxWidth: 660, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+        onClick={e => e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Permisos de {member.name}</div>
+            <div style={{ fontSize: 12, color: '#888580', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+              Rol actual:
+              <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 8px',
+                background: ROLE_STYLE[currentRole]?.bg ?? 'transparent',
+                color: ROLE_STYLE[currentRole]?.color ?? '#888580' }}>
+                {currentRole.toUpperCase()}
+              </span>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18}/></button>
+        </div>
+
+        {/* Body */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
+          {/* Role pills */}
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Rol del usuario</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+            {(['Admin','Manager','Technician'] as const).map(r => {
+              const rs = ROLE_STYLE[r]; const active = editRole === r
+              return (
+                <button key={r} onClick={() => setEditRole(r)}
+                  style={{ padding: '8px 18px', borderRadius: 20, fontFamily: 'Outfit,sans-serif', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
+                    border: `1px solid ${active ? rs.color : 'rgba(255,255,255,0.1)'}`,
+                    background: active ? rs.bg : 'transparent', color: active ? rs.color : '#888580' }}>
+                  {r.toUpperCase()}
+                </button>
+              )
+            })}
+          </div>
+
+          {sep}
+
+          {/* Modules table */}
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 12 }}>Módulos del sistema</div>
+          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+            {/* header */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px', background: '#1a1a1e', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '8px 12px', alignItems: 'center' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Módulo</div>
+              {['Ver','Crear','Editar','Eliminar'].map(h => (
+                <div key={h} style={{ fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>{h}</div>
+              ))}
+            </div>
+            {MOD_CFG.map((mod, i) => {
+              const p = editPerms[mod.key as keyof Permissions] as any
+              return (
+                <div key={mod.key} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px',
+                  background: i % 2 === 0 ? '#1a1a1e' : '#141416', padding: '10px 12px', alignItems: 'center',
+                  borderBottom: i < MOD_CFG.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{mod.icon}</span>
+                    <span style={{ fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{mod.label}</span>
+                  </div>
+                  {(['view','create','edit','delete'] as const).map(op => (
+                    <div key={op} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {mod.ops.includes(op)
+                        ? <Toggle on={!!p[op]} onChange={() => toggleOp(mod.key, op)}/>
+                        : <span style={{ fontSize: 14, color: '#3a3836' }}>—</span>}
+                    </div>
+                  ))}
+                </div>
+              )
+            })}
+          </div>
+
+          {sep}
+
+          {/* Presets */}
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#888580', marginBottom: 10 }}>Presets rápidos</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <PresetBtn label="Aplicar Admin"      onClick={() => applyPreset('Admin')}/>
+            <PresetBtn label="Aplicar Manager"    onClick={() => applyPreset('Manager')}/>
+            <PresetBtn label="Aplicar Technician" onClick={() => applyPreset('Technician')}/>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <button onClick={handleSave} disabled={saving}
+            style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
+              fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+            {saving ? 'Guardando…' : 'Guardar Permisos'}
+          </button>
+          <button onClick={onClose}
+            style={{ width: '100%', padding: '9px 0', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+              color: '#888580', fontSize: 13, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── nav ──────────────────────────────────────────────────────────────────────
+const NAV: { key: Section; label: string; icon: any }[] = [
+  { key: 'profile',      label: 'Profile',       icon: User },
+  { key: 'team',         label: 'Team & Roles',  icon: Users },
+  { key: 'integrations', label: 'Integrations',  icon: Plug },
+  { key: 'plans',        label: 'Plans',          icon: BarChart2 },
+  { key: 'billing',      label: 'Billing',        icon: CreditCard },
 ]
 
 const MOCK_INVOICES = [
@@ -31,21 +307,15 @@ const MOCK_INVOICES = [
 
 const INTEGRATIONS = [
   { key: 'whatsapp', name: 'WhatsApp Business', desc: 'Send automated messages to clients', color: '#22c55e', initials: 'WA' },
-  { key: 'stripe', name: 'Stripe', desc: 'Accept online payments', color: '#818cf8', initials: 'ST' },
-  { key: 'gcal', name: 'Google Calendar', desc: 'Sync bookings to calendar', color: '#00d4aa', initials: 'GC' },
-  { key: 'gmail', name: 'Gmail', desc: 'Send invoices via email', color: '#ff4f4f', initials: 'GM' },
-  { key: 'zapier', name: 'Zapier', desc: 'Connect 5,000+ apps', color: '#ffa800', initials: 'ZP' },
+  { key: 'stripe',   name: 'Stripe',            desc: 'Accept online payments',             color: '#818cf8', initials: 'ST' },
+  { key: 'gcal',     name: 'Google Calendar',   desc: 'Sync bookings to calendar',          color: '#00d4aa', initials: 'GC' },
+  { key: 'gmail',    name: 'Gmail',             desc: 'Send invoices via email',            color: '#ff4f4f', initials: 'GM' },
+  { key: 'zapier',   name: 'Zapier',            desc: 'Connect 5,000+ apps',               color: '#ffa800', initials: 'ZP' },
 ]
 
-// Profile section
+// ─── Profile section ──────────────────────────────────────────────────────────
 function ProfileSection() {
-  const [form, setForm] = useState({
-    businessName: 'Noirem Dubai',
-    country: 'UAE',
-    currency: 'AED',
-    timezone: 'Asia/Dubai',
-    language: 'EN',
-  })
+  const [form, setForm] = useState({ businessName:'Noirem Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
   function save() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
   return (
@@ -55,12 +325,12 @@ function ProfileSection() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <label className="label">Business Name</label>
-          <input className="inp" value={form.businessName} onChange={(e) => setForm({ ...form, businessName: e.target.value })} />
+          <input className="inp" value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})}/>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
             <label className="label">Country</label>
-            <select className="inp" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
+            <select className="inp" value={form.country} onChange={e => setForm({...form, country: e.target.value})}>
               <option value="UAE">United Arab Emirates</option>
               <option value="SA">Saudi Arabia</option>
               <option value="KW">Kuwait</option>
@@ -68,7 +338,7 @@ function ProfileSection() {
           </div>
           <div>
             <label className="label">Currency</label>
-            <select className="inp" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
+            <select className="inp" value={form.currency} onChange={e => setForm({...form, currency: e.target.value})}>
               <option value="AED">AED — UAE Dirham</option>
               <option value="SAR">SAR — Saudi Riyal</option>
               <option value="USD">USD — US Dollar</option>
@@ -76,7 +346,7 @@ function ProfileSection() {
           </div>
           <div>
             <label className="label">Timezone</label>
-            <select className="inp" value={form.timezone} onChange={(e) => setForm({ ...form, timezone: e.target.value })}>
+            <select className="inp" value={form.timezone} onChange={e => setForm({...form, timezone: e.target.value})}>
               <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
               <option value="Asia/Riyadh">Asia/Riyadh (UTC+3)</option>
               <option value="Europe/London">Europe/London (UTC+0)</option>
@@ -84,7 +354,7 @@ function ProfileSection() {
           </div>
           <div>
             <label className="label">Language</label>
-            <select className="inp" value={form.language} onChange={(e) => setForm({ ...form, language: e.target.value })}>
+            <select className="inp" value={form.language} onChange={e => setForm({...form, language: e.target.value})}>
               <option value="EN">English</option>
               <option value="ES">Spanish</option>
               <option value="AR">Arabic</option>
@@ -92,25 +362,73 @@ function ProfileSection() {
           </div>
         </div>
         <button className="btn btn-gold" onClick={save} style={{ width: 160, justifyContent: 'center', marginTop: 8 }}>
-          {saved ? <><Check size={13} /> Saved!</> : <><Save size={13} /> Save Changes</>}
+          {saved ? <><Check size={13}/> Saved!</> : <><Save size={13}/> Save Changes</>}
         </button>
       </div>
     </div>
   )
 }
 
-// Team section
+// ─── Team section ─────────────────────────────────────────────────────────────
+const INIT_TEAM: TeamMember[] = [
+  { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Ahmed Al Mansouri', email: 'ahmed@noirem.ae', role: 'Admin' },
+  { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Sara Khalid',       email: 'sara@noirem.ae',   role: 'Manager' },
+  { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Khalid Hassan',     email: 'khalid@noirem.ae', role: 'Technician' },
+]
+
 function TeamSection() {
-  const [team, setTeam] = useState(MOCK_TEAM)
+  const [team, setTeam] = useState<TeamMember[]>(INIT_TEAM)
+  const [permsMap, setPermsMap] = useState<Record<string, { role: string; permissions: Permissions }>>({})
+  const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [invite, setInvite] = useState({ email: '', role: 'Technician' })
-  function removeTeam(id: string) { setTeam(team.filter((m) => m.id !== id)) }
-  function sendInvite() {
-    setTeam([...team, { id: Date.now().toString(), name: invite.email.split('@')[0], email: invite.email, role: invite.role }])
+
+  useEffect(() => {
+    const ids = INIT_TEAM.map(m => m.id)
+    createClient()
+      .from('user_permissions')
+      .select('user_id, role, permissions')
+      .in('user_id', ids)
+      .then(({ data }) => {
+        const map: Record<string, { role: string; permissions: Permissions }> = {}
+        if (data && data.length > 0) {
+          data.forEach((row: any) => { map[row.user_id] = { role: row.role, permissions: row.permissions } })
+        } else {
+          INIT_TEAM.forEach(m => { map[m.id] = { role: m.role, permissions: defaultPermissions(m.role) } })
+        }
+        setPermsMap(map)
+      })
+  }, [])
+
+  function removeTeam(id: string) {
+    setTeam(prev => prev.filter(m => m.id !== id))
+    setPermsMap(prev => { const c = {...prev}; delete c[id]; return c })
+  }
+
+  async function sendInvite() {
+    const newId = crypto.randomUUID()
+    const newMember: TeamMember = { id: newId, name: invite.email.split('@')[0], email: invite.email, role: invite.role }
+    const newPerms = defaultPermissions(invite.role)
+    setTeam(prev => [...prev, newMember])
+    setPermsMap(prev => ({ ...prev, [newId]: { role: invite.role, permissions: newPerms } }))
+    try {
+      await createClient().from('user_permissions').upsert({
+        user_id: newId, role: invite.role.toLowerCase(), permissions: newPerms,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id' })
+    } catch { /* ignore */ }
     setInvite({ email: '', role: 'Technician' })
     setShowInvite(false)
   }
-  const ROLE_COLOR: Record<string, string> = { Admin: 'var(--gold)', Manager: 'var(--cyan)', Technician: 'var(--text2)' }
+
+  function handlePermsSaved(memberId: string, role: string, perms: Permissions) {
+    setPermsMap(prev => ({ ...prev, [memberId]: { role, permissions: perms } }))
+    setTeam(prev => prev.map(m => m.id === memberId ? { ...m, role } : m))
+    setEditingMember(null)
+  }
+
+  const ROLE_COLOR: Record<string, string> = { Admin: '#c9a84c', Manager: '#00d4aa', Technician: '#888580' }
+
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -118,47 +436,72 @@ function TeamSection() {
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Team & Roles</div>
           <div style={{ fontSize: 12, color: 'var(--text2)' }}>{team.length} members</div>
         </div>
-        <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13} /> Invite Member</button>
+        <button className="btn btn-gold" onClick={() => setShowInvite(true)}><Plus size={13}/> Invite Member</button>
       </div>
+
       <div className="glass" style={{ overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Name', 'Email', 'Role', 'Actions'].map((h) => (
+              {['Name','Email','Role','Permisos','Actions'].map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {team.map((m) => (
-              <tr key={m.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{m.name}</td>
-                <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{m.email}</td>
-                <td style={{ padding: '12px 16px' }}>
-                  <span className="badge" style={{ background: `${ROLE_COLOR[m.role]}18`, color: ROLE_COLOR[m.role], border: `1px solid ${ROLE_COLOR[m.role]}30` }}>{m.role}</span>
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  <button className="btn btn-danger btn-sm" onClick={() => removeTeam(m.id)}><Trash2 size={11} /> Remove</button>
-                </td>
-              </tr>
-            ))}
+            {team.map(m => {
+              const mp = permsMap[m.id]
+              return (
+                <tr key={m.id} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>{m.name}</td>
+                  <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text2)' }}>{m.email}</td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <span className="badge" style={{ background: `${ROLE_COLOR[m.role]}18`, color: ROLE_COLOR[m.role], border: `1px solid ${ROLE_COLOR[m.role]}30` }}>{m.role}</span>
+                  </td>
+                  <td style={{ padding: '12px 16px', minWidth: 170 }}>
+                    <PermChips perms={mp?.permissions}/>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      <button onClick={() => setEditingMember(m)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
+                          border: '1px solid rgba(201,168,76,0.25)', background: '#1a1a1e', color: '#c9a84c',
+                          fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        ✏️ Permisos
+                      </button>
+                      <button onClick={() => removeTeam(m.id)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
+                          border: '1px solid rgba(255,79,79,0.25)', background: 'rgba(255,79,79,0.1)', color: '#ff4f4f',
+                          fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        🗑 Remove
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
+
+      {/* Invite modal */}
       {showInvite && (
         <Modal title="Invite Team Member" onClose={() => setShowInvite(false)}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <label className="label">Email Address</label>
-              <input className="inp" type="email" placeholder="colleague@noirem.ae" value={invite.email} onChange={(e) => setInvite({ ...invite, email: e.target.value })} />
+              <input className="inp" type="email" placeholder="colleague@noirem.ae" value={invite.email} onChange={e => setInvite({...invite, email: e.target.value})}/>
             </div>
             <div>
               <label className="label">Role</label>
-              <select className="inp" value={invite.role} onChange={(e) => setInvite({ ...invite, role: e.target.value })}>
+              <select className="inp" value={invite.role} onChange={e => setInvite({...invite, role: e.target.value})}>
                 <option value="Admin">Admin</option>
                 <option value="Manager">Manager</option>
                 <option value="Technician">Technician</option>
               </select>
+            </div>
+            <div style={{ fontSize: 11, color: '#888580', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, padding: '8px 12px' }}>
+              Se asignarán permisos predeterminados según el rol seleccionado.
             </div>
             <button className="btn btn-gold" onClick={sendInvite} style={{ width: '100%', justifyContent: 'center' }}>
               Send Invite
@@ -166,11 +509,22 @@ function TeamSection() {
           </div>
         </Modal>
       )}
+
+      {/* Permissions modal */}
+      {editingMember && (
+        <PermissionsModal
+          member={editingMember}
+          currentRole={permsMap[editingMember.id]?.role ?? editingMember.role}
+          currentPerms={permsMap[editingMember.id]?.permissions ?? defaultPermissions(editingMember.role)}
+          onSave={(role, perms) => handlePermsSaved(editingMember.id, role, perms)}
+          onClose={() => setEditingMember(null)}
+        />
+      )}
     </div>
   )
 }
 
-// Integrations section
+// ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const [enabled, setEnabled] = useState<Record<string, boolean>>({ whatsapp: true, stripe: false, gcal: true, gmail: false, zapier: false })
   return (
@@ -178,7 +532,7 @@ function IntegrationsSection() {
       <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Integrations</div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Connect third-party tools</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        {INTEGRATIONS.map((int) => (
+        {INTEGRATIONS.map(int => (
           <div key={int.key} className="glass" style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'center' }}>
             <div style={{ width: 44, height: 44, borderRadius: 10, background: `${int.color}18`, border: `1px solid ${int.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: int.color, flexShrink: 0 }}>
               {int.initials}
@@ -187,18 +541,9 @@ function IntegrationsSection() {
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{int.name}</div>
               <div style={{ fontSize: 11, color: 'var(--text2)' }}>{int.desc}</div>
             </div>
-            <button
-              onClick={() => setEnabled({ ...enabled, [int.key]: !enabled[int.key] })}
-              style={{
-                width: 42, height: 22, borderRadius: 99, border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0,
-                background: enabled[int.key] ? 'var(--gold)' : 'var(--bg3)',
-                transition: 'background 0.2s',
-              }}
-            >
-              <div style={{
-                position: 'absolute', top: 3, left: enabled[int.key] ? 22 : 3, width: 16, height: 16,
-                borderRadius: '50%', background: enabled[int.key] ? '#000' : 'var(--text2)', transition: 'left 0.2s',
-              }} />
+            <button onClick={() => setEnabled({...enabled, [int.key]: !enabled[int.key]})}
+              style={{ width: 42, height: 22, borderRadius: 99, border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0, background: enabled[int.key] ? 'var(--gold)' : 'var(--bg3)', transition: 'background 0.2s' }}>
+              <div style={{ position: 'absolute', top: 3, left: enabled[int.key] ? 22 : 3, width: 16, height: 16, borderRadius: '50%', background: enabled[int.key] ? '#000' : 'var(--text2)', transition: 'left 0.2s' }}/>
             </button>
           </div>
         ))}
@@ -207,28 +552,22 @@ function IntegrationsSection() {
   )
 }
 
-// Plans section
+// ─── Plans section ────────────────────────────────────────────────────────────
 function PlansSection() {
   const plans = [
-    { name: 'Starter', price: '$49', period: '/mo', features: ['Up to 100 contacts', '1 user', 'Basic reports', 'Email support'], cta: 'Select Plan', ctaClass: 'btn btn-ghost', highlight: false },
-    { name: 'Pro', price: '$129', period: '/mo', features: ['Unlimited contacts', '5 users', 'Advanced reports', 'All integrations', 'Priority support'], cta: 'Current Plan', ctaClass: 'btn btn-gold', highlight: true },
-    { name: 'Enterprise', price: '$349', period: '/mo', features: ['Unlimited everything', 'Unlimited users', 'Custom reports', 'Dedicated manager', 'SLA guarantee'], cta: 'Contact Sales', ctaClass: 'btn btn-ghost', highlight: false },
+    { name: 'Starter', price: '$49', period: '/mo', features: ['Up to 100 contacts','1 user','Basic reports','Email support'], cta: 'Select Plan', ctaClass: 'btn btn-ghost', highlight: false },
+    { name: 'Pro', price: '$129', period: '/mo', features: ['Unlimited contacts','5 users','Advanced reports','All integrations','Priority support'], cta: 'Current Plan', ctaClass: 'btn btn-gold', highlight: true },
+    { name: 'Enterprise', price: '$349', period: '/mo', features: ['Unlimited everything','Unlimited users','Custom reports','Dedicated manager','SLA guarantee'], cta: 'Contact Sales', ctaClass: 'btn btn-ghost', highlight: false },
   ]
   return (
     <div>
       <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Plans</div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Choose the plan that fits your business</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
-        {plans.map((p) => (
-          <div
-            key={p.name}
-            className="glass"
-            style={{ padding: 24, border: p.highlight ? '1px solid var(--gold-b)' : undefined, position: 'relative' }}
-          >
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
+        {plans.map(p => (
+          <div key={p.name} className="glass" style={{ padding: 24, border: p.highlight ? '1px solid var(--gold-b)' : undefined, position: 'relative' }}>
             {p.highlight && (
-              <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--gold)', color: '#000', fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                Current
-              </div>
+              <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--gold)', color: '#000', fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Current</div>
             )}
             <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 20 }}>
@@ -236,10 +575,9 @@ function PlansSection() {
               <span style={{ fontSize: 13, color: 'var(--text2)' }}>{p.period}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-              {p.features.map((f) => (
+              {p.features.map(f => (
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                  <Check size={12} color="var(--cyan)" />
-                  {f}
+                  <Check size={12} color="var(--cyan)"/>{f}
                 </div>
               ))}
             </div>
@@ -251,13 +589,12 @@ function PlansSection() {
   )
 }
 
-// Billing section
+// ─── Billing section ──────────────────────────────────────────────────────────
 function BillingSection() {
   return (
     <div style={{ maxWidth: 600 }}>
       <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>Billing</div>
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>Manage your subscription and payment method</div>
-
       <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Current Subscription</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -268,7 +605,6 @@ function BillingSection() {
           <span className="badge status-completed">Active</span>
         </div>
       </div>
-
       <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
         <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Payment Method</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -282,15 +618,12 @@ function BillingSection() {
           <button className="btn btn-ghost btn-sm">Update</button>
         </div>
       </div>
-
       <div className="glass" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Invoice History
-        </div>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Invoice History</div>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {['Date', 'Amount', 'Status', 'Download'].map((h) => (
+              {['Date','Amount','Status','Download'].map(h => (
                 <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
               ))}
             </tr>
@@ -300,10 +633,8 @@ function BillingSection() {
               <tr key={i} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '12px 16px', fontSize: 13 }}>{new Date(inv.date).toLocaleDateString('en-AE', { year: 'numeric', month: 'long' })}</td>
                 <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>${inv.amount}</td>
-                <td style={{ padding: '12px 16px' }}><StatusBadge status={inv.status} /></td>
-                <td style={{ padding: '12px 16px' }}>
-                  <button className="btn btn-ghost btn-sm">PDF</button>
-                </td>
+                <td style={{ padding: '12px 16px' }}><StatusBadge status={inv.status}/></td>
+                <td style={{ padding: '12px 16px' }}><button className="btn btn-ghost btn-sm">PDF</button></td>
               </tr>
             ))}
           </tbody>
@@ -313,51 +644,39 @@ function BillingSection() {
   )
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile')
 
   const renderContent = () => {
     switch (activeSection) {
-      case 'profile': return <ProfileSection />
-      case 'team': return <TeamSection />
-      case 'integrations': return <IntegrationsSection />
-      case 'plans': return <PlansSection />
-      case 'billing': return <BillingSection />
+      case 'profile':      return <ProfileSection/>
+      case 'team':         return <TeamSection/>
+      case 'integrations': return <IntegrationsSection/>
+      case 'plans':        return <PlansSection/>
+      case 'billing':      return <BillingSection/>
     }
   }
 
   return (
     <div style={{ padding: 24, height: '100%', display: 'flex', gap: 24 }}>
-      {/* Left sidebar nav */}
       <div style={{ width: 160, flexShrink: 0 }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Settings</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {NAV.map((item) => {
-            const Icon = item.icon
-            const active = activeSection === item.key
+          {NAV.map(item => {
+            const Icon = item.icon; const active = activeSection === item.key
             return (
-              <button
-                key={item.key}
-                onClick={() => setActiveSection(item.key)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 9,
-                  padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              <button key={item.key} onClick={() => setActiveSection(item.key)}
+                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
                   fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
-                  background: active ? 'var(--gold-dim)' : 'transparent',
-                  color: active ? 'var(--gold)' : 'var(--text2)',
-                  textAlign: 'left', width: '100%',
-                  transition: 'all 0.15s',
-                }}
-              >
-                <Icon size={14} />
-                {item.label}
+                  background: active ? 'var(--gold-dim)' : 'transparent', color: active ? 'var(--gold)' : 'var(--text2)',
+                  textAlign: 'left', width: '100%', transition: 'all 0.15s' }}>
+                <Icon size={14}/>{item.label}
               </button>
             )
           })}
         </div>
       </div>
-
-      {/* Right content */}
       <div className="scroll" style={{ flex: 1, paddingRight: 4 }}>
         {renderContent()}
       </div>
