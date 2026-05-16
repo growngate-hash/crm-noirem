@@ -43,7 +43,7 @@ function IconBtn({ onClick, danger = false, children }: { onClick: () => void; d
 }
 
 // ─── main tabs ─────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Costs & Expenses', 'Banks', 'Chart of Accounts', 'VAT Calculator', 'VIP Loyalty']
+const MAIN_TABS = ['Costs & Expenses', 'Banks', 'Chart of Accounts', 'Impuestos']
 
 // ─── category pill ─────────────────────────────────────────────────────────────
 const CAT_STYLE: Record<string, { bg: string; border: string; color: string }> = {
@@ -845,6 +845,254 @@ function ChartOfAccountsTab() {
   )
 }
 
+// ─── IMPUESTOS TAB ────────────────────────────────────────────────────────────
+const TAX_TYPES = ['Standard', 'Zero-rated', 'Exento', 'Municipal']
+const TAX_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
+  'Standard':   { bg: 'rgba(79,163,255,0.12)',   color: '#4fa3ff' },
+  'Zero-rated': { bg: 'rgba(136,133,128,0.12)',  color: '#888580' },
+  'Exento':     { bg: 'rgba(168,139,250,0.12)',  color: '#a78bfa' },
+  'Municipal':  { bg: 'rgba(251,146,60,0.12)',   color: '#fb923c' },
+}
+const SEED_TAXES = [
+  { name: 'IVA — UAE VAT',        code: 'VAT-AE-5',  rate: 5, type: 'Standard',   applies_to: 'Todos los servicios', is_active: true,  collected_mtd: 42362 },
+  { name: 'VAT Zero-rated',       code: 'VAT-AE-0',  rate: 0, type: 'Zero-rated', applies_to: 'Exportaciones',       is_active: true,  collected_mtd: 0     },
+  { name: 'Tarifa Municipal DXB', code: 'MUNI-DXB',  rate: 2, type: 'Municipal',  applies_to: 'Servicios de lujo',   is_active: false, collected_mtd: 0     },
+]
+const EMPTY_TAX = { name: '', code: '', rate: '', type: 'Standard', applies_to: '', is_active: true }
+
+function TaxTypeBadge({ type }: { type: string }) {
+  const s = TAX_TYPE_STYLE[type] ?? TAX_TYPE_STYLE['Standard']
+  return <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:10, fontWeight:700, background:s.bg, color:s.color }}>{type}</span>
+}
+function TaxStatusBadge({ active }: { active: boolean }) {
+  return (
+    <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:10, fontWeight:700,
+      background: active?'rgba(52,211,153,0.12)':'rgba(136,133,128,0.12)',
+      color:      active?'#34d399':'#888580' }}>
+      {active ? 'Activo' : 'Inactivo'}
+    </span>
+  )
+}
+
+function ImpuestosTab() {
+  const [taxes,   setTaxes]   = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAdd, setShowAdd] = useState(false)
+  const [editTax, setEditTax] = useState<any|null>(null)
+  const [form,    setForm]    = useState({ ...EMPTY_TAX })
+  const [saving,  setSaving]  = useState(false)
+  const [delConf, setDelConf] = useState(false)
+  const [toasts,  setToasts]  = useState<Toast[]>([])
+
+  function addToast(msg: string, type: Toast['type'] = 'success') {
+    const id = ++_toastId
+    setToasts(prev => [...prev, { id, msg, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }
+
+  async function fetchTaxes() {
+    setLoading(true)
+    const sb = createClient()
+    const { data: existing } = await sb.from('taxes').select('*').order('created_at', { ascending: true })
+    if (existing && existing.length > 0) { setTaxes(existing); setLoading(false); return }
+    const { data: seeded } = await sb.from('taxes').insert(SEED_TAXES).select()
+    setTaxes(seeded ?? [])
+    setLoading(false)
+  }
+  useEffect(() => { fetchTaxes() }, [])
+
+  function openAdd() { setForm({ ...EMPTY_TAX }); setShowAdd(true) }
+
+  function openEdit(t: any) {
+    setForm({ name: t.name, code: t.code, rate: String(t.rate), type: t.type, applies_to: t.applies_to ?? '', is_active: t.is_active })
+    setDelConf(false); setEditTax(t)
+  }
+
+  async function saveTax() {
+    if (!form.name.trim() || !form.code.trim()) return
+    setSaving(true)
+    const payload = { name: form.name.trim(), code: form.code.trim().toUpperCase(), rate: Number(form.rate) || 0, type: form.type, applies_to: form.applies_to || null, is_active: form.is_active }
+    const { error } = editTax
+      ? await createClient().from('taxes').update(payload).eq('id', editTax.id)
+      : await createClient().from('taxes').insert(payload)
+    setSaving(false)
+    if (error) { addToast(error.message, 'error'); return }
+    addToast(editTax ? 'Impuesto actualizado' : 'Impuesto creado', 'success')
+    setShowAdd(false); setEditTax(null); setForm({ ...EMPTY_TAX }); fetchTaxes()
+  }
+
+  async function deleteTax() {
+    if (!editTax) return
+    const { error } = await createClient().from('taxes').delete().eq('id', editTax.id)
+    if (error) { addToast(error.message, 'error'); return }
+    addToast('Impuesto eliminado', 'success'); setEditTax(null); fetchTaxes()
+  }
+
+  async function toggleActive(t: any) {
+    await createClient().from('taxes').update({ is_active: !t.is_active }).eq('id', t.id)
+    fetchTaxes()
+  }
+
+  const activeCount    = taxes.filter(t => t.is_active).length
+  const gravadosCount  = taxes.filter(t => t.is_active && t.type === 'Standard').length
+  const recaudadoMTD   = taxes.reduce((s, t) => s + (t.collected_mtd ?? 0), 0)
+
+  function TaxModal({ onClose }: { onClose: () => void }) {
+    return (
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={onClose}>
+        <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:28, width:'100%', maxWidth:480 }} onClick={e => e.stopPropagation()}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
+            <span style={{ fontSize:16, fontWeight:700, color:'#f0ede8' }}>{editTax ? 'Editar Impuesto' : 'Nuevo Impuesto'}</span>
+            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
+          </div>
+          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div><FLabel>Nombre *</FLabel><FInput placeholder="IVA UAE" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}/></div>
+              <div><FLabel>Código *</FLabel><FInput placeholder="VAT-AE-5" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} style={{ fontFamily:'monospace', textTransform:'uppercase' }}/></div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'120px 1fr', gap:12 }}>
+              <div><FLabel>Tasa %</FLabel><FInput type="number" min={0} max={100} step={0.1} placeholder="5" value={form.rate as any} onChange={e => setForm({ ...form, rate: e.target.value })}/></div>
+              <div><FLabel>Aplica a</FLabel><FInput placeholder="Todos los servicios" value={form.applies_to} onChange={e => setForm({ ...form, applies_to: e.target.value })}/></div>
+            </div>
+            <div>
+              <FLabel>Tipo</FLabel>
+              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                {TAX_TYPES.map(t => (
+                  <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
+                    style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif',
+                      background: form.type===t?'#c9a84c':'#1a1a1e', color: form.type===t?'#0d0d0f':'#888580',
+                      border: form.type===t?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
+              <input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} style={{ width:16, height:16, accentColor:'#c9a84c' }}/>
+              <span style={{ fontSize:13, color:'#f0ede8' }}>Activo</span>
+            </label>
+          </div>
+
+          {/* delete confirm (edit only) */}
+          {editTax && delConf && (
+            <div style={{ marginTop:16, padding:12, background:'rgba(255,79,79,0.08)', border:'1px solid rgba(255,79,79,0.25)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:12, color:'#ff4f4f' }}>¿Eliminar este impuesto?</span>
+              <div style={{ display:'flex', gap:6 }}>
+                <button onClick={() => setDelConf(false)} style={{ padding:'5px 12px', borderRadius:6, border:'1px solid rgba(255,255,255,0.1)', background:'#1a1a1e', color:'#888580', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>No</button>
+                <button onClick={deleteTax} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'#ff4f4f', color:'#fff', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>Sí, eliminar</button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ display:'flex', justifyContent: editTax ? 'space-between' : 'flex-end', alignItems:'center', marginTop:22, gap:10 }}>
+            {editTax && (
+              <button onClick={() => setDelConf(true)}
+                style={{ padding:'9px 16px', borderRadius:8, border:'1px solid rgba(255,79,79,0.3)', background:'transparent', color:'#ff4f4f', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+                Eliminar
+              </button>
+            )}
+            <button onClick={saveTax} disabled={saving || !form.name.trim() || !form.code.trim()}
+              style={{ padding:'10px 24px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer',
+                opacity: form.name.trim() && form.code.trim() ? 1 : 0.5 }}>
+              {saving ? 'Guardando…' : editTax ? 'Guardar Cambios' : 'Crear Impuesto'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {/* header */}
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
+        <div>
+          <div style={{ fontSize:20, fontWeight:700, color:'#f0ede8' }}>Gestión de Impuestos</div>
+          <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>Configura los impuestos aplicables a tus servicios</div>
+        </div>
+        <button onClick={openAdd}
+          style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+          + Nuevo Impuesto
+        </button>
+      </div>
+
+      {/* KPI cards */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:20 }}>
+        {[
+          { label:'IMPUESTOS ACTIVOS',  value: String(activeCount),          color:'#00d4aa' },
+          { label:'SERVICIOS GRAVADOS', value: String(gravadosCount),         color:'#c9a84c' },
+          { label:'RECAUDADO MTD',      value: aed(recaudadoMTD),            color:'#34d399' },
+        ].map(k => (
+          <div key={k.label} style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:16 }}>
+            <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>{k.label}</div>
+            <div style={{ fontSize:22, fontWeight:800, color:k.color }}>{k.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* taxes table */}
+      <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, overflow:'hidden' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+              {['Nombre','Código','Tasa %','Tipo','Aplica a','Estado','Acciones'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando…</td></tr>
+            ) : taxes.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ padding:'60px 20px', textAlign:'center' }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:'#3a3836', marginBottom:14 }}>No hay impuestos configurados</div>
+                  <button onClick={openAdd} style={{ padding:'9px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ Nuevo Impuesto</button>
+                </td>
+              </tr>
+            ) : taxes.map(t => (
+              <tr key={t.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s' }}
+                onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
+                <td style={{ padding:'12px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{t.name}</td>
+                <td style={{ padding:'12px 16px', fontFamily:'monospace', fontSize:12, color:'#c9a84c' }}>{t.code}</td>
+                <td style={{ padding:'12px 16px', fontSize:14, fontWeight:700, color:'#f0ede8', fontVariantNumeric:'tabular-nums' }}>{t.rate}%</td>
+                <td style={{ padding:'12px 16px' }}><TaxTypeBadge type={t.type}/></td>
+                <td style={{ padding:'12px 16px', fontSize:12, color:'#888580' }}>{t.applies_to ?? '—'}</td>
+                <td style={{ padding:'12px 16px' }}>
+                  <button onClick={() => toggleActive(t)} style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                    <TaxStatusBadge active={t.is_active}/>
+                  </button>
+                </td>
+                <td style={{ padding:'12px 16px' }}>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <IconBtn onClick={() => openEdit(t)}><Pencil size={11}/></IconBtn>
+                    <IconBtn danger onClick={() => { openEdit(t); setDelConf(true) }}><X size={11}/></IconBtn>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* modal */}
+      {(showAdd || editTax) && <TaxModal onClose={() => { setShowAdd(false); setEditTax(null); setDelConf(false) }}/>}
+
+      {/* toasts */}
+      <div style={{ position:'fixed', bottom:24, right:24, zIndex:900, display:'flex', flexDirection:'column', gap:8 }}>
+        {toasts.map(t => (
+          <div key={t.id} style={{ padding:'12px 18px', borderRadius:10, fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', color:'#fff',
+            background: t.type==='success'?'rgba(34,197,94,0.95)':t.type==='warn'?'rgba(251,191,36,0.95)':'rgba(255,79,79,0.95)',
+            boxShadow:'0 4px 20px rgba(0,0,0,0.4)', backdropFilter:'blur(8px)' }}>
+            {t.msg}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── placeholder ───────────────────────────────────────────────────────────────
 function ComingSoon({ label }: { label: string }) {
   return (
@@ -891,8 +1139,7 @@ export default function FinancePage() {
       {activeTab === 'Costs & Expenses'  && <CostsTab />}
       {activeTab === 'Banks'             && <BanksTab />}
       {activeTab === 'Chart of Accounts' && <ChartOfAccountsTab />}
-      {activeTab === 'VAT Calculator'    && <ComingSoon label="VAT Calculator" />}
-      {activeTab === 'VIP Loyalty'       && <ComingSoon label="VIP Loyalty" />}
+      {activeTab === 'Impuestos'          && <ImpuestosTab />}
     </div>
   )
 }
