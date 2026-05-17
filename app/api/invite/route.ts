@@ -22,10 +22,8 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://crm-noirem.vercel.app'
-
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim(), {
-    redirectTo: `${appUrl}/accept-invite`,
+    redirectTo: 'https://crm-noirem.vercel.app/accept-invite',
     data: { role: (role ?? 'technician').toLowerCase() },
   })
 
