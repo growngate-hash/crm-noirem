@@ -23,7 +23,7 @@ export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLanguage()
-  const { logoUrl } = useCompany()
+  const { companyName, companySubtitle, logoUrl } = useCompany()
 
   const [authUser, setAuthUser] = useState<any>(null)
   const [showMenu, setShowMenu] = useState(false)
@@ -68,11 +68,11 @@ export default function Sidebar() {
         }}>
           {logoUrl
             ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-            : 'S'}
+            : companyName.charAt(0)}
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>SAFFI</div>
-          <div style={{ fontSize: 8, color: 'var(--text2)', letterSpacing: '0.05em', marginTop: 1 }}>LUXURY DETAILING</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>{companyName}</div>
+          <div style={{ fontSize: 8, color: 'var(--text2)', letterSpacing: '0.05em', marginTop: 1 }}>{companySubtitle}</div>
         </div>
       </div>
 

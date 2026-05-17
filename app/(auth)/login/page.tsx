@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 
@@ -11,8 +11,25 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showReset, setShowReset] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [brandName, setBrandName] = useState('SAFFI')
+  const [brandSubtitle, setBrandSubtitle] = useState('LUXURY DETAILING')
+  const [brandLogo, setBrandLogo] = useState<string | null>(null)
 
   const router = useRouter()
+
+  useEffect(() => {
+    createClient()
+      .from('company_settings')
+      .select('key, value')
+      .in('key', ['company_name', 'company_subtitle', 'logo_url'])
+      .then(({ data }) => {
+        data?.forEach(row => {
+          if (row.key === 'company_name' && row.value) setBrandName(row.value.toUpperCase())
+          if (row.key === 'company_subtitle' && row.value) setBrandSubtitle(row.value.toUpperCase())
+          if (row.key === 'logo_url' && row.value) setBrandLogo(row.value)
+        })
+      })
+  }, [])
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -77,13 +94,19 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
-            width: '56px', height: '56px', background: '#c9a84c',
+            width: '56px', height: '56px',
+            background: brandLogo ? 'transparent' : '#c9a84c',
             borderRadius: '14px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', margin: '0 auto 12px',
             fontSize: '22px', fontWeight: 800, color: '#0d0d0f',
-          }}>S</div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0ede8', letterSpacing: '0.08em' }}>SAFFI</div>
-          <div style={{ fontSize: '10px', color: '#888580', letterSpacing: '0.15em', marginTop: '4px' }}>LUXURY DETAILING</div>
+            overflow: 'hidden',
+          }}>
+            {brandLogo
+              ? <img src={brandLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+              : brandName.charAt(0)}
+          </div>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0ede8', letterSpacing: '0.08em' }}>{brandName}</div>
+          <div style={{ fontSize: '10px', color: '#888580', letterSpacing: '0.15em', marginTop: '4px' }}>{brandSubtitle}</div>
         </div>
 
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', marginBottom: '28px' }}/>

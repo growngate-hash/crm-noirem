@@ -319,9 +319,25 @@ const INTEGRATIONS = [
 // ─── Profile section ──────────────────────────────────────────────────────────
 function ProfileSection() {
   const { t } = useLanguage()
-  const { logoUrl, setLogoUrl } = useCompany()
-  const [form, setForm] = useState({ businessName:'Saffi Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
+  const { logoUrl, setLogoUrl, setCompanyName: setCtxName, setCompanySubtitle: setCtxSub } = useCompany()
+  const [form, setForm] = useState({ businessName:'SAFFI', companySubtitle:'LUXURY DETAILING', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    createClient()
+      .from('company_settings')
+      .select('key, value')
+      .in('key', ['company_name', 'company_subtitle'])
+      .then(({ data }) => {
+        if (!data) return
+        const patch: Partial<typeof form> = {}
+        data.forEach(row => {
+          if (row.key === 'company_name' && row.value) patch.businessName = row.value
+          if (row.key === 'company_subtitle' && row.value) patch.companySubtitle = row.value
+        })
+        if (Object.keys(patch).length) setForm(prev => ({ ...prev, ...patch }))
+      })
+  }, [])
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -334,7 +350,17 @@ function ProfileSection() {
     setTimeout(() => setToast(null), 3000)
   }
 
-  function save() { setSaved(true); setTimeout(() => setSaved(false), 2000) }
+  async function save() {
+    const supabase = createClient()
+    await Promise.all([
+      supabase.from('company_settings').upsert({ key: 'company_name', value: form.businessName }, { onConflict: 'key' }),
+      supabase.from('company_settings').upsert({ key: 'company_subtitle', value: form.companySubtitle }, { onConflict: 'key' }),
+    ])
+    setCtxName(form.businessName.toUpperCase())
+    setCtxSub(form.companySubtitle.toUpperCase())
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
 
   function processFile(file: File) {
     if (file.size > 2 * 1024 * 1024) { showToast('El archivo es muy grande. Máximo 2MB', 'error'); return }
@@ -420,7 +446,7 @@ function ProfileSection() {
             overflow: 'hidden', flexShrink: 0 }}>
             {displayLogo
               ? <img src={displayLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-              : <span style={{ fontSize: 28, fontWeight: 900, color: '#0d0d0f' }}>N</span>}
+              : <span style={{ fontSize: 28, fontWeight: 900, color: '#0d0d0f' }}>{form.businessName.charAt(0)}</span>}
           </div>
 
           {/* Buttons */}
@@ -477,9 +503,15 @@ function ProfileSection() {
 
       {/* ── Form fields ── */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div>
-          <label className="label">{t('businessName')}</label>
-          <input className="inp" value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})}/>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div>
+            <label className="label">{t('businessName')}</label>
+            <input className="inp" value={form.businessName} placeholder="ej. SAFFI" onChange={e => setForm({...form, businessName: e.target.value})}/>
+          </div>
+          <div>
+            <label className="label">SUBTÍTULO</label>
+            <input className="inp" value={form.companySubtitle} placeholder="ej. LUXURY DETAILING" onChange={e => setForm({...form, companySubtitle: e.target.value})}/>
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
