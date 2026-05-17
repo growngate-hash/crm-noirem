@@ -49,6 +49,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
   }, [])
 
   async function handleLogout() {
+    onClose()
     await createClient().auth.signOut()
     router.push('/auth')
     router.refresh()
@@ -120,6 +121,22 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
           )
         })}
       </nav>
+
+      {/* Mobile-only logout button */}
+      {isMobile && (
+        <div style={{ padding: '12px 12px 0', flexShrink: 0 }}>
+          <button onClick={handleLogout} style={{
+            width: '100%', padding: '11px 14px', borderRadius: 10,
+            background: 'transparent', border: '1px solid rgba(255,79,79,0.3)',
+            color: '#ff4f4f', fontSize: 12, fontWeight: 700,
+            fontFamily: 'Outfit, sans-serif', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            letterSpacing: '0.06em',
+          }}>
+            <LogOut size={14} /> CERRAR SESIÓN
+          </button>
+        </div>
+      )}
 
       {/* User footer with dropdown */}
       <div ref={menuRef} style={{ position: 'relative', flexShrink: 0 }}>
