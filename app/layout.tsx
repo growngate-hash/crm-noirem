@@ -10,8 +10,8 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Saffi CRM',
-    template: '%s — Saffi CRM',
+    default: 'Saffi',
+    template: '%s — Saffi',
   },
   description: 'Luxury Car Care Management System — Dubai',
   icons: {
