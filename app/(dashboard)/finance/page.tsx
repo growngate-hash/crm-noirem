@@ -1433,7 +1433,7 @@ export default function FinancePage() {
       </div>
 
       {/* top tabs */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 22, flexWrap: 'wrap' }}>
+      <div className="tabs-scroll" style={{ marginBottom: 22 }}>
         {MAIN_TABS.map(tab => {
           const active = activeTab === tab
           return (

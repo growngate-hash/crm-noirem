@@ -2,11 +2,12 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings, LogOut, User as UserIcon } from 'lucide-react'
+import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings, LogOut, User as UserIcon, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
 import { useCompany } from '@/contexts/CompanyContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
   { labelKey: 'dashboard',         href: '/',          icon: LayoutDashboard },
@@ -19,7 +20,13 @@ const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
   { labelKey: 'settings',          href: '/settings',  icon: Settings },
 ]
 
-export default function Sidebar() {
+interface SidebarProps {
+  mobileMenuOpen: boolean
+  onClose: () => void
+}
+
+export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
+  const isMobile = useIsMobile()
   const pathname = usePathname()
   const router = useRouter()
   const { t } = useLanguage()
@@ -52,12 +59,29 @@ export default function Sidebar() {
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
+    <>
+    {isMobile && mobileMenuOpen && (
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 299 }} />
+    )}
     <div style={{
       width: 200, minWidth: 200, height: '100vh',
       background: 'var(--bg2)',
       borderRight: '1px solid var(--border)',
       display: 'flex', flexDirection: 'column',
+      ...(isMobile && {
+        position: 'fixed', top: 0, bottom: 0, left: mobileMenuOpen ? 0 : -240,
+        width: 240, minWidth: 240, zIndex: 300,
+        transition: 'left 0.25s ease',
+        boxShadow: mobileMenuOpen ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
+      }),
     }}>
+      {/* Mobile close button */}
+      {isMobile && (
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28 }}>
+          <X size={14} />
+        </button>
+      )}
+
       {/* Logo */}
       <div style={{ padding: '18px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <div style={{
@@ -155,5 +179,6 @@ export default function Sidebar() {
         </button>
       </div>
     </div>
+    </>
   )
 }

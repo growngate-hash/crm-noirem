@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
 import { usePermissions } from '@/hooks/usePermissions'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
@@ -859,6 +860,7 @@ function BillingSection() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
   const { t } = useLanguage()
+  const isMobile = useIsMobile()
   const [activeSection, setActiveSection] = useState<Section>('profile')
   const { isAdmin, isManager, currentUserEmail } = usePermissions()
 
@@ -878,33 +880,49 @@ export default function SettingsPage() {
     }
   }
 
+  const NAV_LABEL: Record<string, string> = {
+    profile:      t('profile'),
+    team:         t('teamRoles'),
+    integrations: t('integrations'),
+    plans:        t('plans'),
+    billing:      t('billing'),
+  }
+
   return (
-    <div style={{ padding: 24, height: '100%', display: 'flex', gap: 24 }}>
-      <div style={{ width: 160, flexShrink: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('settings')}</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <div className="page-pad" style={{ padding: 24, height: '100%', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 16 : 24 }}>
+
+      {/* Nav — vertical on desktop, horizontal scroll on mobile */}
+      <div style={isMobile
+        ? { flexShrink: 0 }
+        : { width: 160, flexShrink: 0 }
+      }>
+        {!isMobile && (
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('settings')}</div>
+        )}
+        <div className={isMobile ? 'tabs-scroll' : undefined}
+          style={isMobile ? {} : { display: 'flex', flexDirection: 'column', gap: 2 }}>
           {visibleNav.map(item => {
             const Icon = item.icon; const active = activeSection === item.key
-            const NAV_LABEL: Record<string, string> = {
-              profile:      t('profile'),
-              team:         t('teamRoles'),
-              integrations: t('integrations'),
-              plans:        t('plans'),
-              billing:      t('billing'),
-            }
             return (
               <button key={item.key} onClick={() => setActiveSection(item.key)}
-                style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 8, border: 'none', cursor: 'pointer',
-                  fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
-                  background: active ? 'var(--gold-dim)' : 'transparent', color: active ? 'var(--gold)' : 'var(--text2)',
-                  textAlign: 'left', width: '100%', transition: 'all 0.15s' }}>
+                style={{ display: 'flex', alignItems: 'center', gap: 9,
+                  padding: isMobile ? '7px 14px' : '9px 12px',
+                  borderRadius: isMobile ? 20 : 8,
+                  border: isMobile ? `1px solid ${active ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}` : 'none',
+                  cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
+                  background: active ? 'var(--gold-dim)' : 'transparent',
+                  color: active ? 'var(--gold)' : 'var(--text2)',
+                  textAlign: 'left', whiteSpace: 'nowrap',
+                  ...(isMobile ? {} : { width: '100%' }),
+                  transition: 'all 0.15s' }}>
                 <Icon size={14}/>{NAV_LABEL[item.key] ?? item.label}
               </button>
             )
           })}
         </div>
       </div>
-      <div className="scroll" style={{ flex: 1, paddingRight: 4 }}>
+
+      <div className="scroll" style={{ flex: 1, paddingRight: isMobile ? 0 : 4 }}>
         {renderContent()}
       </div>
     </div>

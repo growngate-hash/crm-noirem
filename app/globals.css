@@ -93,3 +93,28 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
   font-size: 9px; font-weight: 700; letter-spacing: 0.6px;
   text-transform: uppercase; padding: 3px 8px; border-radius: 99px;
 }
+
+/* ── Responsive grids ───────────────────────────────────────────── */
+.kpi-grid-4   { display: grid; gap: 12px; grid-template-columns: repeat(4, 1fr); }
+.bottom-grid  { display: grid; gap: 14px; grid-template-columns: 1fr 300px; }
+.table-wrap   { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Horizontal scroll tabs */
+.tabs-scroll  { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px;
+                scrollbar-width: none; -ms-overflow-style: none; }
+.tabs-scroll::-webkit-scrollbar { display: none; }
+.tabs-scroll > * { flex-shrink: 0; }
+
+@media (max-width: 768px) {
+  .kpi-grid-4  { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .bottom-grid { grid-template-columns: 1fr; }
+
+  /* Page padding on mobile */
+  .page-pad { padding: 12px !important; }
+
+  /* Prevent iOS zoom on input focus */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* Safe area for notch devices */
+  .main-content { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}

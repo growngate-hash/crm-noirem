@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
 import NotificationsPanel from '@/components/ui/NotificationsPanel'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const PAGE_KEY: Record<string, string> = {
   '/':         'dashboard',
@@ -18,7 +19,12 @@ const PAGE_KEY: Record<string, string> = {
 
 const CURRENCIES = ['AED', 'USD', 'EUR']
 
-export default function TopBar() {
+interface TopBarProps {
+  onMenuOpen: () => void
+}
+
+export default function TopBar({ onMenuOpen }: TopBarProps) {
+  const isMobile = useIsMobile()
   const pathname = usePathname()
   const { lang, setLang, t } = useLanguage()
   const [currency, setCurrency] = useState('AED')
@@ -42,6 +48,18 @@ export default function TopBar() {
     document.addEventListener('mousedown', onClick)
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
+
+  if (isMobile) {
+    return (
+      <div style={{ height: 52, flexShrink: 0, background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+        <button onClick={onMenuOpen} style={{ width: 34, height: 34, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'var(--text2)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          ☰
+        </button>
+        <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: 15 }}>{pageLabel}</span>
+        <NotificationsPanel />
+      </div>
+    )
+  }
 
   return (
     <div style={{

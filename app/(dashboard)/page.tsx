@@ -421,7 +421,7 @@ export default function DashboardPage() {
 
   // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div style={{ padding:24, minHeight:'100%' }}>
+    <div className="page-pad" style={{ padding:24, minHeight:'100%' }}>
       <style>{`
         @keyframes shimmer {
           0%   { background-position: 200% 0 }
@@ -513,7 +513,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI Row 1 ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:12 }}>
+      <div className="kpi-grid-4" style={{ marginBottom:12 }}>
         {loading
           ? [0,1,2,3].map(i => <KpiSkeleton key={i} />)
           : row1.map(card => (
@@ -537,7 +537,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── KPI Row 2 ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12, marginBottom:16 }}>
+      <div className="kpi-grid-4" style={{ marginBottom:16 }}>
         {loading
           ? [0,1,2,3].map(i => <KpiSkeleton2 key={i} />)
           : row2.map(card => (
@@ -561,7 +561,7 @@ export default function DashboardPage() {
       )}
 
       {/* ── Bottom: Recent Bookings + Activity Feed ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:14 }}>
+      <div className="bottom-grid">
 
         {/* Recent Bookings */}
         <div className="glass" style={{ overflow:'hidden' }}>

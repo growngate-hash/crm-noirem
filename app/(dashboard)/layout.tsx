@@ -10,6 +10,7 @@ import { CompanyProvider } from '@/contexts/CompanyContext'
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const [ready, setReady] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -23,7 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ width: 32, height: 32, background: 'var(--gold)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#000', fontSize: 16 }}>N</div>
+          <div style={{ width: 32, height: 32, background: 'var(--gold)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#000', fontSize: 16 }}>S</div>
           <span style={{ fontSize: 12, color: 'var(--text2)' }}>Loading…</span>
         </div>
       </div>
@@ -34,10 +35,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <CompanyProvider>
       <LanguageProvider>
         <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg)' }}>
-          <Sidebar />
+          <Sidebar mobileMenuOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <TopBar />
-            <div className="scroll" style={{ flex: 1 }}>{children}</div>
+            <TopBar onMenuOpen={() => setMobileMenuOpen(true)} />
+            <div className="scroll main-content" style={{ flex: 1 }}>{children}</div>
           </div>
         </div>
       </LanguageProvider>
