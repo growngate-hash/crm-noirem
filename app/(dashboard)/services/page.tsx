@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
 const INP_BASE: React.CSSProperties = {
@@ -184,8 +185,10 @@ type MatRow = { name: string; qty: string; unit: string }
 
 export default function ServicesPage() {
   const { t } = useLanguage()
+  const isMobile = useIsMobile()
   const [services,  setServices]  = useState<any[]>([])
   const [inventory, setInventory] = useState<any[]>([])
+  const [selectedInventoryItem, setSelectedInventoryItem] = useState<any|null>(null)
   const [loadingS,  setLoadingS]  = useState(true)
   const [loadingI,  setLoadingI]  = useState(true)
 
@@ -437,7 +440,7 @@ export default function ServicesPage() {
             {[1,2,3,4].map(i=><div key={i} style={{background:'#141416',border:'1px solid rgba(255,255,255,0.06)',borderRadius:12,padding:20,height:180}} className="skeleton"/>)}
           </div>
         ) : (
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
             {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)}/>)}
           </div>
         )}
@@ -452,39 +455,95 @@ export default function ServicesPage() {
           </div>
           <button style={BTN_GOLD} onClick={()=>setShowInv(true)}>+ Agregar Inventario</button>
         </div>
-        <div className="glass" style={{overflow:'hidden'}}>
-          <table style={{width:'100%',borderCollapse:'collapse'}}>
-            <thead>
-              <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                {['Producto','Marca','Stock','Unidad','Nivel'].map(h=>(
-                  <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {loadingI ? (
-                <tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
-              ) : srcInventory.map((item:any)=>{
-                const isLow = (item.stock_qty??0)<=(item.min_stock??0)
-                return (
-                  <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                    <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{item.name}</td>
-                    <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.brand||'—'}</td>
-                    <td style={{padding:'14px 16px'}}>
-                      <div style={{display:'flex',alignItems:'center',gap:8}}>
-                        <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#f0ede8'}}>{item.stock_qty??0}</span>
-                        {isLow && <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:99,background:'rgba(255,79,79,0.12)',border:'1px solid rgba(255,79,79,0.3)',color:'#ff4f4f'}}>▲ BAJO</span>}
-                      </div>
-                    </td>
-                    <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
-                    <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+        {isMobile ? (
+          /* ── MOBILE: cards ── */
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            {loadingI ? (
+              <div style={{padding:32,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
+            ) : srcInventory.map((item:any)=>{
+              const isLow = (item.stock_qty??0)<=(item.min_stock??0)
+              return (
+                <div key={item.id} onClick={()=>setSelectedInventoryItem(item)}
+                  style={{background:'#1a1a1e',border:`1px solid ${isLow?'rgba(255,79,79,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:16,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div>
+                    <div style={{color:'#f0ede8',fontWeight:700,fontSize:14,marginBottom:3}}>{item.name}</div>
+                    <div style={{color:'#888580',fontSize:12}}>{item.brand||'—'} · {item.unit||'mL'}</div>
+                  </div>
+                  <div style={{textAlign:'right',flexShrink:0,marginLeft:12}}>
+                    <div style={{color:isLow?'#ff4f4f':'#c9a84c',fontWeight:800,fontSize:22,lineHeight:1}}>{item.stock_qty??0}</div>
+                    <div style={{color:isLow?'#ff4f4f':'#22c55e',fontSize:10,fontWeight:700,textTransform:'uppercase',marginTop:3}}>{isLow?'LOW':'OK'}</div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          /* ── DESKTOP: tabla con scroll horizontal ── */
+          <div className="glass" style={{overflowX:'auto'}}>
+            <table style={{width:'100%',borderCollapse:'collapse',minWidth:500}}>
+              <thead>
+                <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                  {['Producto','Marca','Stock','Unidad','Nivel'].map(h=>(
+                    <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {loadingI ? (
+                  <tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
+                ) : srcInventory.map((item:any)=>{
+                  const isLow = (item.stock_qty??0)<=(item.min_stock??0)
+                  return (
+                    <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
+                      <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{item.name}</td>
+                      <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.brand||'—'}</td>
+                      <td style={{padding:'14px 16px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#f0ede8'}}>{item.stock_qty??0}</span>
+                          {isLow && <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:99,background:'rgba(255,79,79,0.12)',border:'1px solid rgba(255,79,79,0.3)',color:'#ff4f4f'}}>▲ BAJO</span>}
+                        </div>
+                      </td>
+                      <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
+                      <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* ── Mobile: bottom-sheet detalle de inventario ── */}
+      {selectedInventoryItem && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500,display:'flex',alignItems:'flex-end'}}
+          onClick={()=>setSelectedInventoryItem(null)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:'#1a1a1e',borderRadius:'20px 20px 0 0',padding:'24px',width:'100%',borderTop:'2px solid #c9a84c',maxHeight:'80vh',overflowY:'auto'}}>
+            {/* Handle */}
+            <div style={{width:40,height:4,background:'#333',borderRadius:2,margin:'0 auto 20px'}}/>
+            <div style={{color:'#c9a84c',fontSize:10,fontWeight:700,letterSpacing:'0.15em',marginBottom:6}}>INVENTARIO</div>
+            <div style={{color:'#f0ede8',fontSize:20,fontWeight:800,marginBottom:20}}>{selectedInventoryItem.name}</div>
+            {[
+              {label:'MARCA',        value: selectedInventoryItem.brand     || '—'},
+              {label:'STOCK',        value: selectedInventoryItem.stock_qty ?? 0},
+              {label:'UNIDAD',       value: selectedInventoryItem.unit      || 'mL'},
+              {label:'NIVEL MÍNIMO', value: selectedInventoryItem.min_stock ?? '—'},
+              {label:'CATEGORÍA',    value: selectedInventoryItem.category  || '—'},
+              {label:'NOTAS',        value: selectedInventoryItem.notes     || '—'},
+            ].map(field=>(
+              <div key={field.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                <span style={{color:'#888580',fontSize:11,fontWeight:600}}>{field.label}</span>
+                <span style={{color:'#f0ede8',fontSize:14,fontWeight:600}}>{String(field.value)}</span>
+              </div>
+            ))}
+            <button onClick={()=>setSelectedInventoryItem(null)}
+              style={{width:'100%',marginTop:20,padding:14,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+              CERRAR
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Agregar Servicio ── */}
       {showService && (
