@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 // ─── shared inputs ─────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -82,6 +83,7 @@ const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', 
 
 function CostsTab() {
   const { t, lang } = useLanguage()
+  const isMobile = useIsMobile()
   const [expenses,         setExpenses]         = useState<any[]>([])
   const [loading,          setLoading]          = useState(true)
   const [expFilter,        setExpFilter]        = useState('All')
@@ -228,14 +230,14 @@ function CostsTab() {
   return (
     <>
       {/* KPI row 1 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10, marginBottom: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: isMobile ? 8 : 10, marginBottom: 10 }}>
         {[
           { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa' },
           { dot: '#ff4f4f', label: t('totalExpensesMTD'), value: aed(totalExpenses),  color: '#ff4f4f' },
           { dot: '#c9a84c', label: t('netProfitMTD'),     value: aed(netProfit),      color: '#c9a84c' },
           { dot: '#00d4aa', label: t('profitMargin'),      value: `${profitMargin}%`,  color: '#00d4aa' },
         ].map(k => (
-          <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: 16 }}>
+          <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: k.dot, flexShrink: 0 }} />
               <span style={{ fontSize: 11, color: '#888580' }}>{k.label}</span>
@@ -246,7 +248,7 @@ function CostsTab() {
       </div>
 
       {/* KPI row 2 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 22 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? 8 : 10, marginBottom: 22 }}>
         {[
           { icon: <BarChart2 size={14} color="#4fa3ff" />, iconBg: 'rgba(79,163,255,0.15)',   label: t('fixedCosts'),    sub: `${fixedCosts.pct}% of expenses`,    value: aed(fixedCosts.amount),    bar: '#4fa3ff', pct: fixedCosts.pct    },
           { icon: <Droplets  size={14} color="#c9a84c" />, iconBg: 'rgba(201,168,76,0.15)',  label: t('variableCosts'), sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#c9a84c', pct: variableCosts.pct },
@@ -313,41 +315,74 @@ function CostsTab() {
               + {t('addExpense')}
             </button>
           </div>
+        ) : isMobile ? (
+          /* ── Mobile: expense cards ── */
+          <div style={{ padding: '12px 12px 16px' }}>
+            {displayed.length === 0 ? (
+              <div style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noExpensesInCat')}</div>
+            ) : displayed.map((e: any) => (
+              <div key={e.id} style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 10, padding: 14, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: '#f0ede8', fontWeight: 600, fontSize: 14, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {e.description}
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <CatPill cat={e.category ?? 'Operational'} />
+                    {e.subcat && <span style={{ color: '#888580', fontSize: 11 }}>{e.subcat}</span>}
+                    {e.recurring && <span style={{ fontSize: 9, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 99, padding: '2px 6px' }}>REC</span>}
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ color: '#ff4f4f', fontWeight: 700, fontSize: 15 }}>{aed(e.amount ?? 0)}</div>
+                  <div style={{ color: '#888580', fontSize: 11, marginTop: 3 }}>
+                    {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                  </div>
+                </div>
+              </div>
+            ))}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, paddingTop: 8, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize: 12, color: '#888580' }}>Total:</span>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#ff4f4f' }}>{aed(total)}</span>
+            </div>
+          </div>
         ) : (
+          /* ── Desktop: expense table ── */
           <>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  {['Date', 'Description', 'Category', 'Sub-Cat.', 'AED', 'Recur.'].map(h => (
-                    <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {displayed.length === 0 ? (
-                  <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noExpensesInCat')}</td></tr>
-                ) : displayed.map((e: any) => (
-                  <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
-                    onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                    onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
-                    <td style={{ padding: '12px 16px', fontSize: 11, color: '#888580', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                      {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{e.description}</td>
-                    <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{e.subcat ?? '—'}</td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                      {aed(e.amount ?? 0)}
-                    </td>
-                    <td style={{ padding: '12px 16px' }}>
-                      {e.recurring
-                        ? <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 99, padding: '2px 8px' }}>YES</span>
-                        : <span style={{ fontSize: 10, color: '#888580' }}>—</span>}
-                    </td>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                    {['Date', 'Description', 'Category', 'Sub-Cat.', 'AED', 'Recur.'].map(h => (
+                      <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {displayed.length === 0 ? (
+                    <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noExpensesInCat')}</td></tr>
+                  ) : displayed.map((e: any) => (
+                    <tr key={e.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', transition: 'background 0.1s' }}
+                      onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                      onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
+                      <td style={{ padding: '12px 16px', fontSize: 11, color: '#888580', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                        {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{e.description}</td>
+                      <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{e.subcat ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
+                        {aed(e.amount ?? 0)}
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        {e.recurring
+                          ? <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 99, padding: '2px 8px' }}>YES</span>
+                          : <span style={{ fontSize: 10, color: '#888580' }}>—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 16, padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
               <span style={{ fontSize: 12, color: '#888580' }}>{displayed.length} row{displayed.length !== 1 ? 's' : ''}</span>
               <span style={{ fontSize: 12, color: '#888580' }}>Total:</span>
@@ -385,72 +420,126 @@ function CostsTab() {
               ? 'Marca una reserva como completada para generar una factura automáticamente.'
               : 'Mark a booking as complete to generate an invoice automatically.'}
           </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr>
-                {['FACTURA #','CLIENTE','SUBTOTAL','VAT','TOTAL','ESTADO','ACCIONES'].map(h => (
-                  <th key={h} style={{ fontSize: 10, fontWeight: 500, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0 10px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {invoices
-                .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
-                .map((inv: any) => (
-                <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                  <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 600 }}>{inv.invoice_no}</td>
-                  <td style={{ padding: '12px 8px', fontSize: 13, color: '#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</td>
-                  <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
-                  <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
-                  <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#00d4aa' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
-                  <td style={{ padding: '12px 8px' }}>
-                    <span style={{
-                      padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                      background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
-                      color:      inv.status==='paid' ? '#34d399'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
-                    }}>
-                      {inv.status==='paid'    ? (lang==='es' ? 'Pagada'   : 'Paid')
-                     : inv.status==='sent'    ? (lang==='es' ? 'Enviada'  : 'Sent')
-                     : inv.status==='overdue' ? (lang==='es' ? 'Vencida'  : 'Overdue')
-                     :                          (lang==='es' ? 'Borrador' : 'Draft')}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px 0' }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {inv.status === 'draft' && (
-                        <button onClick={async () => {
-                          await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
-                          fetchInvoices()
-                        }} style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          {lang === 'es' ? 'Enviar' : 'Send'}
-                        </button>
-                      )}
-                      {inv.status === 'sent' && (
-                        <button onClick={async () => {
-                          await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
-                          fetchInvoices()
-                        }} style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          {lang === 'es' ? 'Pagada' : 'Mark Paid'}
-                        </button>
-                      )}
+        ) : isMobile ? (
+          /* ── Mobile: invoice cards ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {invoices
+              .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
+              .map((inv: any) => {
+                const statusColor = inv.status==='paid' ? '#34d399' : inv.status==='sent' ? '#4fa3ff' : inv.status==='overdue' ? '#ff4f4f' : '#888580'
+                const statusBg    = inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)'
+                const statusLabel = inv.status==='paid' ? (lang==='es' ? 'Pagada' : 'Paid')
+                  : inv.status==='sent' ? (lang==='es' ? 'Enviada' : 'Sent')
+                  : inv.status==='overdue' ? (lang==='es' ? 'Vencida' : 'Overdue')
+                  : (lang==='es' ? 'Borrador' : 'Draft')
+                return (
+                  <div key={inv.id} style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 10, padding: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                      <div>
+                        <div style={{ fontFamily: 'monospace', color: '#c9a84c', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
+                        <div style={{ color: '#888580', fontSize: 12, marginTop: 2 }}>{(inv as any).contacts?.name ?? '—'}</div>
+                      </div>
+                      <span style={{ background: statusBg, border: `1px solid ${statusColor}55`, color: statusColor, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
+                        {statusLabel}
+                      </span>
                     </div>
-                  </td>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+                      {[
+                        { label: 'SUBTOTAL', value: `AED ${Number(inv.subtotal ?? 0).toFixed(2)}` },
+                        { label: 'VAT', value: `AED ${Number(inv.tax ?? 0).toFixed(2)}` },
+                        { label: 'TOTAL', value: `AED ${Number(inv.total ?? 0).toFixed(2)}` },
+                      ].map(f => (
+                        <div key={f.label} style={{ textAlign: 'center' }}>
+                          <div style={{ color: '#888580', fontSize: 9, fontWeight: 700, letterSpacing: '1px', marginBottom: 3 }}>{f.label}</div>
+                          <div style={{ color: f.label === 'TOTAL' ? '#00d4aa' : '#f0ede8', fontWeight: f.label === 'TOTAL' ? 800 : 600, fontSize: f.label === 'TOTAL' ? 14 : 12 }}>{f.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {(inv.status === 'draft' || inv.status === 'sent') && (
+                      <button onClick={async () => {
+                        if (inv.status === 'draft') {
+                          await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
+                        } else {
+                          await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
+                        }
+                        fetchInvoices()
+                      }} style={{ width: '100%', padding: '10px 0', background: inv.status === 'draft' ? 'rgba(79,163,255,0.1)' : '#c9a84c', border: inv.status === 'draft' ? '1px solid rgba(79,163,255,0.3)' : 'none', color: inv.status === 'draft' ? '#4fa3ff' : '#0d0d0f', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                        {inv.status === 'draft' ? (lang === 'es' ? 'Enviar' : 'Send') : (lang === 'es' ? 'Marcar Pagada' : 'Mark Paid')}
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        ) : (
+          /* ── Desktop: invoice table ── */
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+              <thead>
+                <tr>
+                  {['FACTURA #','CLIENTE','SUBTOTAL','VAT','TOTAL','ESTADO','ACCIONES'].map(h => (
+                    <th key={h} style={{ fontSize: 10, fontWeight: 500, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0 10px', textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colSpan={4} style={{ padding: '12px 0', fontSize: 12, color: '#888580', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
-                </td>
-                <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#00d4aa', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                  AED {invoices.reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
-                </td>
-                <td colSpan={2} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody>
+                {invoices
+                  .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
+                  .map((inv: any) => (
+                  <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 600 }}>{inv.invoice_no}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 13, color: '#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#00d4aa' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 8px' }}>
+                      <span style={{
+                        padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                        background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
+                        color:      inv.status==='paid' ? '#34d399'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
+                      }}>
+                        {inv.status==='paid'    ? (lang==='es' ? 'Pagada'   : 'Paid')
+                       : inv.status==='sent'    ? (lang==='es' ? 'Enviada'  : 'Sent')
+                       : inv.status==='overdue' ? (lang==='es' ? 'Vencida'  : 'Overdue')
+                       :                          (lang==='es' ? 'Borrador' : 'Draft')}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 0' }}>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {inv.status === 'draft' && (
+                          <button onClick={async () => {
+                            await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
+                            fetchInvoices()
+                          }} style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            {lang === 'es' ? 'Enviar' : 'Send'}
+                          </button>
+                        )}
+                        {inv.status === 'sent' && (
+                          <button onClick={async () => {
+                            await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
+                            fetchInvoices()
+                          }} style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            {lang === 'es' ? 'Pagada' : 'Mark Paid'}
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={4} style={{ padding: '12px 0', fontSize: 12, color: '#888580', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
+                  </td>
+                  <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#00d4aa', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    AED {invoices.reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
+                  </td>
+                  <td colSpan={2} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         )}
       </div>
 
