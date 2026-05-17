@@ -580,6 +580,9 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [showInvite, setShowInvite] = useState(false)
   const [invite, setInvite] = useState({ email: '', role: 'Technician' })
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteError, setInviteError] = useState('')
+  const [inviteSuccess, setInviteSuccess] = useState('')
 
   useEffect(() => {
     const ids = INIT_TEAM.map(m => m.id)
@@ -604,19 +607,37 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
   }
 
   async function sendInvite() {
-    const newId = crypto.randomUUID()
-    const newMember: TeamMember = { id: newId, name: invite.email.split('@')[0], email: invite.email, role: invite.role }
-    const newPerms = defaultPermissions(invite.role)
-    setTeam(prev => [...prev, newMember])
-    setPermsMap(prev => ({ ...prev, [newId]: { role: invite.role, permissions: newPerms } }))
+    if (!invite.email.trim()) return
+    setInviteSending(true)
+    setInviteError('')
+    setInviteSuccess('')
     try {
-      await createClient().from('user_permissions').upsert({
-        user_id: newId, role: invite.role.toLowerCase(), permissions: newPerms,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
-    } catch { /* ignore */ }
-    setInvite({ email: '', role: 'Technician' })
-    setShowInvite(false)
+      const res = await fetch('/api/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: invite.email.trim(), role: invite.role }),
+      })
+      const result = await res.json()
+      if (result.error) {
+        setInviteError(result.error)
+        return
+      }
+      // Add to team view with real user ID returned by the API
+      const memberId = result.userId ?? crypto.randomUUID()
+      const newMember: TeamMember = { id: memberId, name: invite.email.split('@')[0], email: invite.email, role: invite.role }
+      setTeam(prev => [...prev, newMember])
+      setPermsMap(prev => ({ ...prev, [memberId]: { role: invite.role, permissions: defaultPermissions(invite.role) } }))
+      setInviteSuccess(`Invitación enviada a ${invite.email}`)
+      setTimeout(() => {
+        setInvite({ email: '', role: 'Technician' })
+        setShowInvite(false)
+        setInviteSuccess('')
+      }, 1800)
+    } catch (e: any) {
+      setInviteError(`Error de red: ${e.message}`)
+    } finally {
+      setInviteSending(false)
+    }
   }
 
   function handlePermsSaved(memberId: string, role: string, perms: Permissions) {
@@ -713,8 +734,18 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
             <div style={{ fontSize: 11, color: '#888580', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, padding: '8px 12px' }}>
               Se asignarán permisos predeterminados según el rol seleccionado.
             </div>
-            <button className="btn btn-gold" onClick={sendInvite} style={{ width: '100%', justifyContent: 'center' }}>
-              {t('inviteUser')}
+            {inviteError && (
+              <div style={{ fontSize: 12, color: '#ff4f4f', background: 'rgba(255,79,79,0.08)', border: '1px solid rgba(255,79,79,0.2)', borderRadius: 8, padding: '8px 12px' }}>
+                {inviteError}
+              </div>
+            )}
+            {inviteSuccess && (
+              <div style={{ fontSize: 12, color: '#34d399', background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 8, padding: '8px 12px' }}>
+                ✓ {inviteSuccess}
+              </div>
+            )}
+            <button className="btn btn-gold" onClick={sendInvite} disabled={inviteSending || !invite.email.trim()} style={{ width: '100%', justifyContent: 'center', opacity: (inviteSending || !invite.email.trim()) ? 0.6 : 1 }}>
+              {inviteSending ? 'Enviando…' : t('inviteUser')}
             </button>
           </div>
         </Modal>
