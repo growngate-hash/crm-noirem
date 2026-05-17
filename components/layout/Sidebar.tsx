@@ -65,12 +65,14 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 299 }} />
     )}
     <div style={{
-      width: 200, minWidth: 200, height: '100vh',
+      width: 200, minWidth: 200, height: '100dvh',
       background: 'var(--bg2)',
       borderRight: '1px solid var(--border)',
       display: 'flex', flexDirection: 'column',
+      overflow: 'hidden',
       ...(isMobile && {
         position: 'fixed', top: 0, bottom: 0, left: mobileMenuOpen ? 0 : -240,
+        height: '100dvh',
         width: 240, minWidth: 240, zIndex: 300,
         transition: 'left 0.25s ease',
         boxShadow: mobileMenuOpen ? '4px 0 24px rgba(0,0,0,0.5)' : 'none',
@@ -102,7 +104,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Nav items */}
-      <nav style={{ flex: 1, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
+      <nav style={{ flex: 1, minHeight: 0, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', overflowX: 'hidden' }}>
         {NAV.map(({ labelKey, href, icon: Icon }) => {
           const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
@@ -122,16 +124,22 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
         })}
       </nav>
 
-      {/* Mobile-only logout button */}
+      {/* Mobile-only logout button — always anchored above user pill */}
       {isMobile && (
-        <div style={{ padding: '12px 12px 0', flexShrink: 0 }}>
+        <div style={{
+          flexShrink: 0,
+          padding: '12px 14px',
+          paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg2)',
+        }}>
           <button onClick={handleLogout} style={{
-            width: '100%', padding: '11px 14px', borderRadius: 10,
-            background: 'transparent', border: '1px solid rgba(255,79,79,0.3)',
-            color: '#ff4f4f', fontSize: 12, fontWeight: 700,
+            width: '100%', padding: '12px 14px', borderRadius: 10,
+            background: 'transparent', border: '1px solid rgba(255,79,79,0.35)',
+            color: '#ff4f4f', fontSize: 13, fontWeight: 700,
             fontFamily: 'Outfit, sans-serif', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            letterSpacing: '0.06em',
+            letterSpacing: '0.05em',
           }}>
             <LogOut size={14} /> CERRAR SESIÓN
           </button>
