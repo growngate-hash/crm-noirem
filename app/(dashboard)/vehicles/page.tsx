@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Package } from 'lucide-react'
 import { getDubaiToday, dubaiDayRange, formatHoraDubai, toDubaiTime } from '@/utils/timezone'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { useLanguage } from '@/contexts/LanguageContext'
 
 // ─── shared inputs ────────────────────────────────────────────────────────────
@@ -724,7 +725,13 @@ export default function VehiclesPage() {
           ))}
         </div>
       ) : vehicles.length === 0 ? (
-        <div style={{color:'#888580',fontSize:13,padding:20}}>{t('noVehiclesYet')}</div>
+        <EmptyState
+          icon="🚗"
+          title="No hay vehículos registrados"
+          subtitle="Registra el primer vehículo de un cliente para comenzar"
+          actionLabel="+ AGREGAR VEHÍCULO"
+          onAction={() => setShowAdd(true)}
+        />
       ) : (
         <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:8}}>
           {vehicles.map(v=>(

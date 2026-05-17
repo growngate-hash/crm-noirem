@@ -5,6 +5,7 @@ import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { Search, X, Car, Calendar, MessageCircle, Phone, Pencil, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
 const initials = (n: string) => n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -336,10 +337,13 @@ export default function ContactsPage() {
           {loading ? (
             <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando...</div>
           ) : filtered.length === 0 ? (
-            <div style={{ padding:48, textAlign:'center' }}>
-              <div style={{ color:'#888580', fontSize:13 }}>{emptyMsg}</div>
-              {emptyAction}
-            </div>
+            <EmptyState
+              icon={activeTab === 'suppliers' ? '🏭' : '👤'}
+              title={activeTab === 'suppliers' ? 'No hay proveedores aún' : 'No hay contactos aún'}
+              subtitle={activeTab === 'suppliers' ? 'Agrega tu primer proveedor para gestionar tus compras' : 'Agrega tu primer cliente para comenzar a gestionar tus relaciones'}
+              actionLabel={activeTab === 'suppliers' ? '+ AGREGAR PROVEEDOR' : '+ AGREGAR CLIENTE'}
+              onAction={() => activeTab === 'suppliers' ? setShowProvider(true) : setShowClient(true)}
+            />
           ) : filtered.map(c => {
             const bkCount   = (c.bookings ?? []).length
             const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
@@ -397,9 +401,14 @@ export default function ContactsPage() {
                 <tr><td colSpan={6}><SkeletonTable rows={4} cols={6} /></td></tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ padding:48, textAlign:'center' }}>
-                    <div style={{ color:'#888580', fontSize:13 }}>{emptyMsg}</div>
-                    {emptyAction}
+                  <td colSpan={6}>
+                    <EmptyState
+                      icon={activeTab === 'suppliers' ? '🏭' : '👤'}
+                      title={activeTab === 'suppliers' ? 'No hay proveedores aún' : 'No hay contactos aún'}
+                      subtitle={activeTab === 'suppliers' ? 'Agrega tu primer proveedor para gestionar tus compras' : 'Agrega tu primer cliente para comenzar a gestionar tus relaciones'}
+                      actionLabel={activeTab === 'suppliers' ? '+ AGREGAR PROVEEDOR' : '+ AGREGAR CLIENTE'}
+                      onAction={() => activeTab === 'suppliers' ? setShowProvider(true) : setShowClient(true)}
+                    />
                   </td>
                 </tr>
               ) : filtered.map(c => {

@@ -5,6 +5,7 @@ import { X, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
 const INP_BASE: React.CSSProperties = {
@@ -439,6 +440,14 @@ export default function ServicesPage() {
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
             {[1,2,3,4].map(i=><div key={i} style={{background:'#141416',border:'1px solid rgba(255,255,255,0.06)',borderRadius:12,padding:20,height:180}} className="skeleton"/>)}
           </div>
+        ) : srcServices.length === 0 ? (
+          <EmptyState
+            icon="✨"
+            title="No hay servicios creados"
+            subtitle="Define los servicios que ofreces para poder asignarlos a reservas"
+            actionLabel="+ AGREGAR SERVICIO"
+            onAction={() => setShowService(true)}
+          />
         ) : (
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
             {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)}/>)}

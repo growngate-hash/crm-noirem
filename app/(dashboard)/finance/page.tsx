@@ -5,6 +5,7 @@ import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── shared inputs ─────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -308,12 +309,14 @@ function CostsTab() {
         {loading ? (
           <div style={{ padding: 40, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('loading')}</div>
         ) : expenses.length === 0 ? (
-          <div style={{ padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#3a3836' }}>{t('noExpenses')}</div>
-            <button onClick={() => setShowAdd(true)}
-              style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
-              + {t('addExpense')}
-            </button>
+          <div style={{ padding: '0 16px' }}>
+            <EmptyState
+              icon="💸"
+              title="Sin gastos registrados"
+              subtitle="Registra los gastos del negocio para controlar tu rentabilidad"
+              actionLabel="+ AGREGAR GASTO"
+              onAction={() => setShowAdd(true)}
+            />
           </div>
         ) : isMobile ? (
           /* ── Mobile: expense cards ── */
@@ -411,15 +414,11 @@ function CostsTab() {
 
         {/* Tabla / vacío */}
         {invoices.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: '#888580', fontSize: 13 }}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>🧾</div>
-            <div style={{ fontWeight: 600, marginBottom: 4, color: '#f0ede8' }}>
-              {lang === 'es' ? 'Sin facturas todavía' : 'No invoices yet'}
-            </div>
-            {lang === 'es'
-              ? 'Marca una reserva como completada para generar una factura automáticamente.'
-              : 'Mark a booking as complete to generate an invoice automatically.'}
-          </div>
+          <EmptyState
+            icon="🧾"
+            title="Sin facturas generadas"
+            subtitle="Las facturas se generan automáticamente al completar una reserva"
+          />
         ) : isMobile ? (
           /* ── Mobile: invoice cards ── */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

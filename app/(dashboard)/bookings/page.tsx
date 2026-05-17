@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
@@ -554,7 +555,11 @@ export default function BookingsPage() {
             {loading ? (
               <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
             ) : vehicles.length===0 ? (
-              <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>{t('noVehiclesReg2')}</div>
+              <EmptyState
+                icon="🚗"
+                title="Sin vehículos registrados"
+                subtitle="Agrega vehículos desde la sección Vehículos para poder crear reservas"
+              />
             ) : vehicles.map((v,i)=>{
               const vBookings = getBookingsForVehicle(v.id)
               const demoItems = getDemoForVehicle(v.name)

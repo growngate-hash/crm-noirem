@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { DollarSign, BarChart2, FileText, BookOpen, Receipt, Package, Database, Star, ChevronLeft, Download, FileSpreadsheet, Mail, MessageSquare, X, Star as StarFilled } from 'lucide-react'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── types ────────────────────────────────────────────────────────────────────
 type Report     = { name: string; desc: string }
@@ -667,10 +668,12 @@ export default function ReportsPage() {
               ))}
             </div>
           ) : activeCat.reports.length === 0 ? (
-            <div style={{ padding:'40px 20px', textAlign:'center' }}>
-              <div style={{ fontSize:28, marginBottom:10 }}>⭐</div>
-              <div style={{ fontSize:14, fontWeight:600, color:'#3a3836', marginBottom:6 }}>{t('noFavoriteReports')}</div>
-              <div style={{ fontSize:12, color:'#3a3836' }}>{t('noFavoritesDesc')}</div>
+            <div style={{ padding:'0 16px' }}>
+              <EmptyState
+                icon="📊"
+                title="Sin datos para mostrar"
+                subtitle="Completa reservas y registra gastos para ver tus reportes aquí"
+              />
             </div>
           ) : (
             activeCat.reports.map((r, i) => (

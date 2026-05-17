@@ -169,11 +169,10 @@ export default function NotificationsPanel() {
           {/* Notification list */}
           <div style={{ maxHeight: 380, overflowY: 'auto' }}>
             {notifications.length === 0 ? (
-              <div style={{
-                padding: '40px 16px', textAlign: 'center',
-                color: 'var(--text2)', fontSize: 13,
-              }}>
-                No notifications
+              <div style={{ padding: '36px 16px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔔</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>Sin notificaciones</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.4 }}>Aquí aparecerán alertas de reservas y stock</div>
               </div>
             ) : notifications.map(n => (
               <div
