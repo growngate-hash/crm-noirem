@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { Search, X, Car, Calendar, MessageCircle, Phone, Pencil, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
+import { useIsMobile } from '@/hooks/useIsMobile'
 
 const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
 const initials = (n: string) => n.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()
@@ -119,12 +120,14 @@ const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadi
 
 export default function ContactsPage() {
   const { t } = useLanguage()
-  const [contacts,   setContacts]   = useState<any[]>([])
-  const [loading,    setLoading]    = useState(true)
-  const [search,     setSearch]     = useState('')
-  const [tierFilter, setTierFilter] = useState('All')
-  const [activeTab,  setActiveTab]  = useState<'clients'|'suppliers'>('clients')
-  const [drawer,     setDrawer]     = useState<any | null>(null)
+  const isMobile = useIsMobile()
+  const [contacts,         setContacts]         = useState<any[]>([])
+  const [loading,          setLoading]          = useState(true)
+  const [search,           setSearch]           = useState('')
+  const [tierFilter,       setTierFilter]       = useState('All')
+  const [activeTab,        setActiveTab]        = useState<'clients'|'suppliers'>('clients')
+  const [drawer,           setDrawer]           = useState<any | null>(null)
+  const [selectedContact,  setSelectedContact]  = useState<any | null>(null)
 
   // add modals
   const [showClient,   setShowClient]   = useState(false)
@@ -262,7 +265,7 @@ export default function ContactsPage() {
     : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
 
   return (
-    <div style={{ padding:24, minHeight:'100%' }}>
+    <div className="page-pad" style={{ padding:24, minHeight:'100%' }}>
 
       {/* ── Tabs ── */}
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:20 }}>
@@ -277,116 +280,175 @@ export default function ContactsPage() {
 
       {/* ── Filter bar ── */}
       <div style={{ display:'flex', gap:10, marginBottom:16, alignItems:'center', flexWrap:'wrap' }}>
-        <div style={{ position:'relative', flex:1, minWidth:180, maxWidth:300 }}>
+        <div style={{ position:'relative', flex:1, minWidth:160, maxWidth:300 }}>
           <Search size={13} color="#888580" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
           <input className="inp" style={{ paddingLeft:30, fontSize:12 }} placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
-        <div style={{ display:'flex', gap:6 }}>
-          {(activeTab === 'suppliers' ? ['All'] : TIER_PILLS).map(pill => {
+        {!isMobile && (
+          <div style={{ display:'flex', gap:6 }}>
+            {(activeTab === 'suppliers' ? ['All'] : TIER_PILLS).map(pill => {
+              const isActive = tierFilter === pill
+              return (
+                <button key={pill} onClick={() => setTierFilter(pill)}
+                  style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#c9a84c':'rgba(201,168,76,0.12)', color:isActive?'#0d0d0f':'#c9a84c', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                >
+                  {pill}
+                </button>
+              )
+            })}
+          </div>
+        )}
+        <div style={{ display:'flex', gap:8, marginLeft:'auto' }}>
+          {!isMobile && (
+            <button onClick={() => setShowProvider(true)}
+              style={{ padding:'8px 16px', borderRadius:8, cursor:'pointer', background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
+            >
+              + {t('addSupplier')}
+            </button>
+          )}
+          <button onClick={() => activeTab === 'suppliers' ? setShowProvider(true) : setShowClient(true)}
+            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
+          >
+            + {isMobile ? t(activeTab === 'suppliers' ? 'addSupplier' : 'addClient') : t('addClient')}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Mobile: tier pills row ── */}
+      {isMobile && activeTab !== 'suppliers' && (
+        <div className="tabs-scroll" style={{ marginBottom:12 }}>
+          {TIER_PILLS.map(pill => {
             const isActive = tierFilter === pill
             return (
               <button key={pill} onClick={() => setTierFilter(pill)}
-                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#c9a84c':'rgba(201,168,76,0.12)', color:isActive?'#0d0d0f':'#c9a84c', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', flexShrink:0, background:isActive?'#c9a84c':'rgba(201,168,76,0.12)', color:isActive?'#0d0d0f':'#c9a84c', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
               >
                 {pill}
               </button>
             )
           })}
         </div>
-        <div style={{ display:'flex', gap:8, marginLeft:'auto' }}>
-          <button onClick={() => setShowProvider(true)}
-            style={{ padding:'8px 16px', borderRadius:8, cursor:'pointer', background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
-          >
-            + {t('addSupplier')}
-          </button>
-          <button onClick={() => setShowClient(true)}
-            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
-          >
-            + {t('addClient')}
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* ── Table ── */}
-      <div className="glass" style={{ overflow:'hidden' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-              {[t('client'), t('category')].map(h => (
-                <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
-              ))}
-              {activeTab === 'suppliers' ? (
-                <>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('supplierType')}</th>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('phone')}</th>
-                </>
-              ) : (
-                <>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('mainVehicle')}</th>
-                  <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('licensePlate')}</th>
-                </>
-              )}
-              {[t('totalSpent'), t('actions')].map(h => (
-                <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6}><SkeletonTable rows={4} cols={6} /></td></tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ padding:48, textAlign:'center' }}>
-                  <div style={{ color:'#888580', fontSize:13 }}>{emptyMsg}</div>
-                  {emptyAction}
-                </td>
+      {/* ── Content: Cards (mobile) / Table (desktop) ── */}
+      {isMobile ? (
+        <div>
+          {loading ? (
+            <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando...</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding:48, textAlign:'center' }}>
+              <div style={{ color:'#888580', fontSize:13 }}>{emptyMsg}</div>
+              {emptyAction}
+            </div>
+          ) : filtered.map(c => {
+            const bkCount   = (c.bookings ?? []).length
+            const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
+            return (
+              <div key={c.id} onClick={() => setSelectedContact(c)}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', marginBottom:8, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, cursor:'pointer', transition:'border-color 0.15s', active:{borderColor:'#c9a84c'} } as any}
+              >
+                <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,#c9a84c,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#000', flexShrink:0 }}>
+                  {initials(c.name ?? '?')}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    {c.phone && <span style={{ fontSize:11, color:'#888580', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.phone}</span>}
+                    {!c.phone && c.email && <span style={{ fontSize:11, color:'#888580', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.email}</span>}
+                  </div>
+                </div>
+                <div style={{ flexShrink:0 }}>
+                  {c.tipo === 'proveedor'
+                    ? <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>PROV</span>
+                    : <CategoryBadge tier={c.tier ?? 'VIP'} />
+                  }
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        /* ── Desktop table ── */
+        <div className="glass table-wrap" style={{ overflow:'hidden' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
+            <thead>
+              <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+                {[t('client'), t('category')].map(h => (
+                  <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                ))}
+                {activeTab === 'suppliers' ? (
+                  <>
+                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('supplierType')}</th>
+                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('phone')}</th>
+                  </>
+                ) : (
+                  <>
+                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('mainVehicle')}</th>
+                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('licensePlate')}</th>
+                  </>
+                )}
+                {[t('totalSpent'), t('actions')].map(h => (
+                  <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                ))}
               </tr>
-            ) : filtered.map(c => {
-              const vehicleName = c.vehicle_type || '—'
-              const plate       = c.license_plate || '—'
-              const bkCount     = (c.bookings ?? []).length
-              const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
-              return (
-                <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
-                  <td style={{ padding:'14px 16px' }}>
-                    <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
-                    {activeTab !== 'suppliers' && (
-                      <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
-                    )}
-                  </td>
-                  <td style={{ padding:'14px 16px' }}>
-                    {activeTab === 'suppliers'
-                      ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>{t('suppliers').toUpperCase()}</span>
-                      : <CategoryBadge tier={c.tier ?? 'VIP'} />
-                    }
-                  </td>
-                  {activeTab === 'suppliers' ? (
-                    <>
-                      <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#f0ede8' : '#3a3836' }}>{c.supplier_type || '—'}</td>
-                      <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#f0ede8' : '#3a3836' }}>{c.phone || '—'}</td>
-                    </>
-                  ) : (
-                    <>
-                      <td style={{ padding:'14px 16px', fontSize:13, color: c.vehicle_type ? '#888580' : '#3a3836' }}>{vehicleName}</td>
-                      <td style={{ padding:'14px 16px' }}>
-                        <span style={{ fontFamily:'monospace', fontSize:12, color: c.license_plate ? '#c9a84c' : '#3a3836', fontWeight:600 }}>{plate}</span>
-                      </td>
-                    </>
-                  )}
-                  <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{fmt(totalSpent)}</td>
-                  <td style={{ padding:'14px 16px' }} onClick={e => e.stopPropagation()}>
-                    <div style={{ display:'flex', gap:6 }}>
-                      <ActionBtn><MessageCircle size={13} /></ActionBtn>
-                      <ActionBtn><Phone size={13} /></ActionBtn>
-                      <ActionBtn onClick={() => openEdit(c)}><Pencil size={13} /></ActionBtn>
-                    </div>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={6}><SkeletonTable rows={4} cols={6} /></td></tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ padding:48, textAlign:'center' }}>
+                    <div style={{ color:'#888580', fontSize:13 }}>{emptyMsg}</div>
+                    {emptyAction}
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
+              ) : filtered.map(c => {
+                const vehicleName = c.vehicle_type || '—'
+                const plate       = c.license_plate || '—'
+                const bkCount     = (c.bookings ?? []).length
+                const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
+                return (
+                  <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
+                    <td style={{ padding:'14px 16px' }}>
+                      <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
+                      {activeTab !== 'suppliers' && (
+                        <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
+                      )}
+                    </td>
+                    <td style={{ padding:'14px 16px' }}>
+                      {activeTab === 'suppliers'
+                        ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>{t('suppliers').toUpperCase()}</span>
+                        : <CategoryBadge tier={c.tier ?? 'VIP'} />
+                      }
+                    </td>
+                    {activeTab === 'suppliers' ? (
+                      <>
+                        <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#f0ede8' : '#3a3836' }}>{c.supplier_type || '—'}</td>
+                        <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#f0ede8' : '#3a3836' }}>{c.phone || '—'}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td style={{ padding:'14px 16px', fontSize:13, color: c.vehicle_type ? '#888580' : '#3a3836' }}>{vehicleName}</td>
+                        <td style={{ padding:'14px 16px' }}>
+                          <span style={{ fontFamily:'monospace', fontSize:12, color: c.license_plate ? '#c9a84c' : '#3a3836', fontWeight:600 }}>{plate}</span>
+                        </td>
+                      </>
+                    )}
+                    <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{fmt(totalSpent)}</td>
+                    <td style={{ padding:'14px 16px' }} onClick={e => e.stopPropagation()}>
+                      <div style={{ display:'flex', gap:6 }}>
+                        <ActionBtn><MessageCircle size={13} /></ActionBtn>
+                        <ActionBtn><Phone size={13} /></ActionBtn>
+                        <ActionBtn onClick={() => openEdit(c)}><Pencil size={13} /></ActionBtn>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* ── Drawer ── */}
       {drawer && (
@@ -447,6 +509,64 @@ export default function ContactsPage() {
                     </div>
                   ))}
               </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── Mobile bottom-sheet: Contact detail ── */}
+      {selectedContact && (
+        <>
+          <div onClick={() => setSelectedContact(null)} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:500 }} />
+          <div style={{ position:'fixed', bottom:0, left:0, right:0, zIndex:501, background:'var(--bg2)', borderTop:'2px solid #c9a84c', borderRadius:'20px 20px 0 0', padding:'0 20px 32px', maxHeight:'80vh', overflowY:'auto' }}>
+            {/* handle */}
+            <div style={{ display:'flex', justifyContent:'center', padding:'12px 0 8px' }}>
+              <div style={{ width:36, height:4, borderRadius:2, background:'rgba(255,255,255,0.15)' }} />
+            </div>
+            {/* header */}
+            <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:20 }}>
+              <div style={{ width:50, height:50, borderRadius:'50%', background:'linear-gradient(135deg,#c9a84c,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:700, color:'#000', flexShrink:0 }}>
+                {initials(selectedContact.name ?? '?')}
+              </div>
+              <div>
+                <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8', marginBottom:5 }}>{selectedContact.name}</div>
+                {selectedContact.tipo === 'proveedor'
+                  ? <span style={{ fontSize:9, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>PROVEEDOR</span>
+                  : <CategoryBadge tier={selectedContact.tier ?? 'VIP'} />
+                }
+              </div>
+              <button onClick={() => setSelectedContact(null)} style={{ marginLeft:'auto', background:'none', border:'none', color:'#888580', cursor:'pointer', padding:6 }}>
+                <X size={18} />
+              </button>
+            </div>
+            {/* fields */}
+            {[
+              { label: t('phone'),   value: selectedContact.phone },
+              { label: t('email'),   value: selectedContact.email },
+              { label: t('address'), value: selectedContact.address },
+              selectedContact.tipo !== 'proveedor'
+                ? { label: t('vehicleType'),  value: selectedContact.vehicle_type }
+                : { label: t('supplierType'), value: selectedContact.supplier_type },
+              selectedContact.tipo !== 'proveedor'
+                ? { label: t('licensePlate'), value: selectedContact.license_plate }
+                : null,
+              { label: t('notes'),   value: selectedContact.notes },
+            ].filter(Boolean).map((f: any) => f.value ? (
+              <div key={f.label} style={{ marginBottom:14, padding:'10px 14px', background:'var(--bg3)', borderRadius:10, border:'1px solid var(--border)' }}>
+                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{f.label}</div>
+                <div style={{ fontSize:13, color:'#f0ede8', fontWeight:500 }}>{f.value}</div>
+              </div>
+            ) : null)}
+            {/* action buttons */}
+            <div style={{ display:'flex', gap:10, marginTop:8 }}>
+              {selectedContact.phone && (
+                <a href={`tel:${selectedContact.phone}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'13px 0', borderRadius:10, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                  <Phone size={15} /> LLAMAR
+                </a>
+              )}
+              <button onClick={() => { openEdit(selectedContact); setSelectedContact(null) }} style={{ flex:1, padding:'13px 0', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'var(--bg3)', color:'#f0ede8', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+                EDITAR
+              </button>
             </div>
           </div>
         </>
