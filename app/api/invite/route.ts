@@ -36,7 +36,7 @@ export async function POST(request: Request) {
   if (userId) {
     const perms = buildDefaultPermissions(role ?? 'Technician')
     await supabaseAdmin.from('user_permissions').upsert(
-      { user_id: userId, role: (role ?? 'Technician').toLowerCase(), permissions: perms, updated_at: new Date().toISOString() },
+      { user_id: userId, role: (role ?? 'Technician').toLowerCase(), permissions: { ...perms, _email: email.trim() }, updated_at: new Date().toISOString() },
       { onConflict: 'user_id' }
     )
   }

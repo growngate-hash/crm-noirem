@@ -181,7 +181,7 @@ function PermissionsModal({
       await createClient().from('user_permissions').upsert({
         user_id: member.id,
         role: editRole.toLowerCase(),
-        permissions: editPerms,
+        permissions: { ...editPerms, _email: member.email },
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id' })
     } catch { /* local state still updated */ }
@@ -567,15 +567,9 @@ function ProfileSection() {
 }
 
 // ─── Team section ─────────────────────────────────────────────────────────────
-const INIT_TEAM: TeamMember[] = [
-  { id: '550e8400-e29b-41d4-a716-446655440001', name: 'Ahmed Al Mansouri', email: 'ahmed@noirem.ae', role: 'Admin' },
-  { id: '550e8400-e29b-41d4-a716-446655440002', name: 'Sara Khalid',       email: 'sara@noirem.ae',   role: 'Manager' },
-  { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Khalid Hassan',     email: 'khalid@noirem.ae', role: 'Technician' },
-]
-
 function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentUserEmail: string }) {
   const { t } = useLanguage()
-  const [team, setTeam] = useState<TeamMember[]>(INIT_TEAM)
+  const [team, setTeam] = useState<TeamMember[]>([])
   const [permsMap, setPermsMap] = useState<Record<string, { role: string; permissions: Permissions }>>({})
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [showInvite, setShowInvite] = useState(false)
@@ -585,20 +579,33 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
   const [inviteSuccess, setInviteSuccess] = useState('')
 
   useEffect(() => {
-    const ids = INIT_TEAM.map(m => m.id)
-    createClient()
-      .from('user_permissions')
-      .select('user_id, role, permissions')
-      .in('user_id', ids)
-      .then(({ data }) => {
-        const map: Record<string, { role: string; permissions: Permissions }> = {}
-        if (data && data.length > 0) {
-          data.forEach((row: any) => { map[row.user_id] = { role: row.role, permissions: row.permissions } })
-        } else {
-          INIT_TEAM.forEach(m => { map[m.id] = { role: m.role, permissions: defaultPermissions(m.role) } })
+    async function load() {
+      console.log('[TeamSection] loading team from /api/team …')
+      try {
+        const res = await fetch('/api/team')
+        const json = await res.json()
+        console.log('[TeamSection] /api/team response:', json)
+
+        if (json.error || !json.team) {
+          console.warn('[TeamSection] API error:', json.error)
+          return
         }
+
+        const map: Record<string, { role: string; permissions: Permissions }> = {}
+        json.team.forEach((m: any) => {
+          map[m.id] = {
+            role: m.role,
+            permissions: m.permissions ?? defaultPermissions(m.role),
+          }
+        })
+
+        setTeam(json.team)
         setPermsMap(map)
-      })
+      } catch (e) {
+        console.error('[TeamSection] fetch error:', e)
+      }
+    }
+    load()
   }, [])
 
   function removeTeam(id: string) {
@@ -622,16 +629,22 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
         setInviteError(result.error)
         return
       }
-      // Add to team view with real user ID returned by the API
-      const memberId = result.userId ?? crypto.randomUUID()
-      const newMember: TeamMember = { id: memberId, name: invite.email.split('@')[0], email: invite.email, role: invite.role }
-      setTeam(prev => [...prev, newMember])
-      setPermsMap(prev => ({ ...prev, [memberId]: { role: invite.role, permissions: defaultPermissions(invite.role) } }))
       setInviteSuccess(`Invitación enviada a ${invite.email}`)
-      setTimeout(() => {
+      setTimeout(async () => {
         setInvite({ email: '', role: 'Technician' })
         setShowInvite(false)
         setInviteSuccess('')
+        // Reload team from API so the new member appears with real auth data
+        const teamRes = await fetch('/api/team')
+        const teamJson = await teamRes.json()
+        if (teamJson.team) {
+          const map: Record<string, { role: string; permissions: Permissions }> = {}
+          teamJson.team.forEach((m: any) => {
+            map[m.id] = { role: m.role, permissions: m.permissions ?? defaultPermissions(m.role) }
+          })
+          setTeam(teamJson.team)
+          setPermsMap(map)
+        }
       }, 1800)
     } catch (e: any) {
       setInviteError(`Error de red: ${e.message}`)
