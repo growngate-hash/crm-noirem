@@ -96,8 +96,8 @@ export default function AuthPage() {
 
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: 0 }}>
-          <div style={{ width: 48, height: 48, background: '#c9a84c', borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#0d0d0f', fontSize: 24, marginBottom: 14 }}>N</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#f0ede8', letterSpacing: '0.1em' }}>NOIREM</div>
+          <div style={{ width: 48, height: 48, background: '#c9a84c', borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#0d0d0f', fontSize: 24, marginBottom: 14 }}>S</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: '#f0ede8', letterSpacing: '0.1em' }}>SAFFI</div>
           <div style={{ fontSize: 10, color: '#888580', letterSpacing: '0.15em', marginTop: 4 }}>DUBAI · LUXURY DETAILING</div>
         </div>
 
@@ -217,7 +217,7 @@ export default function AuthPage() {
 
       {/* Footer */}
       <div style={{ marginTop: 24, fontSize: 11, color: '#3a3836', textAlign: 'center' }}>
-        © 2026 Noirem · Powered by NexusCRM
+        © 2026 Saffi · Luxury Car Care
       </div>
 
       {/* Toast */}

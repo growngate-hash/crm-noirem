@@ -81,8 +81,8 @@ export default function LoginPage() {
             borderRadius: '14px', display: 'flex', alignItems: 'center',
             justifyContent: 'center', margin: '0 auto 12px',
             fontSize: '22px', fontWeight: 800, color: '#0d0d0f',
-          }}>N</div>
-          <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0ede8', letterSpacing: '0.08em' }}>NOIREM</div>
+          }}>S</div>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0ede8', letterSpacing: '0.08em' }}>SAFFI</div>
           <div style={{ fontSize: '10px', color: '#888580', letterSpacing: '0.15em', marginTop: '4px' }}>DUBAI · LUXURY DETAILING</div>
         </div>
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
           </>
         )}
 
-        <div style={{ textAlign: 'center', marginTop: '28px', fontSize: '11px', color: '#3a3836' }}>© 2026 Noirem · Luxury Car Care</div>
+        <div style={{ textAlign: 'center', marginTop: '28px', fontSize: '11px', color: '#3a3836' }}>© 2026 Saffi · Luxury Car Care</div>
       </div>
     </div>
   )

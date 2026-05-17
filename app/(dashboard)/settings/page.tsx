@@ -320,7 +320,7 @@ const INTEGRATIONS = [
 function ProfileSection() {
   const { t } = useLanguage()
   const { logoUrl, setLogoUrl } = useCompany()
-  const [form, setForm] = useState({ businessName:'Noirem Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
+  const [form, setForm] = useState({ businessName:'Saffi Dubai', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)

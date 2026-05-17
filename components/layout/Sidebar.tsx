@@ -68,10 +68,10 @@ export default function Sidebar() {
         }}>
           {logoUrl
             ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-            : 'N'}
+            : 'S'}
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>NOIREM</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>SAFFI</div>
           <div style={{ fontSize: 8, color: 'var(--text2)', letterSpacing: '0.05em', marginTop: 1 }}>DUBAI · LUXURY DETAILING</div>
         </div>
       </div>

@@ -9,8 +9,16 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'Noirem CRM — Luxury Car Care Dubai',
-  description: 'Luxury CRM for Noirem Car Care Dubai',
+  title: {
+    default: 'Saffi CRM',
+    template: '%s — Saffi CRM',
+  },
+  description: 'Luxury Car Care Management System — Dubai',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: '/favicon.svg',
+  },
+  manifest: '/manifest.json',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
