@@ -98,7 +98,7 @@ export default function AuthPage() {
         <div style={{ textAlign: 'center', marginBottom: 0 }}>
           <div style={{ width: 48, height: 48, background: '#c9a84c', borderRadius: 12, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, color: '#0d0d0f', fontSize: 24, marginBottom: 14 }}>S</div>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#f0ede8', letterSpacing: '0.1em' }}>SAFFI</div>
-          <div style={{ fontSize: 10, color: '#888580', letterSpacing: '0.15em', marginTop: 4 }}>DUBAI · LUXURY DETAILING</div>
+          <div style={{ fontSize: 10, color: '#888580', letterSpacing: '0.15em', marginTop: 4 }}>LUXURY DETAILING</div>
         </div>
 
         <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', margin: '24px 0' }}/>
