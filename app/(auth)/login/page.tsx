@@ -83,7 +83,7 @@ export default function LoginPage() {
             fontSize: '22px', fontWeight: 800, color: '#0d0d0f',
           }}>S</div>
           <div style={{ fontSize: '18px', fontWeight: 800, color: '#f0ede8', letterSpacing: '0.08em' }}>SAFFI</div>
-          <div style={{ fontSize: '10px', color: '#888580', letterSpacing: '0.15em', marginTop: '4px' }}>DUBAI · LUXURY DETAILING</div>
+          <div style={{ fontSize: '10px', color: '#888580', letterSpacing: '0.15em', marginTop: '4px' }}>LUXURY DETAILING</div>
         </div>
 
         <div style={{ height: '1px', background: 'rgba(255,255,255,0.06)', marginBottom: '28px' }}/>
