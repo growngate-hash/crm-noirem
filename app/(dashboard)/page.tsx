@@ -13,8 +13,8 @@ import { DollarSign, TrendingUp, TrendingDown, ChevronDown, Plus, X } from 'luci
 // ─── helpers ────────────────────────────────────────────────────────────────
 function formatAED(value: number): string {
   if (value >= 1_000_000) return `AED ${(value / 1_000_000).toFixed(1)}M`
-  if (value >= 1_000) return `AED ${(value / 1_000).toFixed(0)}K`
-  return `AED ${value.toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+  if (value >= 10_000) return `AED ${(value / 1_000).toFixed(0)}K`
+  return `AED ${Math.round(value).toLocaleString('en-AE')}`
 }
 const fmt = formatAED
 
@@ -659,15 +659,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* DEBUG — borrar después */}
-      {!loading && (
-        <div style={{ position:'fixed', bottom:24, left:24, zIndex:9999, background:'#1a1a1f', border:'1px solid #c9a84c', borderRadius:10, padding:'10px 14px', fontSize:11, color:'#f0ede8', fontFamily:'monospace', lineHeight:1.6 }}>
-          <div>💰 Revenue total: AED {kpis.totalRevenue}</div>
-          <div>💰 Revenue MTD: AED {kpis.revenueMTD}</div>
-          <div>🔴 Expenses: AED {kpis.totalExpenses}</div>
-          <div>✅ Profit: AED {kpis.totalProfit}</div>
-        </div>
-      )}
     </div>
   )
 }
