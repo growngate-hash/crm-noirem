@@ -104,6 +104,10 @@ function CostsTab() {
   const [busqueda,           setBusqueda]           = useState('')
   const [invoices,           setInvoices]           = useState<any[]>([])
   const [invoiceFilter,      setInvoiceFilter]      = useState('all')
+  const [showPaymentModal,   setShowPaymentModal]   = useState(false)
+  const [selectedInvoice,    setSelectedInvoice]    = useState<any>(null)
+  const [transactionId,      setTransactionId]      = useState('')
+  const [paymentError,       setPaymentError]       = useState('')
   const [receiptFile,        setReceiptFile]        = useState<File | null>(null)
   const [receiptPreview,     setReceiptPreview]     = useState<string | null>(null)
   const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
@@ -147,6 +151,26 @@ function CostsTab() {
   function resetReceiptState() {
     setReceiptFile(null)
     setReceiptPreview(null)
+  }
+
+  function handleMarkAsPaid(inv: any) {
+    setSelectedInvoice(inv)
+    setTransactionId('')
+    setPaymentError('')
+    setShowPaymentModal(true)
+  }
+
+  async function confirmPayment() {
+    if (!transactionId.trim()) { setPaymentError('Debes ingresar el ID de la transacción'); return }
+    const { error } = await createClient().from('invoices').update({
+      status: 'paid',
+      transaction_id: transactionId.trim(),
+      paid_at: new Date().toISOString(),
+    }).eq('id', selectedInvoice.id)
+    if (error) { setPaymentError('Error al actualizar la factura'); return }
+    addToast(lang === 'es' ? 'Factura marcada como pagada ✓' : 'Invoice marked as paid ✓', 'success')
+    setShowPaymentModal(false)
+    fetchInvoices()
   }
 
   async function fetchExpenses() {
@@ -481,9 +505,10 @@ function CostsTab() {
             {invoices
               .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
               .map((inv: any) => {
-                const statusColor = inv.status==='paid' ? '#34d399' : inv.status==='sent' ? '#4fa3ff' : inv.status==='overdue' ? '#ff4f4f' : '#888580'
-                const statusBg    = inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)'
+                const statusColor = inv.status==='paid' ? '#34d399' : inv.status==='por_cobrar' ? '#f59e0b' : inv.status==='sent' ? '#4fa3ff' : inv.status==='overdue' ? '#ff4f4f' : '#888580'
+                const statusBg    = inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='por_cobrar' ? 'rgba(245,158,11,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)'
                 const statusLabel = inv.status==='paid' ? (lang==='es' ? 'Pagada' : 'Paid')
+                  : inv.status==='por_cobrar' ? 'Por Cobrar'
                   : inv.status==='sent' ? (lang==='es' ? 'Enviada' : 'Sent')
                   : inv.status==='overdue' ? (lang==='es' ? 'Vencida' : 'Overdue')
                   : (lang==='es' ? 'Borrador' : 'Draft')
@@ -510,17 +535,22 @@ function CostsTab() {
                         </div>
                       ))}
                     </div>
-                    {(inv.status === 'draft' || inv.status === 'sent') && (
-                      <button onClick={async () => {
-                        if (inv.status === 'draft') {
-                          await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
-                        } else {
-                          await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
-                        }
-                        fetchInvoices()
-                      }} style={{ width: '100%', padding: '10px 0', background: inv.status === 'draft' ? 'rgba(79,163,255,0.1)' : '#c9a84c', border: inv.status === 'draft' ? '1px solid rgba(79,163,255,0.3)' : 'none', color: inv.status === 'draft' ? '#4fa3ff' : '#0d0d0f', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                        {inv.status === 'draft' ? (lang === 'es' ? 'Enviar' : 'Send') : (lang === 'es' ? 'Marcar Pagada' : 'Mark Paid')}
+                    {inv.status === 'draft' && (
+                      <button onClick={async () => { await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id); fetchInvoices() }}
+                        style={{ width: '100%', padding: '10px 0', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                        {lang === 'es' ? 'Enviar' : 'Send'}
                       </button>
+                    )}
+                    {(inv.status === 'por_cobrar' || inv.status === 'sent') && (
+                      <button onClick={() => handleMarkAsPaid(inv)}
+                        style={{ width: '100%', padding: '10px 0', background: '#c9a84c', border: 'none', color: '#0d0d0f', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                        {lang === 'es' ? 'Marcar Pagada' : 'Mark Paid'}
+                      </button>
+                    )}
+                    {inv.status === 'paid' && inv.transaction_id && (
+                      <div style={{ textAlign: 'center', fontSize: 11, color: '#888580', padding: '6px 0' }}>
+                        Ref: {inv.transaction_id}
+                      </div>
                     )}
                   </div>
                 )
@@ -550,32 +580,32 @@ function CostsTab() {
                     <td style={{ padding: '12px 8px' }}>
                       <span style={{
                         padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                        background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
-                        color:      inv.status==='paid' ? '#34d399'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
+                        background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='por_cobrar' ? 'rgba(245,158,11,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
+                        color:      inv.status==='paid' ? '#34d399'              : inv.status==='por_cobrar' ? '#f59e0b'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
                       }}>
-                        {inv.status==='paid'    ? (lang==='es' ? 'Pagada'   : 'Paid')
-                       : inv.status==='sent'    ? (lang==='es' ? 'Enviada'  : 'Sent')
-                       : inv.status==='overdue' ? (lang==='es' ? 'Vencida'  : 'Overdue')
-                       :                          (lang==='es' ? 'Borrador' : 'Draft')}
+                        {inv.status==='paid'        ? (lang==='es' ? 'Pagada'     : 'Paid')
+                       : inv.status==='por_cobrar'  ? 'Por Cobrar'
+                       : inv.status==='sent'        ? (lang==='es' ? 'Enviada'    : 'Sent')
+                       : inv.status==='overdue'     ? (lang==='es' ? 'Vencida'    : 'Overdue')
+                       :                              (lang==='es' ? 'Borrador'   : 'Draft')}
                       </span>
                     </td>
                     <td style={{ padding: '12px 0' }}>
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         {inv.status === 'draft' && (
-                          <button onClick={async () => {
-                            await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id)
-                            fetchInvoices()
-                          }} style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          <button onClick={async () => { await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id); fetchInvoices() }}
+                            style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
                             {lang === 'es' ? 'Enviar' : 'Send'}
                           </button>
                         )}
-                        {inv.status === 'sent' && (
-                          <button onClick={async () => {
-                            await createClient().from('invoices').update({ status: 'paid', paid_at: new Date().toISOString() }).eq('id', inv.id)
-                            fetchInvoices()
-                          }} style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            {lang === 'es' ? 'Pagada' : 'Mark Paid'}
+                        {(inv.status === 'por_cobrar' || inv.status === 'sent') && (
+                          <button onClick={() => handleMarkAsPaid(inv)}
+                            style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            {lang === 'es' ? 'Marcar Pagada' : 'Mark Paid'}
                           </button>
+                        )}
+                        {inv.status === 'paid' && inv.transaction_id && (
+                          <span style={{ fontSize: 10, color: '#888580' }}>#{inv.transaction_id}</span>
                         )}
                       </div>
                     </td>
@@ -789,6 +819,45 @@ function CostsTab() {
               style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount && !saving && !uploadingReceipt) ? 1 : 0.5 }}>
               {uploadingReceipt ? 'Subiendo archivo...' : saving ? t('saving') : t('saveExpenseBtn')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar pago */}
+      {showPaymentModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+          onClick={() => setShowPaymentModal(false)}>
+          <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>💳</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: '#f0ede8', textAlign: 'center', marginBottom: 6 }}>
+              {lang === 'es' ? 'Confirmar Pago' : 'Confirm Payment'}
+            </div>
+            <div style={{ fontSize: 12, color: '#888580', textAlign: 'center', marginBottom: 24 }}>
+              {selectedInvoice?.invoice_no} · AED {Number(selectedInvoice?.total ?? 0).toFixed(2)}
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888580', marginBottom: 6 }}>
+                ID DE TRANSACCIÓN *
+              </label>
+              <input autoFocus type="text" value={transactionId}
+                onChange={e => { setTransactionId(e.target.value); setPaymentError('') }}
+                onKeyDown={e => e.key === 'Enter' && confirmPayment()}
+                placeholder="ej. TXN-123456 / REF-789"
+                style={{ width: '100%', boxSizing: 'border-box', background: '#1a1a1e', border: `1px solid ${paymentError ? '#ff4f4f' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#f0ede8', outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
+              {paymentError && <div style={{ fontSize: 11, color: '#ff4f4f', marginTop: 5 }}>{paymentError}</div>}
+              <div style={{ fontSize: 11, color: '#3a3836', marginTop: 6 }}>Este ID quedará registrado como comprobante del pago</div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowPaymentModal(false)}
+                style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#888580', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                {lang === 'es' ? 'Cancelar' : 'Cancel'}
+              </button>
+              <button onClick={confirmPayment}
+                style={{ flex: 1, padding: 13, background: '#22c55e', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                {lang === 'es' ? 'Confirmar Pago' : 'Confirm'}
+              </button>
+            </div>
           </div>
         </div>
       )}

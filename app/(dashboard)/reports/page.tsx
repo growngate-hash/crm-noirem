@@ -588,16 +588,31 @@ function ExportRow({ label, icon, onClick }: { label: string; icon: React.ReactN
 // ─── page ─────────────────────────────────────────────────────────────────────
 export default function ReportsPage() {
   const { t } = useLanguage()
-  const [selected,     setSelected]     = useState<string|null>(null)
-  const [showExport,   setShowExport]   = useState(false)
-  const [previewReport, setPreviewReport] = useState<string|null>(null)
-  const [toasts,       setToasts]       = useState<Toast[]>([])
+  const [selected,        setSelected]        = useState<string|null>(null)
+  const [showExport,      setShowExport]      = useState(false)
+  const [previewReport,   setPreviewReport]   = useState<string|null>(null)
+  const [toasts,          setToasts]          = useState<Toast[]>([])
+  const [cuentasPorCobrar, setCuentasPorCobrar] = useState<any[]>([])
+  const [totalPorCobrar,   setTotalPorCobrar]   = useState(0)
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function onOut(e: MouseEvent) { if (exportRef.current && !exportRef.current.contains(e.target as Node)) setShowExport(false) }
     document.addEventListener('mousedown', onOut)
     return () => document.removeEventListener('mousedown', onOut)
+  }, [])
+
+  useEffect(() => {
+    createClient()
+      .from('invoices')
+      .select('id, invoice_no, total, created_at, contacts(name)')
+      .eq('status', 'por_cobrar')
+      .order('created_at', { ascending: true })
+      .then(({ data }) => {
+        const rows = data ?? []
+        setCuentasPorCobrar(rows)
+        setTotalPorCobrar(rows.reduce((s, inv) => s + (Number(inv.total) || 0), 0))
+      })
   }, [])
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
@@ -643,6 +658,37 @@ export default function ReportsPage() {
         {CATEGORIES.map(cat => (
           <CategoryCard key={cat.id} cat={cat} active={selected===cat.id} onClick={() => setSelected(p => p===cat.id ? null : cat.id)}/>
         ))}
+      </div>
+
+      {/* Cuentas por Cobrar */}
+      <div style={{ background:'#141416', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:20, marginTop:16, marginBottom: activeCat ? 0 : 0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:10, fontWeight:700, color:'#f59e0b', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Cobrar</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {Math.round(totalPorCobrar).toLocaleString('en-AE')}</div>
+            <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
+              {cuentasPorCobrar.length} factura{cuentasPorCobrar.length !== 1 ? 's' : ''} pendiente{cuentasPorCobrar.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
+        </div>
+        {cuentasPorCobrar.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#888580' }}>✅ No hay cuentas pendientes por cobrar</div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {cuentasPorCobrar.map(inv => (
+              <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8 }}>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</div>
+                  <div style={{ fontSize:11, color:'#888580', marginTop:2 }}>
+                    {inv.invoice_no} · {new Date(inv.created_at).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' })}
+                  </div>
+                </div>
+                <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-AE', { maximumFractionDigits:0 })}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* expanded panel */}
