@@ -1370,11 +1370,17 @@ function BanksTab() {
         ))}
       </div>
 
+      {/* Separador CUENTAS BANCARIAS */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '28px 0 16px' }}>
+        <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '2px' }}>CUENTAS BANCARIAS</div>
+        <div style={{ flex: 1, height: 1, background: '#2a2a30' }} />
+      </div>
       {/* Grid de cuentas bancarias */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
         gap: 16,
+        marginTop: 0,
         marginBottom: 24,
       }}>
         {accounts.map(account => {
@@ -1450,25 +1456,6 @@ function BanksTab() {
             </div>
           )
         })}
-        {/* Card agregar nueva cuenta */}
-        <div
-          onClick={() => setShowNewBankAccount(true)}
-          style={{
-            background: 'transparent',
-            border: '2px dashed #2a2a30',
-            borderRadius: 16,
-            padding: 20,
-            display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', minHeight: 140, gap: 8,
-            transition: 'border-color 0.2s',
-          }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#c9a84c'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#2a2a30'}
-        >
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#c9a84c20', border: '1px solid #c9a84c40', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c9a84c', fontSize: 20 }}>+</div>
-          <div style={{ color: '#666', fontSize: 12, fontWeight: 700 }}>AGREGAR CUENTA</div>
-        </div>
       </div>
 
       {/* modals */}
