@@ -1,232 +1,229 @@
 'use client'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Eye, EyeOff } from 'lucide-react'
-
-type Status = 'loading' | 'ready' | 'saving' | 'success' | 'error'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function ResetPasswordPage() {
-  const [status,   setStatus]   = useState<Status>('loading')
   const [password, setPassword] = useState('')
-  const [confirm,  setConfirm]  = useState('')
-  const [showPw,   setShowPw]   = useState(false)
-  const [showCf,   setShowCf]   = useState(false)
-  const [fieldErr, setFieldErr] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'success' | 'error'>('loading')
+  const [message, setMessage] = useState('')
   const router = useRouter()
 
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   useEffect(() => {
-    // @supabase/ssr's createBrowserClient automatically exchanges the
-    // #access_token from the reset-password email link into a session.
-    async function init() {
-      const { data: { session }, error } = await createClient().auth.getSession()
-      if (error || !session) {
-        setStatus('error')
-        return
-      }
-      setStatus('ready')
+    // Extraer tokens directamente del hash de la URL
+    // El link de Supabase tiene formato:
+    // /reset-password#access_token=XXX&refresh_token=YYY&type=recovery
+    const hash = window.location.hash
+    const params = new URLSearchParams(hash.replace('#', ''))
+
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+    const type = params.get('type')
+
+    if (!accessToken || type !== 'recovery') {
+      setStatus('error')
+      setMessage('Link inválido o expirado. Solicita uno nuevo.')
+      return
     }
-    init()
+
+    // Establecer la sesión del usuario invitado usando
+    // los tokens del link — NO la sesión del admin
+    supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || ''
+    }).then(({ data, error }) => {
+      if (error || !data.session) {
+        setStatus('error')
+        setMessage('Link expirado. Solicita un nuevo correo de reset.')
+      } else {
+        // Sesión del usuario correcto establecida
+        setStatus('ready')
+      }
+    })
   }, [])
 
-  async function handleReset() {
-    setFieldErr('')
-    if (password.length < 8) {
-      setFieldErr('La contraseña debe tener al menos 8 caracteres')
+  const handleReset = async () => {
+    if (password !== confirmPassword) {
+      setMessage('Las contraseñas no coinciden')
+      setStatus('error')
       return
     }
-    if (password !== confirm) {
-      setFieldErr('Las contraseñas no coinciden')
+    if (password.length < 6) {
+      setMessage('Mínimo 6 caracteres')
+      setStatus('error')
       return
     }
-    setStatus('saving')
-    const { error } = await createClient().auth.updateUser({ password })
-    if (error) {
-      setFieldErr(error.message)
-      setStatus('ready')
-      return
-    }
-    setStatus('success')
-    setTimeout(() => router.push('/'), 2200)
-  }
 
-  const inp: React.CSSProperties = {
-    width: '100%', boxSizing: 'border-box',
-    background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)',
-    borderRadius: 8, padding: '10px 14px', paddingRight: 40,
-    fontSize: 13, color: '#f0ede8', fontFamily: 'Outfit, sans-serif', outline: 'none',
+    setStatus('loading')
+
+    const { error } = await supabase.auth.updateUser({ password })
+
+    if (error) {
+      setStatus('error')
+      setMessage('Error al guardar. Solicita un nuevo link.')
+    } else {
+      setStatus('success')
+      setMessage('¡Contraseña establecida correctamente!')
+      // Cerrar sesión y redirigir al login
+      await supabase.auth.signOut()
+      setTimeout(() => router.push('/login'), 2000)
+    }
   }
 
   return (
     <div style={{
-      minHeight: '100vh', background: '#0d0d0f',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center', padding: 20,
+      minHeight: '100vh',
+      background: '#0d0d0f',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px'
     }}>
       <div style={{
-        width: '100%', maxWidth: 420,
-        background: '#141416', border: '1px solid rgba(201,168,76,0.2)',
-        borderRadius: 16, padding: 40,
+        background: '#1a1a1f',
+        border: '1px solid #2a2a30',
+        borderRadius: '16px',
+        padding: '48px 40px',
+        width: '100%',
+        maxWidth: '400px'
       }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{
-            width: 48, height: 48, background: '#c9a84c', borderRadius: 12,
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            fontWeight: 900, color: '#0d0d0f', fontSize: 24, marginBottom: 14,
-          }}>S</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: '#f0ede8', letterSpacing: '0.1em' }}>SAFFI</div>
-          <div style={{ fontSize: 10, color: '#888580', letterSpacing: '0.15em', marginTop: 4 }}>LUXURY DETAILING</div>
-        </div>
+        <div style={{
+          width: '56px', height: '56px',
+          background: '#c9a84c',
+          borderRadius: '12px',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center',
+          margin: '0 auto 24px',
+          fontSize: '24px', fontWeight: 900,
+          color: '#0d0d0f'
+        }}>N</div>
 
-        <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', marginBottom: 28 }} />
-
-        {/* ── Loading ── */}
         {status === 'loading' && (
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: '#f0ede8', marginBottom: 8 }}>
-              Verificando enlace…
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
+              Verificando link...
             </div>
-            <div style={{ fontSize: 12, color: '#888580', marginBottom: 24 }}>Por favor espera un momento</div>
             <div style={{
-              width: 32, height: 32, margin: '0 auto',
-              border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c',
-              borderRadius: '50%', animation: 'spin 0.8s linear infinite',
+              width: '32px', height: '32px',
+              border: '3px solid #2a2a30',
+              borderTop: '3px solid #c9a84c',
+              borderRadius: '50%',
+              margin: '24px auto',
+              animation: 'spin 1s linear infinite'
             }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
           </div>
         )}
 
-        {/* ── Ready / Saving ── */}
-        {(status === 'ready' || status === 'saving') && (
-          <>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8', marginBottom: 6 }}>
-              Nueva contraseña
-            </div>
-            <div style={{ fontSize: 12, color: '#888580', marginBottom: 24 }}>
-              Elige una contraseña segura para tu cuenta.
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* Password */}
-              <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-                  Nueva contraseña
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    placeholder="Mínimo 8 caracteres"
-                    value={password}
-                    onChange={e => { setPassword(e.target.value); setFieldErr('') }}
-                    onFocus={e => (e.target.style.borderColor = '#c9a84c')}
-                    onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
-                    style={inp}
-                  />
-                  <button type="button" onClick={() => setShowPw(p => !p)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#888580', display: 'flex', padding: 0 }}>
-                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Confirm */}
-              <div>
-                <label style={{ display: 'block', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
-                  Confirmar contraseña
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type={showCf ? 'text' : 'password'}
-                    placeholder="Repite la contraseña"
-                    value={confirm}
-                    onChange={e => { setConfirm(e.target.value); setFieldErr('') }}
-                    onKeyDown={e => e.key === 'Enter' && handleReset()}
-                    onFocus={e => (e.target.style.borderColor = '#c9a84c')}
-                    onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.08)')}
-                    style={inp}
-                  />
-                  <button type="button" onClick={() => setShowCf(p => !p)}
-                    style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#888580', display: 'flex', padding: 0 }}>
-                    {showCf ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Field error */}
-              {fieldErr && (
-                <div style={{ fontSize: 12, color: '#ff4f4f', background: 'rgba(255,79,79,0.08)', border: '1px solid rgba(255,79,79,0.2)', borderRadius: 8, padding: '8px 12px' }}>
-                  {fieldErr}
-                </div>
-              )}
-
-              {/* Submit */}
-              <button
-                onClick={handleReset}
-                disabled={status === 'saving' || !password || !confirm}
-                style={{
-                  width: '100%', padding: '14px 0', borderRadius: 10, border: 'none',
-                  background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 800,
-                  fontFamily: 'Outfit, sans-serif', letterSpacing: '0.02em',
-                  cursor: (status === 'saving' || !password || !confirm) ? 'default' : 'pointer',
-                  opacity: (status === 'saving' || !password || !confirm) ? 0.65 : 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  transition: 'opacity 0.15s',
-                }}
-              >
-                {status === 'saving' ? (
-                  <>
-                    <div style={{ width: 14, height: 14, borderRadius: '50%', border: '2px solid rgba(0,0,0,0.3)', borderTopColor: '#0d0d0f', animation: 'spin 0.7s linear infinite' }} />
-                    Guardando…
-                  </>
-                ) : 'Establecer contraseña'}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* ── Success ── */}
-        {status === 'success' && (
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ fontSize: 44, marginBottom: 16 }}>✅</div>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#f0ede8', marginBottom: 8 }}>
-              ¡Contraseña actualizada!
-            </div>
-            <div style={{ fontSize: 13, color: '#888580' }}>Redirigiendo al panel…</div>
-            <div style={{ marginTop: 24 }}>
-              <div style={{ width: 32, height: 32, margin: '0 auto', border: '3px solid rgba(201,168,76,0.2)', borderTopColor: '#c9a84c', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            </div>
-          </div>
-        )}
-
-        {/* ── Error ── */}
         {status === 'error' && (
-          <div style={{ textAlign: 'center', padding: '16px 0' }}>
-            <div style={{ fontSize: 44, marginBottom: 16 }}>⚠️</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8', marginBottom: 8 }}>
-              Enlace inválido
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>❌</div>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
+              Link inválido
             </div>
-            <div style={{ fontSize: 13, color: '#888580', marginBottom: 28, lineHeight: 1.5 }}>
-              El enlace ha expirado o ya fue usado.<br/>Solicita uno nuevo desde el login.
+            <div style={{ color: '#666', fontSize: '13px', marginBottom: '24px' }}>
+              {message}
             </div>
             <button
-              onClick={() => router.push('/auth')}
+              onClick={() => router.push('/login')}
               style={{
-                padding: '12px 28px', background: '#c9a84c', color: '#0d0d0f',
-                border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 800,
-                cursor: 'pointer', letterSpacing: '0.8px', fontFamily: 'Outfit, sans-serif',
+                width: '100%', padding: '13px',
+                background: '#c9a84c', color: '#0d0d0f',
+                border: 'none', borderRadius: '10px',
+                fontSize: '13px', fontWeight: 800,
+                cursor: 'pointer'
               }}
             >
               IR AL LOGIN
             </button>
           </div>
         )}
-      </div>
 
-      <div style={{ marginTop: 24, fontSize: 11, color: '#3a3836', textAlign: 'center' }}>
-        © 2026 Saffi · Luxury Car Care
-      </div>
+        {status === 'success' && (
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '40px', marginBottom: '16px' }}>✅</div>
+            <div style={{ color: '#fff', fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>
+              ¡Contraseña establecida!
+            </div>
+            <div style={{ color: '#666', fontSize: '13px' }}>
+              Redirigiendo al login...
+            </div>
+          </div>
+        )}
 
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        {status === 'ready' && (
+          <>
+            <div style={{ color: '#fff', fontSize: '22px', fontWeight: 800, textAlign: 'center', marginBottom: '8px' }}>
+              Nueva contraseña
+            </div>
+            <div style={{ color: '#666', fontSize: '13px', textAlign: 'center', marginBottom: '32px' }}>
+              Ingresa tu nueva contraseña
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ color: '#888', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', marginBottom: '8px' }}>
+                NUEVA CONTRASEÑA
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Mínimo 6 caracteres"
+                style={{
+                  width: '100%', padding: '12px 16px',
+                  background: '#0d0d0f',
+                  border: '1px solid #2a2a30',
+                  borderRadius: '8px',
+                  color: '#fff', fontSize: '14px',
+                  outline: 'none', boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '24px' }}>
+              <div style={{ color: '#888', fontSize: '11px', fontWeight: 700, letterSpacing: '1px', marginBottom: '8px' }}>
+                CONFIRMAR CONTRASEÑA
+              </div>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Repite la contraseña"
+                onKeyDown={e => e.key === 'Enter' && handleReset()}
+                style={{
+                  width: '100%', padding: '12px 16px',
+                  background: '#0d0d0f',
+                  border: '1px solid #2a2a30',
+                  borderRadius: '8px',
+                  color: '#fff', fontSize: '14px',
+                  outline: 'none', boxSizing: 'border-box'
+                }}
+              />
+            </div>
+
+            <button
+              onClick={handleReset}
+              style={{
+                width: '100%', padding: '14px',
+                background: '#c9a84c', color: '#0d0d0f',
+                border: 'none', borderRadius: '10px',
+                fontSize: '14px', fontWeight: 800,
+                cursor: 'pointer', letterSpacing: '1px'
+              }}
+            >
+              ESTABLECER CONTRASEÑA
+            </button>
+          </>
+        )}
+      </div>
     </div>
   )
 }
