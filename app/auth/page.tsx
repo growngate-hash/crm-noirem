@@ -61,7 +61,7 @@ export default function AuthPage() {
     if (!email) { setEmailErr(true); showToast('Ingresa tu correo para recuperar tu contraseña', 'error'); return }
     setLoading(true)
     const { error } = await createClient().auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset`,
+      redirectTo: `${window.location.origin}/reset-password`,
     })
     setLoading(false)
     if (error) { showToast('Error al enviar el correo. Intenta de nuevo', 'error'); return }
