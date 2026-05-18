@@ -46,11 +46,29 @@ export async function POST(request: Request) {
 
 function buildDefaultPermissions(role: string) {
   const r = role.toLowerCase()
+  const all  = { view: true,  create: true,  edit: true,  delete: true  }
+  const mgr  = { view: true,  create: true,  edit: true,  delete: false }
+  const view = { view: true,  create: false, edit: false, delete: false }
+  const none = { view: false, create: false, edit: false, delete: false }
+
   if (r === 'admin') {
-    return { dashboard: true, contacts: true, vehicles: true, bookings: true, finance: true, reports: true, settings: true, services: true }
+    return {
+      dashboard: { view: true }, contacts: { ...all }, services: { ...all },
+      vehicles:  { ...all },     bookings: { ...all }, finance:  { ...all },
+      reports:   { view: true }, settings: { ...all },
+    }
   }
   if (r === 'manager') {
-    return { dashboard: true, contacts: true, vehicles: true, bookings: true, finance: false, reports: true, settings: false, services: true }
+    return {
+      dashboard: { view: true }, contacts: { ...mgr }, services: { ...mgr },
+      vehicles:  { ...mgr },     bookings: { ...mgr }, finance:  { ...mgr },
+      reports:   { view: true }, settings: { ...none },
+    }
   }
-  return { dashboard: true, contacts: false, vehicles: true, bookings: true, finance: false, reports: false, settings: false, services: true }
+  // technician
+  return {
+    dashboard: { view: true }, contacts: { ...none }, services: { ...view },
+    vehicles:  { ...view },    bookings: { ...view }, finance:  { ...none },
+    reports:   { view: false }, settings: { ...none },
+  }
 }

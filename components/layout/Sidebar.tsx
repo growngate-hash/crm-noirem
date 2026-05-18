@@ -32,12 +32,29 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
   const { t } = useLanguage()
   const { companyName, companySubtitle, logoUrl } = useCompany()
 
-  const [authUser, setAuthUser] = useState<any>(null)
-  const [showMenu, setShowMenu] = useState(false)
+  const [authUser, setAuthUser]   = useState<any>(null)
+  const [dbRole,   setDbRole]     = useState<string | null>(null)
+  const [showMenu, setShowMenu]   = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    createClient().auth.getUser().then(({ data: { user } }) => setAuthUser(user))
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setAuthUser(user)
+      if (user) {
+        const { data } = await supabase
+          .from('user_permissions')
+          .select('role')
+          .eq('user_id', user.id)
+          .single()
+        if (data?.role) {
+          const r = data.role
+          setDbRole(r.charAt(0).toUpperCase() + r.slice(1))
+        }
+      }
+    }
+    load()
   }, [])
 
   useEffect(() => {
@@ -56,7 +73,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
   }
 
   const displayName = authUser?.user_metadata?.full_name ?? authUser?.email?.split('@')[0] ?? 'Usuario'
-  const displayRole = authUser?.user_metadata?.role ?? 'Admin'
+  const displayRole = dbRole ?? authUser?.user_metadata?.role ?? 'Admin'
   const initials = displayName.slice(0, 2).toUpperCase()
 
   return (
