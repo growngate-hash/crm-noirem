@@ -1041,6 +1041,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       {/* Invoice PDF Viewer */}
       {viewingInvoice && <InvoiceViewer invoice={viewingInvoice} onClose={() => setViewingInvoice(null)} />}
 
+
       {/* toasts */}
       <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {toasts.map(t => (
@@ -1089,6 +1090,9 @@ function BanksTab() {
   const [saving,    setSaving]    = useState(false)
   const [delConfirm, setDelConfirm] = useState(false)
   const [toasts,    setToasts]    = useState<Toast[]>([])
+  const [editingBank,  setEditingBank]  = useState<any | null>(null)
+  const [editBankForm, setEditBankForm] = useState({ name: '', account_type: '', account_number: '', currency: 'AED', notes: '' })
+  const [savingBank,   setSavingBank]   = useState(false)
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -1147,6 +1151,24 @@ function BanksTab() {
     const { error } = await createClient().from('bank_accounts').delete().eq('id', editAcc.id)
     if (error) { addToast(error.message, 'error'); return }
     addToast(t('accountDeleted'), 'success'); setEditAcc(null); fetchAccounts()
+  }
+
+  async function handleSaveBank() {
+    if (!editBankForm.name.trim()) { addToast('El nombre es obligatorio', 'error'); return }
+    setSavingBank(true)
+    const { error } = await createClient().from('bank_accounts').update({
+      name: editBankForm.name.trim(),
+      account_type: editBankForm.account_type,
+      account_number: editBankForm.account_number.trim() || null,
+      currency: editBankForm.currency,
+      notes: editBankForm.notes.trim() || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', editingBank.id)
+    setSavingBank(false)
+    if (error) { addToast('Error al guardar: ' + error.message, 'error'); return }
+    addToast('Cuenta actualizada correctamente', 'success')
+    setEditingBank(null)
+    fetchAccounts()
   }
 
   const bankBal  = accounts.filter(a => a.account_type === 'Bank').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
@@ -1298,12 +1320,182 @@ function BanksTab() {
         ))}
       </div>
 
+      {/* bank account cards */}
+      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {accounts.map(account => {
+          const color = getBankColor(account.account_type)
+          const icon  = getBankIcon(account.account_type, account.name)
+          const bal   = parseFloat(account.current_balance ?? account.balance ?? 0)
+          return (
+            <div key={account.id} style={{
+              background: '#1a1a1f',
+              border: `1px solid ${color}30`,
+              borderRadius: 16,
+              padding: 20,
+              position: 'relative',
+            }}>
+              {/* EDITAR button */}
+              <button
+                onClick={() => {
+                  setEditingBank(account)
+                  setEditBankForm({
+                    name: account.name || '',
+                    account_type: account.account_type || 'Bank',
+                    account_number: account.account_number || '',
+                    currency: account.currency || 'AED',
+                    notes: account.notes || '',
+                  })
+                }}
+                style={{
+                  position: 'absolute', top: 14, right: 14,
+                  background: 'transparent',
+                  border: '1px solid #2a2a30',
+                  borderRadius: 6,
+                  color: '#666',
+                  fontSize: 11, fontWeight: 700,
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                  letterSpacing: '0.5px',
+                  fontFamily: 'Outfit,sans-serif',
+                }}
+              >EDITAR</button>
+              {/* icon + name */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+                <div style={{
+                  padding: '8px 12px', borderRadius: 8,
+                  background: color + '20',
+                  fontSize: 11, fontWeight: 800, color,
+                }}>{icon}</div>
+                <div>
+                  <div style={{ color: '#f0ede8', fontSize: 15, fontWeight: 700 }}>{account.name}</div>
+                  <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{account.account_type}{account.currency ? ' · ' + account.currency : ''}</div>
+                </div>
+              </div>
+              {/* balance */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                <div>
+                  <div style={{ color: '#666', fontSize: 10, fontWeight: 700, letterSpacing: '1px', marginBottom: 4 }}>SALDO ACTUAL</div>
+                  <div style={{ color: bal >= 0 ? '#34d399' : '#ff4f4f', fontSize: 22, fontWeight: 800 }}>{aed(bal)}</div>
+                </div>
+                {account.account_number && (
+                  <div style={{ color: '#555', fontSize: 11, fontFamily: 'monospace' }}>{account.account_number}</div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
       {/* modals */}
       {showAdd && (
         <AccModal title={t('addAccount')} onClose={() => setShowAdd(false)} onSave={saveAdd} saveLabel={t('addAccount')} />
       )}
       {editAcc && (
         <AccModal title={`${t('edit')} ${t('accounts')}`} onClose={() => { setEditAcc(null); setDelConfirm(false) }} onSave={saveEdit} saveLabel={t('saveChanges')} />
+      )}
+
+      {/* edit bank modal */}
+      {editingBank && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.8)',
+          zIndex: 700,
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'center', padding: 24,
+        }} onClick={() => setEditingBank(null)}>
+          <div style={{
+            background: '#1a1a1f',
+            border: '1px solid #2a2a30',
+            borderRadius: 16,
+            padding: 32,
+            width: '100%', maxWidth: 460,
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
+            <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Editar Cuenta</div>
+            {/* Nombre */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOMBRE *</div>
+              <input
+                value={editBankForm.name}
+                onChange={e => setEditBankForm(p => ({...p, name: e.target.value}))}
+                placeholder="ej. Emirates NBD"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
+              />
+            </div>
+            {/* Tipo */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>TIPO DE CUENTA</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+                {([
+                  { value: 'Cash',        label: 'Efectivo / Caja',     color: '#22c55e' },
+                  { value: 'Bank',        label: 'Cuenta Bancaria',     color: '#c9a84c' },
+                  { value: 'Transfer',    label: 'Transfer / IBAN',     color: '#3b82f6' },
+                  { value: 'Credit Card', label: 'Tarjeta de Credito',  color: '#ef4444' },
+                ] as const).map(type => (
+                  <button key={type.value}
+                    onClick={() => setEditBankForm(p => ({...p, account_type: type.value}))}
+                    style={{
+                      padding: '10px 14px',
+                      background: editBankForm.account_type === type.value ? type.color + '20' : '#0d0d0f',
+                      border: `2px solid ${editBankForm.account_type === type.value ? type.color : '#2a2a30'}`,
+                      borderRadius: 8,
+                      color: editBankForm.account_type === type.value ? type.color : '#666',
+                      fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
+                      fontFamily: 'Outfit,sans-serif',
+                    }}>
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Numero de cuenta */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NUMERO DE CUENTA / IBAN <span style={{ color: '#555', marginLeft: 4 }}>(opcional)</span></div>
+              <input
+                value={editBankForm.account_number}
+                onChange={e => setEditBankForm(p => ({...p, account_number: e.target.value}))}
+                placeholder="ej. AE07 0331 2345 6789 0123 456"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+              />
+            </div>
+            {/* Moneda */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>MONEDA</div>
+              <select
+                value={editBankForm.currency}
+                onChange={e => setEditBankForm(p => ({...p, currency: e.target.value}))}
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}
+              >
+                <option value="AED">AED - Dirham Emirati</option>
+                <option value="USD">USD - Dolar Americano</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - Libra Esterlina</option>
+              </select>
+            </div>
+            {/* Notas */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOTAS <span style={{ color: '#555' }}>(opcional)</span></div>
+              <input
+                value={editBankForm.notes}
+                onChange={e => setEditBankForm(p => ({...p, notes: e.target.value}))}
+                placeholder="ej. Cuenta principal de operaciones"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
+              />
+            </div>
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => setEditingBank(null)}
+                style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid #2a2a30', borderRadius: 10, color: '#888', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}
+              >CANCELAR</button>
+              <button
+                onClick={handleSaveBank}
+                disabled={savingBank || !editBankForm.name.trim()}
+                style={{ flex: 2, padding: 13, background: '#c9a84c', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingBank || !editBankForm.name.trim() ? 0.6 : 1 }}
+              >{savingBank ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* toasts */}
