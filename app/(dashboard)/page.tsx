@@ -238,35 +238,31 @@ export default function DashboardPage() {
     const finMesAnteriorStr = finMesAnterior.toISOString().split('T')[0]
 
     const [
-      { data: allPaidInvoices },
-      { data: invoicesMes },
-      { data: invoicesMesAnterior },
+      { data: bookingsTodos },
+      { data: bookingsMes },
+      { data: bookingsMesAnterior },
       { data: allExpenses },
       { data: bookingsActivos },
-      { data: bookingsCompletados },
       { data: inventario },
       { data: bookingsRecientes },
     ] = await Promise.all([
-      // All-time paid invoices → total revenue
-      supabase.from('invoices').select('total').eq('status', 'paid'),
+      // All-time completed bookings → total revenue (same source as finance module)
+      supabase.from('bookings').select('price, discount').eq('status', 'completed'),
 
-      // Paid invoices this month → revenueMTD
-      supabase.from('invoices').select('total').eq('status', 'paid')
-        .gte('created_at', inicioMesUTC).lte('created_at', finMesUTC),
+      // Completed bookings this month → revenueMTD (identical to finance KPI query)
+      supabase.from('bookings').select('price, discount').eq('status', 'completed')
+        .gte('scheduled_at', inicioMesUTC).lte('scheduled_at', finMesUTC),
 
-      // Paid invoices previous month → delta
-      supabase.from('invoices').select('total').eq('status', 'paid')
-        .gte('created_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
-        .lte('created_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
+      // Completed bookings previous month → delta
+      supabase.from('bookings').select('price, discount').eq('status', 'completed')
+        .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
+        .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
 
-      // All-time expenses → total expenses
+      // All-time expenses (same table as finance module)
       supabase.from('expenses').select('amount'),
 
       // Active bookings
       supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
-
-      // Completed bookings count → avg ticket
-      supabase.from('bookings').select('id').eq('status', 'completed'),
 
       // Inventory for low-stock check
       supabase.from('inventory_items').select('stock_qty, min_stock'),
@@ -279,22 +275,25 @@ export default function DashboardPage() {
         .limit(10),
     ])
 
-    // Revenue = paid invoices (source of truth from finance module)
-    const totalRevenue  = (allPaidInvoices ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
-    const revenueMTD    = (invoicesMes ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
-    const revenuePrevMes = (invoicesMesAnterior ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
+    const calcRevenue = (rows: any[]) =>
+      (rows ?? []).reduce((sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0)
 
-    // Expenses = all-time expenses (source of truth from finance module)
+    // Revenue from bookings — exactly like finance module's fetchFinanceKPIs()
+    const totalRevenue   = calcRevenue(bookingsTodos ?? [])
+    const revenueMTD     = calcRevenue(bookingsMes ?? [])
+    const revenuePrevMes = calcRevenue(bookingsMesAnterior ?? [])
+
+    // Expenses all-time
     const totalExpenses = (allExpenses ?? []).reduce((sum, g) => sum + (g.amount ?? 0), 0)
 
-    const totalProfit   = totalRevenue - totalExpenses
-    const deltaRevenue  = revenuePrevMes > 0
+    const totalProfit  = totalRevenue - totalExpenses
+    const deltaRevenue = revenuePrevMes > 0
       ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
       : 0
 
-    // Avg ticket = total revenue / completed bookings
-    const avgOrderValue = (bookingsCompletados?.length ?? 0) > 0
-      ? totalRevenue / bookingsCompletados!.length : 0
+    // Avg ticket = all-time revenue / all completed bookings
+    const avgOrderValue = (bookingsTodos?.length ?? 0) > 0
+      ? totalRevenue / bookingsTodos!.length : 0
 
     const lowStockAlerts = (inventario ?? []).filter(
       i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0) && (i.min_stock ?? 0) > 0
