@@ -817,7 +817,7 @@ export default function BookingsPage() {
                         contact_id: bk.contact_id,
                         invoice_no: invoiceNo,
                         subtotal, discount, tax, total,
-                        status: 'draft',
+                        status: 'por_cobrar',
                         issued_at: now.toISOString(),
                         due_at: new Date(now.getTime() + 30*24*60*60*1000).toISOString(),
                       })
