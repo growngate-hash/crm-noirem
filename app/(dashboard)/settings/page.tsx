@@ -9,10 +9,11 @@ import Modal from '@/components/ui/Modal'
 import StatusBadge from '@/components/ui/StatusBadge'
 import {
   User, Users, Plug, CreditCard, BarChart2,
-  Save, Plus, Trash2, Check, X, Upload, Trash,
+  Save, Plus, Trash2, Check, X, Upload, Trash, Printer,
 } from 'lucide-react'
+import { PrintTemplatesSection } from '@/components/settings/PrintTemplatesSection'
 
-type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing'
+type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing' | 'print-templates'
 
 // ─── permission types ──────────────────────────────────────────────────────────
 type PermOps = { view: boolean; create?: boolean; edit?: boolean; delete?: boolean }
@@ -296,11 +297,12 @@ function PermissionsModal({
 
 // ─── nav ──────────────────────────────────────────────────────────────────────
 const NAV: { key: Section; label: string; icon: any }[] = [
-  { key: 'profile',      label: 'Profile',       icon: User },
-  { key: 'team',         label: 'Team & Roles',  icon: Users },
-  { key: 'integrations', label: 'Integrations',  icon: Plug },
-  { key: 'plans',        label: 'Plans',          icon: BarChart2 },
-  { key: 'billing',      label: 'Billing',        icon: CreditCard },
+  { key: 'profile',         label: 'Profile',              icon: User },
+  { key: 'team',            label: 'Team & Roles',         icon: Users },
+  { key: 'integrations',   label: 'Integrations',         icon: Plug },
+  { key: 'plans',           label: 'Plans',                icon: BarChart2 },
+  { key: 'billing',         label: 'Billing',              icon: CreditCard },
+  { key: 'print-templates', label: 'Plantillas Impresión', icon: Printer },
 ]
 
 const MOCK_INVOICES = [
@@ -966,17 +968,19 @@ export default function SettingsPage() {
       case 'profile':      return <ProfileSection/>
       case 'team':         return <TeamSection isAdmin={isAdmin} currentUserEmail={currentUserEmail}/>
       case 'integrations': return <IntegrationsSection/>
-      case 'plans':        return <PlansSection/>
-      case 'billing':      return <BillingSection/>
+      case 'plans':            return <PlansSection/>
+      case 'billing':          return <BillingSection/>
+      case 'print-templates':  return <PrintTemplatesSection/>
     }
   }
 
   const NAV_LABEL: Record<string, string> = {
-    profile:      t('profile'),
-    team:         t('teamRoles'),
-    integrations: t('integrations'),
-    plans:        t('plans'),
-    billing:      t('billing'),
+    profile:          t('profile'),
+    team:             t('teamRoles'),
+    integrations:     t('integrations'),
+    plans:            t('plans'),
+    billing:          t('billing'),
+    'print-templates': 'Plantillas',
   }
 
   return (
