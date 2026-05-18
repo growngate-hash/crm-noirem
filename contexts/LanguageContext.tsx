@@ -10,6 +10,7 @@ const translations = {
     vehicles:          'Vehicles',
     bookings:          'Bookings',
     finance:           'Finance',
+    accounting:        'Accounting',
     reports:           'Reports',
     settings:          'Settings',
 
@@ -291,6 +292,7 @@ const translations = {
     vehicles:          'Vehículos',
     bookings:          'Reservas',
     finance:           'Finanzas',
+    accounting:        'Contabilidad',
     reports:           'Reportes',
     settings:          'Configuración',
 

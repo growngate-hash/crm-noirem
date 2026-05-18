@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BarChart2, Settings, LogOut, User as UserIcon, X } from 'lucide-react'
+import { LayoutDashboard, Users, Wrench, Car, CalendarCheck, DollarSign, BookOpen, BarChart2, Settings, LogOut, User as UserIcon, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
@@ -15,8 +15,9 @@ const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
   { labelKey: 'servicesInventory', href: '/services',  icon: Wrench },
   { labelKey: 'vehicles',          href: '/vehicles',  icon: Car },
   { labelKey: 'bookings',          href: '/bookings',  icon: CalendarCheck },
-  { labelKey: 'finance',           href: '/finance',   icon: DollarSign },
-  { labelKey: 'reports',           href: '/reports',   icon: BarChart2 },
+  { labelKey: 'finance',           href: '/finance',    icon: DollarSign },
+  { labelKey: 'accounting',        href: '/accounting', icon: BookOpen },
+  { labelKey: 'reports',           href: '/reports',    icon: BarChart2 },
   { labelKey: 'settings',          href: '/settings',  icon: Settings },
 ]
 
