@@ -229,51 +229,47 @@ export default function DashboardPage() {
     const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59)
     const inicioMesUTC = new Date(inicioMes.getTime() - 4 * 3600000).toISOString()
     const finMesUTC = new Date(finMes.getTime() - 4 * 3600000).toISOString()
+    const inicioMesStr = inicioMes.toISOString().split('T')[0]
+    const finMesStr = finMes.toISOString().split('T')[0]
 
     const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1)
     const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59)
+    const inicioMesAnteriorStr = inicioMesAnterior.toISOString().split('T')[0]
+    const finMesAnteriorStr = finMesAnterior.toISOString().split('T')[0]
 
     const [
-      { data: bookingsCompletados },
+      { data: allPaidInvoices },
+      { data: invoicesMes },
+      { data: invoicesMesAnterior },
+      { data: allExpenses },
       { data: bookingsActivos },
-      { data: gastosMes },
+      { data: bookingsCompletados },
       { data: inventario },
-      { data: bookingsMesAnterior },
       { data: bookingsRecientes },
     ] = await Promise.all([
-      // Completed bookings this month
-      supabase
-        .from('bookings')
-        .select('price, discount')
-        .eq('status', 'completed')
-        .gte('scheduled_at', inicioMesUTC)
-        .lte('scheduled_at', finMesUTC),
+      // All-time paid invoices → total revenue
+      supabase.from('invoices').select('total').eq('status', 'paid'),
 
-      // Active bookings (any status = pending/confirmed/in_progress)
-      supabase
-        .from('bookings')
-        .select('id')
-        .in('status', ['confirmed', 'in_progress', 'pending']),
+      // Paid invoices this month → revenueMTD
+      supabase.from('invoices').select('total').eq('status', 'paid')
+        .gte('created_at', inicioMesUTC).lte('created_at', finMesUTC),
 
-      // Expenses this month
-      supabase
-        .from('expenses')
-        .select('amount')
-        .gte('date', inicioMes.toISOString().split('T')[0])
-        .lte('date', finMes.toISOString().split('T')[0]),
+      // Paid invoices previous month → delta
+      supabase.from('invoices').select('total').eq('status', 'paid')
+        .gte('created_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
+        .lte('created_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
 
-      // All inventory for low-stock check
-      supabase
-        .from('inventory_items')
-        .select('stock_qty, min_stock'),
+      // All-time expenses → total expenses
+      supabase.from('expenses').select('amount'),
 
-      // Previous month completed for delta
-      supabase
-        .from('bookings')
-        .select('price, discount')
-        .eq('status', 'completed')
-        .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
-        .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
+      // Active bookings
+      supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
+
+      // Completed bookings count → avg ticket
+      supabase.from('bookings').select('id').eq('status', 'completed'),
+
+      // Inventory for low-stock check
+      supabase.from('inventory_items').select('stock_qty, min_stock'),
 
       // Recent bookings for table
       supabase
@@ -283,21 +279,22 @@ export default function DashboardPage() {
         .limit(10),
     ])
 
-    // Revenue calculations
-    const totalRevenue = (bookingsCompletados ?? []).reduce(
-      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
-    )
-    const totalExpenses = (gastosMes ?? []).reduce((sum, g) => sum + (g.amount ?? 0), 0)
-    const totalProfit = totalRevenue - totalExpenses
+    // Revenue = paid invoices (source of truth from finance module)
+    const totalRevenue  = (allPaidInvoices ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
+    const revenueMTD    = (invoicesMes ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
+    const revenuePrevMes = (invoicesMesAnterior ?? []).reduce((sum, inv) => sum + (parseFloat(String(inv.total)) || 0), 0)
+
+    // Expenses = all-time expenses (source of truth from finance module)
+    const totalExpenses = (allExpenses ?? []).reduce((sum, g) => sum + (g.amount ?? 0), 0)
+
+    const totalProfit   = totalRevenue - totalExpenses
+    const deltaRevenue  = revenuePrevMes > 0
+      ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
+      : 0
+
+    // Avg ticket = total revenue / completed bookings
     const avgOrderValue = (bookingsCompletados?.length ?? 0) > 0
       ? totalRevenue / bookingsCompletados!.length : 0
-
-    const revenueMesAnterior = (bookingsMesAnterior ?? []).reduce(
-      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
-    )
-    const deltaRevenue = revenueMesAnterior > 0
-      ? +((totalRevenue - revenueMesAnterior) / revenueMesAnterior * 100).toFixed(1)
-      : 0
 
     const lowStockAlerts = (inventario ?? []).filter(
       i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0) && (i.min_stock ?? 0) > 0
@@ -307,9 +304,7 @@ export default function DashboardPage() {
     let csatScore = 0
     try {
       const { data: reviews } = await supabase
-        .from('reviews')
-        .select('rating')
-        .gte('created_at', inicioMesUTC)
+        .from('reviews').select('rating').gte('created_at', inicioMesUTC)
       if (reviews && reviews.length > 0) {
         csatScore = reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / reviews.length
       }
@@ -317,7 +312,7 @@ export default function DashboardPage() {
 
     setKpis({
       totalRevenue, totalExpenses, totalProfit,
-      lowStockAlerts, revenueMTD: totalRevenue,
+      lowStockAlerts, revenueMTD,
       activeBookings: bookingsActivos?.length ?? 0,
       avgOrderValue, csatScore, deltaRevenue,
     })
@@ -391,10 +386,13 @@ export default function DashboardPage() {
 
   // ── KPI row data ──
   const row1 = [
-    { key:'totalProfit',   label:t('totalProfit'),    color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:TrendingUp,   value: formatAED(kpis.totalProfit),   sub:`— ${formatAED(kpis.totalRevenue - kpis.totalExpenses)} este mes` },
-    { key:'totalRevenue',  label:t('totalRevenue'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,   value: formatAED(kpis.totalRevenue),  sub:`— ${formatAED(kpis.totalRevenue)} este mes` },
-    { key:'totalExpenses', label:t('totalExpenses'),  color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown, value: formatAED(kpis.totalExpenses), sub:`— ${formatAED(kpis.totalExpenses)} este mes` },
-    { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆',      value: String(kpis.lowStockAlerts), bigNum: true,
+    { key:'totalProfit',   label:t('totalProfit'),    color: kpis.totalProfit >= 0 ? 'var(--cyan)' : 'var(--red)', iconBg:'rgba(0,212,170,0.1)',   icon: kpis.totalProfit >= 0 ? TrendingUp : TrendingDown,
+      value: formatAED(kpis.totalProfit), sub:`— ${formatAED(kpis.revenueMTD)} ingresos este mes` },
+    { key:'totalRevenue',  label:t('totalRevenue'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,
+      value: formatAED(kpis.totalRevenue),  sub:`— ${formatAED(kpis.revenueMTD)} este mes` },
+    { key:'totalExpenses', label:t('totalExpenses'),  color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown,
+      value: formatAED(kpis.totalExpenses), sub:'— gastos acumulados' },
+    { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆', value: String(kpis.lowStockAlerts), bigNum: true,
       sub: kpis.lowStockAlerts === 0 ? `— ${t('allInStock')}` : `— ${kpis.lowStockAlerts} items bajo mínimo` },
   ]
   const row2 = [
@@ -402,7 +400,7 @@ export default function DashboardPage() {
       delta: kpis.deltaRevenue >= 0 ? `↑ +${kpis.deltaRevenue}%` : `↓ ${kpis.deltaRevenue}%`,
       deltaPos: kpis.deltaRevenue >= 0, sub:'vs mes anterior' },
     { key:'act',  label:t('activeBookings'), value: String(kpis.activeBookings), delta:'reservas activas', deltaPos:true, sub:'confirmadas / en curso' },
-    { key:'avg',  label:t('avgOrderValue'),  value: formatAED(kpis.avgOrderValue), delta:'ticket promedio', deltaPos:true, sub:'bookings completados' },
+    { key:'avg',  label:t('avgOrderValue'),  value: formatAED(kpis.avgOrderValue), delta:'ticket promedio', deltaPos:true, sub:'sobre bookings completados' },
     { key:'csat', label:t('csatScore'),
       value: kpis.csatScore > 0 ? `${kpis.csatScore.toFixed(2)} / 5` : 'Sin datos',
       delta:'este trimestre', deltaPos:true, sub:'valoración clientes' },
