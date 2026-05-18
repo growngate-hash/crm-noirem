@@ -187,8 +187,11 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     if (error) { setPaymentError('Error al actualizar la factura'); return }
     const bank = bankAccounts.find(b => b.id === selectedBankAccount)
     if (bank) {
-      const newBal = (parseFloat(bank.balance || 0)) + parseFloat(selectedInvoice.total || 0)
-      await supabase.from('bank_accounts').update({ balance: newBal }).eq('id', selectedBankAccount)
+      const newBal = (parseFloat(bank.current_balance ?? bank.balance ?? 0)) + parseFloat(selectedInvoice.total || 0)
+      await supabase.from('bank_accounts').update({
+        current_balance: newBal,
+        updated_at: new Date().toISOString(),
+      }).eq('id', selectedBankAccount)
     }
     addToast('Pago registrado correctamente', 'success')
     setShowPaymentModal(false)
@@ -992,28 +995,29 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {bankAccounts.map(account => {
                     const sel = selectedBankAccount === account.id
-                    const icon = (account.name || '').toLowerCase().includes('efectivo') || (account.name || '').toLowerCase().includes('caja') ? 'CA'
-                      : (account.name || '').toLowerCase().includes('tarjeta') || (account.account_type || '').toLowerCase().includes('credit') ? 'CC' : 'BK'
+                    const icon = getBankIcon(account.account_type, account.name)
+                    const color = getBankColor(account.account_type)
+                    const bal = parseFloat(account.current_balance ?? account.balance ?? 0)
                     return (
                       <div key={account.id} onClick={() => { setSelectedBankAccount(account.id); setPaymentError('') }}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           padding: '12px 16px',
-                          background: sel ? 'rgba(201,168,76,0.1)' : '#0d0d0f',
-                          border: `2px solid ${sel ? '#c9a84c' : '#2a2a30'}`,
+                          background: sel ? color + '15' : '#0d0d0f',
+                          border: `2px solid ${sel ? color : '#2a2a30'}`,
                           borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 8,
-                            background: sel ? 'rgba(201,168,76,0.2)' : '#1a1a1f',
+                          <div style={{ padding: '6px 10px', borderRadius: 6,
+                            background: color + '20',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 11, fontWeight: 800, color: sel ? '#c9a84c' : '#888580' }}>
+                            fontSize: 10, fontWeight: 800, color: color }}>
                             {icon}
                           </div>
                           <div>
                             <div style={{ color: '#f0ede8', fontSize: 13, fontWeight: 700 }}>{account.name}</div>
-                            <div style={{ color: '#666', fontSize: 11 }}>Saldo: AED {parseFloat(account.balance || 0).toFixed(2)}</div>
+                            <div style={{ color: '#666', fontSize: 11 }}>Saldo: AED {bal.toFixed(2)}</div>
                           </div>
                         </div>
-                        {sel && <span style={{ color: '#c9a84c', fontSize: 14, fontWeight: 800 }}>+</span>}
+                        {sel && <span style={{ color: color, fontSize: 16, fontWeight: 800 }}>+</span>}
                       </div>
                     )
                   })}
@@ -1060,6 +1064,21 @@ const SEED_ACCOUNTS = [
 ]
 const EMPTY_ACC = { name: '', account_type: 'Bank', account_number: '', balance: '', notes: '' }
 
+function getBankIcon(accountType: string, name: string): string {
+  const t = (accountType || '').toLowerCase()
+  const n = (name || '').toLowerCase()
+  if (t === 'cash' || n.includes('caja') || n.includes('efectivo')) return 'EFECTIVO'
+  if (t === 'credit card' || t === 'credit_card' || n.includes('tarjeta')) return 'TARJETA'
+  if (t === 'transfer' || n.includes('transferencia') || n.includes('iban')) return 'TRANSFER'
+  return 'BANCO'
+}
+function getBankColor(accountType: string): string {
+  const t = (accountType || '').toLowerCase()
+  if (t === 'cash') return '#22c55e'
+  if (t === 'credit card' || t === 'credit_card') return '#ef4444'
+  if (t === 'transfer') return '#3b82f6'
+  return '#c9a84c'
+}
 function BanksTab() {
   const { t } = useLanguage()
   const [accounts,  setAccounts]  = useState<any[]>([])
@@ -1080,7 +1099,7 @@ function BanksTab() {
   async function fetchAccounts() {
     setLoading(true)
     const sb = createClient()
-    const { data: existing } = await sb.from('bank_accounts').select('*').order('created_at', { ascending: true })
+    const { data: existing } = await sb.from('bank_accounts').select('*').eq('is_active', true).order('name')
     if (existing && existing.length > 0) {
       setAccounts(existing); setLoading(false); return
     }
@@ -1103,7 +1122,7 @@ function BanksTab() {
     setSaving(true)
     const { error } = await createClient().from('bank_accounts').insert({
       name: form.name, account_type: form.account_type, account_number: form.account_number || null,
-      balance: Number(form.balance) || 0, notes: form.notes || null,
+      balance: Number(form.balance) || 0, current_balance: Number(form.balance) || 0, notes: form.notes || null,
     })
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
@@ -1115,7 +1134,7 @@ function BanksTab() {
     setSaving(true)
     const { error } = await createClient().from('bank_accounts').update({
       name: form.name, account_type: form.account_type, account_number: form.account_number || null,
-      balance: Number(form.balance) || 0, notes: form.notes || null,
+      balance: Number(form.balance) || 0, current_balance: Number(form.balance) || 0, notes: form.notes || null,
       updated_at: new Date().toISOString(),
     }).eq('id', editAcc.id)
     setSaving(false)
@@ -1130,9 +1149,9 @@ function BanksTab() {
     addToast(t('accountDeleted'), 'success'); setEditAcc(null); fetchAccounts()
   }
 
-  const bankBal  = accounts.filter(a => a.account_type === 'Bank').reduce((s, a) => s + (a.balance ?? 0), 0)
-  const cashBal  = accounts.filter(a => a.account_type === 'Cash').reduce((s, a) => s + (a.balance ?? 0), 0)
-  const ccBal    = accounts.filter(a => a.account_type === 'Credit Card').reduce((s, a) => s + (a.balance ?? 0), 0)
+  const bankBal  = accounts.filter(a => a.account_type === 'Bank').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
+  const cashBal  = accounts.filter(a => a.account_type === 'Cash').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
+  const ccBal    = accounts.filter(a => a.account_type === 'Credit Card').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
 
   function balColor(v: number) { return v > 0 ? '#34d399' : v < 0 ? '#ff4f4f' : '#888580' }
 
@@ -1241,8 +1260,8 @@ function BanksTab() {
                     {acc.account_number ?? 'â€”'}
                   </td>
                   {/* balance */}
-                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: balColor(acc.balance ?? 0) }}>
-                    {aed(acc.balance ?? 0)}
+                  <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: balColor(parseFloat(acc.current_balance ?? acc.balance ?? 0)) }}>
+                    {aed(parseFloat(acc.current_balance ?? acc.balance ?? 0))}
                   </td>
                   {/* reconciliation */}
                   <td style={{ padding: '12px 16px' }}>
