@@ -19,18 +19,15 @@ export async function DELETE(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { error: permsError } = await supabaseAdmin
+  // Remove from user_permissions — this revokes all CRM access.
+  // Deleting the auth account is a separate "hard delete" action not needed here.
+  const { error } = await supabaseAdmin
     .from('user_permissions')
     .delete()
     .eq('user_id', userId)
 
-  if (permsError) {
-    return NextResponse.json({ error: permsError.message }, { status: 400 })
-  }
-
-  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 400 })
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 })
   }
 
   return NextResponse.json({ success: true })

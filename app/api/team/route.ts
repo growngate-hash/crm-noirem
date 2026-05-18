@@ -13,35 +13,32 @@ export async function GET() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const [{ data: usersData, error: usersError }, { data: permsData }] = await Promise.all([
-    supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
+  const [{ data: permsData }, { data: usersData, error: usersError }] = await Promise.all([
     supabaseAdmin.from('user_permissions').select('user_id, role, permissions'),
+    supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
   ])
 
   if (usersError) {
     return NextResponse.json({ error: usersError.message }, { status: 500 })
   }
 
-  const realUserIds = new Set((usersData?.users ?? []).map((u: any) => u.id))
-
-  const permsMap: Record<string, { role: string; permissions: any }> = {}
-  ;(permsData ?? []).forEach((row: any) => {
-    if (realUserIds.has(row.user_id)) {
-      permsMap[row.user_id] = { role: row.role, permissions: row.permissions }
-    }
+  // Build email lookup from real auth users
+  const authEmailMap: Record<string, string> = {}
+  ;(usersData?.users ?? []).forEach((u: any) => {
+    authEmailMap[u.id] = u.email ?? ''
   })
 
-  const team = (usersData?.users ?? []).map((u: any) => {
-    const p = permsMap[u.id]
-    const roleCap = p?.role
-      ? p.role.charAt(0).toUpperCase() + p.role.slice(1)
-      : 'Admin'
+  // user_permissions is the source of truth — only show users with a row there
+  const team = (permsData ?? []).map((row: any) => {
+    const r = row.role ?? 'admin'
+    const roleCap = r.charAt(0).toUpperCase() + r.slice(1)
+    const email = authEmailMap[row.user_id] ?? (row.permissions?._email ?? '')
     return {
-      id: u.id,
-      email: u.email ?? '',
-      name: (u.email ?? u.id.slice(0, 8)).split('@')[0],
+      id: row.user_id,
+      email,
+      name: email ? email.split('@')[0] : row.user_id.slice(0, 8),
       role: roleCap,
-      permissions: p?.permissions ?? null,
+      permissions: row.permissions ?? null,
     }
   })
 

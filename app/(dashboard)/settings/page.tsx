@@ -586,9 +586,11 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
 
   useEffect(() => {
     async function load() {
-      console.log('[TeamSection] loading team from /api/team …')
       try {
-        const res = await fetch('/api/team')
+        const [res, { data: { user } }] = await Promise.all([
+          fetch('/api/team'),
+          createClient().auth.getUser(),
+        ])
         const json = await res.json()
         console.log('[TeamSection] /api/team response:', json)
 
@@ -605,7 +607,18 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
           }
         })
 
-        setTeam(json.team)
+        let members: TeamMember[] = json.team
+        // If current user has no permissions row yet (e.g. project owner), add them at top
+        if (user && !map[user.id]) {
+          const role = 'Admin'
+          members = [
+            { id: user.id, name: user.email?.split('@')[0] ?? 'You', email: user.email ?? '', role },
+            ...members,
+          ]
+          map[user.id] = { role, permissions: defaultPermissions(role) }
+        }
+
+        setTeam(members)
         setPermsMap(map)
       } catch (e) {
         console.error('[TeamSection] fetch error:', e)
