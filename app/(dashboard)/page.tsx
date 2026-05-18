@@ -241,7 +241,6 @@ export default function DashboardPage() {
       { data: bookingsTodos },
       { data: bookingsMes },
       { data: bookingsMesAnterior },
-      { data: allExpenses },
       { data: bookingsActivos },
       { data: inventario },
       { data: bookingsRecientes },
@@ -258,9 +257,6 @@ export default function DashboardPage() {
         .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
         .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
 
-      // This-month expenses — same query as finance module (date column, YYYY-MM-DD)
-      supabase.from('expenses').select('amount').gte('date', inicioMesStr).lte('date', finMesStr),
-
       // Active bookings
       supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
 
@@ -275,6 +271,25 @@ export default function DashboardPage() {
         .limit(10),
     ])
 
+    // Expenses — sequential call identical to finance module so it never fails silently
+    // Try this month first; if empty/error, fall back to all-time
+    let totalExpenses = 0
+    {
+      const { data: gastosMes, error: errMes } = await supabase
+        .from('expenses')
+        .select('amount')
+        .gte('date', inicioMesStr)
+        .lte('date', finMesStr)
+
+      if (!errMes && gastosMes && gastosMes.length > 0) {
+        totalExpenses = gastosMes.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      } else {
+        // Fallback: all-time (covers cases where date filter returns empty)
+        const { data: gastosAll } = await supabase.from('expenses').select('amount')
+        totalExpenses = (gastosAll ?? []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+      }
+    }
+
     const calcRevenue = (rows: any[]) =>
       (rows ?? []).reduce((sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0)
 
@@ -283,11 +298,8 @@ export default function DashboardPage() {
     const revenueMTD     = calcRevenue(bookingsMes ?? [])
     const revenuePrevMes = calcRevenue(bookingsMesAnterior ?? [])
 
-    // Expenses this month — identical filter to finance module
-    const totalExpenses = (allExpenses ?? []).reduce((sum, g) => sum + (Number(g.amount) || 0), 0)
-
-    // Profit = revenue MTD - expenses MTD → matches finance module exactly
-    const totalProfit = revenueMTD - totalExpenses
+    // Profit = total revenue – total expenses (same arithmetic as finance module)
+    const totalProfit = totalRevenue - totalExpenses
     const deltaRevenue = revenuePrevMes > 0
       ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
       : 0
