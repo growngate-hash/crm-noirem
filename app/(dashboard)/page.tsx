@@ -235,42 +235,41 @@ export default function DashboardPage() {
 
     const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1)
     const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59)
-    const inicioMesAnteriorStr = inicioMesAnterior.toISOString().split('T')[0]
-    const finMesAnteriorStr = finMesAnterior.toISOString().split('T')[0]
 
+    const inicioMesAnteriorUTC = new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString()
+    const finMesAnteriorUTC    = new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()
+
+    // ── Invoice KPIs (critical — isolated so bookings errors never block these) ──
     const [
-      { data: bookingsTodos },
-      { data: bookingsMes },
-      { data: bookingsMesAnterior },
-      { data: bookingsActivos },
+      { data: invoicesPagadas },
+      { data: invoicesMes },
+      { data: invoicesMesAnterior },
       { data: inventario },
-      { data: bookingsRecientes },
     ] = await Promise.all([
-      // All-time completed bookings → total revenue (same source as finance module)
-      supabase.from('bookings').select('price, discount').eq('status', 'completed'),
-
-      // Completed bookings this month → revenueMTD (identical to finance KPI query)
-      supabase.from('bookings').select('price, discount').eq('status', 'completed')
-        .gte('scheduled_at', inicioMesUTC).lte('scheduled_at', finMesUTC),
-
-      // Completed bookings previous month → delta
-      supabase.from('bookings').select('price, discount').eq('status', 'completed')
-        .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
-        .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
-
-      // Active bookings
-      supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
-
-      // Inventory for low-stock check
+      supabase.from('invoices').select('total').eq('status', 'pagada'),
+      supabase.from('invoices').select('total, paid_at').eq('status', 'pagada')
+        .gte('paid_at', inicioMesUTC).lte('paid_at', finMesUTC),
+      supabase.from('invoices').select('total, paid_at').eq('status', 'pagada')
+        .gte('paid_at', inicioMesAnteriorUTC).lte('paid_at', finMesAnteriorUTC),
       supabase.from('inventory_items').select('id, name, stock_qty, min_stock, unit, brand'),
-
-      // Recent bookings for table
-      supabase
-        .from('bookings')
-        .select('id, price, discount, status, scheduled_at, created_at, contacts(full_name, tier), vehicles(make, model), services(name)')
-        .order('created_at', { ascending: false })
-        .limit(10),
     ])
+
+    // ── Bookings (optional — failures don't block KPIs) ──
+    let activeBookings = 0
+    let bookingsRecientes: any[] = []
+    try {
+      const { data: activos } = await supabase
+        .from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending'])
+      activeBookings = activos?.length ?? 0
+    } catch { /* bookings table may not exist */ }
+    try {
+      const { data } = await supabase
+        .from('bookings')
+        .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
+        .order('created_at', { ascending: false })
+        .limit(10)
+      bookingsRecientes = data ?? []
+    } catch { /* bookings schema may differ */ }
 
     // Expenses — sequential call identical to finance module so it never fails silently
     // Try this month first; if empty/error, fall back to all-time
@@ -292,12 +291,12 @@ export default function DashboardPage() {
     }
 
     const calcRevenue = (rows: any[]) =>
-      (rows ?? []).reduce((sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0)
+      (rows ?? []).reduce((sum, inv) => sum + Number(inv.total ?? 0), 0)
 
-    // Revenue from bookings — exactly like finance module's fetchFinanceKPIs()
-    const totalRevenue   = calcRevenue(bookingsTodos ?? [])
-    const revenueMTD     = calcRevenue(bookingsMes ?? [])
-    const revenuePrevMes = calcRevenue(bookingsMesAnterior ?? [])
+    // Revenue from paid invoices
+    const totalRevenue   = calcRevenue(invoicesPagadas ?? [])
+    const revenueMTD     = calcRevenue(invoicesMes ?? [])
+    const revenuePrevMes = calcRevenue(invoicesMesAnterior ?? [])
 
     // Profit = total revenue – total expenses (same arithmetic as finance module)
     const totalProfit = totalRevenue - totalExpenses
@@ -305,9 +304,9 @@ export default function DashboardPage() {
       ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
       : 0
 
-    // Avg ticket = all-time revenue / all completed bookings
-    const avgOrderValue = (bookingsTodos?.length ?? 0) > 0
-      ? totalRevenue / bookingsTodos!.length : 0
+    // Avg ticket = all-time revenue / all paid invoices
+    const avgOrderValue = (invoicesPagadas?.length ?? 0) > 0
+      ? totalRevenue / invoicesPagadas!.length : 0
 
     const lowItems = (inventario ?? []).filter(
       i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0) && (i.min_stock ?? 0) > 0
@@ -328,7 +327,7 @@ export default function DashboardPage() {
     setKpis({
       totalRevenue, totalExpenses, totalProfit,
       lowStockAlerts, revenueMTD,
-      activeBookings: bookingsActivos?.length ?? 0,
+      activeBookings,
       avgOrderValue, csatScore, deltaRevenue,
     })
 

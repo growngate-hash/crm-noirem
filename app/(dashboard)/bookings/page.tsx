@@ -430,7 +430,7 @@ export default function BookingsPage() {
             discount,
             tax,
             total,
-            status: 'draft',
+            status: 'por_cobrar',
             issued_at: now.toISOString(),
             due_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           })

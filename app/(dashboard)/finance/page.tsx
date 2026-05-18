@@ -176,6 +176,7 @@ function CostsTab() {
     addToast('Factura marcada como pagada ✓', 'success')
     setShowPaymentModal(false)
     fetchInvoices()
+    fetchFinanceKPIs()
   }
 
   async function handleVoidInvoice() {
@@ -192,6 +193,7 @@ function CostsTab() {
     setVoidingInvoice(null)
     setVoidReason('')
     fetchInvoices()
+    fetchFinanceKPIs()
   }
 
   async function fetchExpenses() {
@@ -211,13 +213,13 @@ function CostsTab() {
     const inicioMesStr = inicioMes.toISOString().split('T')[0]
     const finMesStr = finMes.toISOString().split('T')[0]
 
-    const [{ data: bookings }, { data: gastos }] = await Promise.all([
+    const [{ data: invoicesPagadas }, { data: gastos }] = await Promise.all([
       supabase
-        .from('bookings')
-        .select('price, discount')
-        .eq('status', 'completed')
-        .gte('scheduled_at', inicioMesUTC)
-        .lte('scheduled_at', finMesUTC),
+        .from('invoices')
+        .select('total')
+        .eq('status', 'pagada')
+        .gte('paid_at', inicioMesUTC)
+        .lte('paid_at', finMesUTC),
       supabase
         .from('expenses')
         .select('amount, category')
@@ -225,8 +227,8 @@ function CostsTab() {
         .lte('date', finMesStr),
     ])
 
-    const totalRevenue = (bookings ?? []).reduce(
-      (sum, b) => sum + ((b.price ?? 0) - (b.discount ?? 0)), 0
+    const totalRevenue = (invoicesPagadas ?? []).reduce(
+      (sum, inv) => sum + Number(inv.total ?? 0), 0
     )
     const totalExpenses = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
     const netProfit = totalRevenue - totalExpenses
