@@ -202,6 +202,7 @@ export default function DashboardPage() {
   })
   const [recentBookings, setRecentBookings] = useState<any[]>([])
   const [activityFeed, setActivityFeed] = useState<any[]>([])
+  const [lowStockItems, setLowStockItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
 
@@ -261,7 +262,7 @@ export default function DashboardPage() {
       supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
 
       // Inventory for low-stock check
-      supabase.from('inventory_items').select('stock_qty, min_stock'),
+      supabase.from('inventory_items').select('id, name, stock_qty, min_stock, unit, brand'),
 
       // Recent bookings for table
       supabase
@@ -308,9 +309,11 @@ export default function DashboardPage() {
     const avgOrderValue = (bookingsTodos?.length ?? 0) > 0
       ? totalRevenue / bookingsTodos!.length : 0
 
-    const lowStockAlerts = (inventario ?? []).filter(
+    const lowItems = (inventario ?? []).filter(
       i => (i.stock_qty ?? 0) <= (i.min_stock ?? 0) && (i.min_stock ?? 0) > 0
-    ).length
+    )
+    const lowStockAlerts = lowItems.length
+    setLowStockItems(lowItems)
 
     // CSAT — optional table
     let csatScore = 0
@@ -437,6 +440,11 @@ export default function DashboardPage() {
           0%   { background-position: 200% 0 }
           100% { background-position: -200% 0 }
         }
+        @keyframes pulse {
+          0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+          70%  { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
       `}</style>
 
       {/* ── top action bar ── */}
@@ -526,23 +534,63 @@ export default function DashboardPage() {
       <div className="kpi-grid-4" style={{ marginBottom:12 }}>
         {loading
           ? [0,1,2,3].map(i => <KpiSkeleton key={i} />)
-          : row1.map(card => (
-            <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px' }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{card.label}</div>
-                <div style={{ width:28, height:28, borderRadius:8, background:card.iconBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                  {card.iconChar
-                    ? <span style={{ fontSize:14, color:card.color }}>{card.iconChar}</span>
-                    : card.icon && <card.icon size={14} color={card.color} strokeWidth={2} />}
+          : row1.map(card => {
+            if (card.key === 'lowStock') {
+              const count = kpis.lowStockAlerts
+              const hasAlerts = count > 0
+              return (
+                <div key="lowStock" style={{
+                  background: hasAlerts ? 'rgba(239,68,68,0.08)' : 'var(--bg2)',
+                  border: `1px solid ${hasAlerts ? '#ef4444' : 'var(--border)'}`,
+                  borderRadius: 12, padding: '18px 16px',
+                  position: 'relative', overflow: 'hidden',
+                  transition: 'all 0.3s ease',
+                }}>
+                  {hasAlerts && (
+                    <div style={{
+                      position: 'absolute', top: 14, right: 14,
+                      width: 10, height: 10, background: '#ef4444',
+                      borderRadius: '50%', animation: 'pulse 1.5s infinite',
+                    }} />
+                  )}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                    <div style={{ fontSize:10, fontWeight:600, color: hasAlerts ? '#ef4444' : 'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                      {card.label}
+                    </div>
+                    <div style={{ width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center',
+                      background: hasAlerts ? 'rgba(239,68,68,0.15)' : card.iconBg,
+                      border: `1px solid ${hasAlerts ? 'rgba(239,68,68,0.3)' : 'transparent'}`,
+                    }}>
+                      <span style={{ fontSize:14 }}>{hasAlerts ? '⚠️' : '📦'}</span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:36, fontWeight:800, color: hasAlerts ? '#ef4444' : 'var(--text)', lineHeight:1 }}>
+                    {count}
+                  </div>
+                  <div style={{ fontSize:10, color: hasAlerts ? 'rgba(239,68,68,0.6)' : '#3a3836', marginTop:6 }}>
+                    {count === 0 ? `— ${t('allInStock')}` : `— ${count} producto${count !== 1 ? 's' : ''} bajo mínimo`}
+                  </div>
                 </div>
+              )
+            }
+            return (
+              <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                  <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{card.label}</div>
+                  <div style={{ width:28, height:28, borderRadius:8, background:card.iconBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {card.iconChar
+                      ? <span style={{ fontSize:14, color:card.color }}>{card.iconChar}</span>
+                      : card.icon && <card.icon size={14} color={card.color} strokeWidth={2} />}
+                  </div>
+                </div>
+                {card.bigNum
+                  ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
+                  : <div style={{ fontSize:22, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</div>
+                }
+                <div style={{ fontSize:10, color:'#3a3836', marginTop:6 }}>{card.sub}</div>
               </div>
-              {card.bigNum
-                ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
-                : <div style={{ fontSize:22, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</div>
-              }
-              <div style={{ fontSize:10, color:'#3a3836', marginTop:6 }}>{card.sub}</div>
-            </div>
-          ))
+            )
+          })
         }
       </div>
 
@@ -626,28 +674,77 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Activity Feed */}
-        <div className="glass" style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
-          <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
-            <div style={{ fontSize:13, fontWeight:700 }}>{t('activityFeed')}</div>
+        {/* Productos Bajos de Stock */}
+        <div className="glass" style={{ display:'flex', flexDirection:'column', overflow:'hidden', border: kpis.lowStockAlerts > 0 ? '1px solid rgba(239,68,68,0.3)' : undefined }}>
+          <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', flexShrink:0, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700 }}>Productos Bajos de Stock</div>
+              <div style={{ fontSize:11, color:'var(--text2)', marginTop:2 }}>Inventario que requiere reposición</div>
+            </div>
+            {kpis.lowStockAlerts > 0 && (
+              <span style={{ background:'rgba(239,68,68,0.12)', border:'1px solid rgba(239,68,68,0.3)', color:'#ef4444', borderRadius:20, padding:'4px 12px', fontSize:11, fontWeight:700 }}>
+                {kpis.lowStockAlerts} alerta{kpis.lowStockAlerts !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-          <div className="scroll" style={{ flex:1, padding:'8px 0' }}>
+          <div className="scroll" style={{ flex:1, padding:'8px 12px' }}>
             {loading
-              ? <div style={{ padding:'12px 18px', display:'flex', flexDirection:'column', gap:14 }}>
-                  {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height:36, borderRadius:8 }} />)}
+              ? <div style={{ padding:'12px 6px', display:'flex', flexDirection:'column', gap:10 }}>
+                  {[1,2,3,4].map(i => <div key={i} className="skeleton" style={{ height:64, borderRadius:10 }} />)}
                 </div>
-              : activityFeed.length === 0
-                ? <div style={{ padding:'32px 18px', textAlign:'center', fontSize:12, color:'var(--text2)' }}>Sin actividad reciente</div>
-                : activityFeed.map((item, idx) => (
-                  <div key={item.id ?? idx} style={{ display:'flex', gap:12, padding:'12px 18px', borderBottom: idx < activityFeed.length-1 ? '1px solid var(--border)' : 'none' }}>
-                    <div style={{ width:8, height:8, borderRadius:'50%', flexShrink:0, marginTop:4, background:DOT_COLOR[item.status] ?? 'var(--text2)' }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:11, fontWeight:600, color:'var(--text)', marginBottom:2 }}>{item.name}</div>
-                      <div style={{ fontSize:11, color:'var(--text2)', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{item.desc}</div>
-                      <div style={{ fontSize:10, color:'#444' }}>{item.time ? timeAgo(item.time) : ''}</div>
-                    </div>
+              : lowStockItems.length === 0
+                ? <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'40px 18px', textAlign:'center' }}>
+                    <div style={{ fontSize:36, marginBottom:12 }}>✅</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', marginBottom:4 }}>Todo en orden</div>
+                    <div style={{ fontSize:12, color:'var(--text2)' }}>Todos los productos están sobre el nivel mínimo</div>
                   </div>
-                ))
+                : <>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8, paddingBottom:8 }}>
+                      {lowStockItems.map(item => {
+                        const stock = item.stock_qty ?? 0
+                        const minLevel = item.min_stock ?? 1
+                        const stockPercent = Math.min((stock / minLevel) * 100, 100)
+                        const isCritical = stock === 0
+                        return (
+                          <div key={item.id} style={{
+                            background: isCritical ? 'rgba(239,68,68,0.06)' : 'var(--bg3)',
+                            border: `1px solid ${isCritical ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
+                            borderRadius:10, padding:'12px 14px',
+                            display:'flex', alignItems:'center', gap:12,
+                          }}>
+                            <div style={{
+                              width:34, height:34, borderRadius:8, flexShrink:0,
+                              background: isCritical ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.12)',
+                              border: `1px solid ${isCritical ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)'}`,
+                              display:'flex', alignItems:'center', justifyContent:'center', fontSize:15,
+                            }}>
+                              {isCritical ? '🚨' : '⚠️'}
+                            </div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+                                <div style={{ fontSize:12, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                  {item.name ?? '—'}
+                                </div>
+                                <div style={{ fontSize:12, fontWeight:800, color: isCritical ? '#ef4444' : '#f59e0b', flexShrink:0, marginLeft:8 }}>
+                                  {stock} {item.unit || 'u'}
+                                </div>
+                              </div>
+                              <div style={{ height:3, background:'var(--border)', borderRadius:2, overflow:'hidden', marginBottom:4 }}>
+                                <div style={{ height:'100%', width:`${stockPercent}%`, background: isCritical ? '#ef4444' : '#f59e0b', borderRadius:2, transition:'width 0.3s' }} />
+                              </div>
+                              <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, color:'#555' }}>
+                                <span>{item.brand || '—'}</span>
+                                <span>Mín: {minLevel} {item.unit || 'u'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <a href="/services" style={{ display:'block', textAlign:'center', padding:'9px', background:'transparent', border:'1px solid var(--border)', borderRadius:8, color:GOLD, fontSize:11, fontWeight:700, textDecoration:'none', letterSpacing:'1px' }}>
+                      VER INVENTARIO COMPLETO →
+                    </a>
+                  </>
             }
           </div>
         </div>
