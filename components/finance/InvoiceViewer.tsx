@@ -82,7 +82,8 @@ export function InvoiceViewer({ invoice, onClose }: Props) {
   const tax        = Number(invoice.tax ?? 0)
   const discount   = Number(invoice.discount ?? 0)
   const total      = Number(invoice.total ?? 0)
-  const isPaid     = invoice.status === 'paid'
+  const isPaid     = invoice.status === 'pagada'
+  const isVoided   = invoice.status === 'anulada'
 
   async function handleDownload() {
     if (!invoiceRef.current) return
@@ -126,6 +127,19 @@ export function InvoiceViewer({ invoice, onClose }: Props) {
       <div ref={invoiceRef} onClick={e => e.stopPropagation()}
         style={{ background: '#fff', width: '100%', maxWidth: 720, borderRadius: 12, padding: '48px 48px 40px', fontFamily: 'Arial, Helvetica, sans-serif', color: '#1a1a1a', boxSizing: 'border-box' }}>
 
+        {/* Banner factura anulada */}
+        {isVoided && (
+          <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: 16 }}>🚫</span>
+            <div>
+              <div style={{ color: '#ef4444', fontWeight: 700, fontSize: 13 }}>FACTURA ANULADA</div>
+              {invoice.void_reason && (
+                <div style={{ color: 'rgba(239,68,68,0.7)', fontSize: 12, marginTop: 2 }}>Motivo: {invoice.void_reason}</div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 24, borderBottom: `2px solid ${tpl.accent_color}`, marginBottom: 32 }}>
           <div>
@@ -164,7 +178,7 @@ export function InvoiceViewer({ invoice, onClose }: Props) {
               background: isPaid ? '#dcfce7' : '#fef3c7',
               color: isPaid ? '#16a34a' : '#d97706',
               border: `1px solid ${isPaid ? '#86efac' : '#fcd34d'}` }}>
-              {isPaid ? '✓ PAGADA' : '⏳ POR COBRAR'}
+              {isPaid ? '✓ PAGADA' : isVoided ? '🚫 ANULADA' : '⏳ POR COBRAR'}
             </span>
             {invoice.transaction_id && (
               <div style={{ color: '#888', fontSize: 12, marginTop: 8 }}>

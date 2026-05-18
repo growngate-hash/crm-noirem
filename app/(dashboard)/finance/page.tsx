@@ -110,6 +110,9 @@ function CostsTab() {
   const [transactionId,      setTransactionId]      = useState('')
   const [paymentError,       setPaymentError]       = useState('')
   const [viewingInvoice,     setViewingInvoice]     = useState<any>(null)
+  const [voidingInvoice,     setVoidingInvoice]     = useState<any>(null)
+  const [voidReason,         setVoidReason]         = useState('')
+  const [voiding,            setVoiding]            = useState(false)
   const [receiptFile,        setReceiptFile]        = useState<File | null>(null)
   const [receiptPreview,     setReceiptPreview]     = useState<string | null>(null)
   const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
@@ -165,13 +168,29 @@ function CostsTab() {
   async function confirmPayment() {
     if (!transactionId.trim()) { setPaymentError('Debes ingresar el ID de la transacción'); return }
     const { error } = await createClient().from('invoices').update({
-      status: 'paid',
+      status: 'pagada',
       transaction_id: transactionId.trim(),
       paid_at: new Date().toISOString(),
     }).eq('id', selectedInvoice.id)
     if (error) { setPaymentError('Error al actualizar la factura'); return }
-    addToast(lang === 'es' ? 'Factura marcada como pagada ✓' : 'Invoice marked as paid ✓', 'success')
+    addToast('Factura marcada como pagada ✓', 'success')
     setShowPaymentModal(false)
+    fetchInvoices()
+  }
+
+  async function handleVoidInvoice() {
+    if (!voidReason.trim()) { addToast('Debes ingresar el motivo de anulación', 'error'); return }
+    setVoiding(true)
+    const { error } = await createClient().from('invoices').update({
+      status: 'anulada',
+      void_reason: voidReason.trim(),
+      voided_at: new Date().toISOString(),
+    }).eq('id', voidingInvoice.id)
+    setVoiding(false)
+    if (error) { addToast('Error al anular factura', 'error'); return }
+    addToast('Factura anulada correctamente', 'success')
+    setVoidingInvoice(null)
+    setVoidReason('')
     fetchInvoices()
   }
 
@@ -238,7 +257,7 @@ function CostsTab() {
   async function fetchInvoices() {
     const { data } = await createClient()
       .from('invoices')
-      .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, paid_at, transaction_id, contact_id, contacts(name, email, phone)')
+      .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, paid_at, transaction_id, void_reason, voided_at, contact_id, contacts(name, email, phone)')
       .order('created_at', { ascending: false })
       .limit(20)
     setInvoices(data ?? [])
@@ -507,55 +526,57 @@ function CostsTab() {
             {invoices
               .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
               .map((inv: any) => {
-                const statusColor = inv.status==='paid' ? '#34d399' : inv.status==='por_cobrar' ? '#f59e0b' : inv.status==='sent' ? '#4fa3ff' : inv.status==='overdue' ? '#ff4f4f' : '#888580'
-                const statusBg    = inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='por_cobrar' ? 'rgba(245,158,11,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)'
-                const statusLabel = inv.status==='paid' ? (lang==='es' ? 'Pagada' : 'Paid')
-                  : inv.status==='por_cobrar' ? 'Por Cobrar'
-                  : inv.status==='sent' ? (lang==='es' ? 'Enviada' : 'Sent')
-                  : inv.status==='overdue' ? (lang==='es' ? 'Vencida' : 'Overdue')
-                  : (lang==='es' ? 'Borrador' : 'Draft')
+                const sc = inv.status === 'pagada'     ? { color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   border: '#22c55e55', label: 'Pagada'     }
+                         : inv.status === 'por_cobrar' ? { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: '#f59e0b55', label: 'Por Cobrar' }
+                         : inv.status === 'anulada'    ? { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  border: '#ef444455', label: 'Anulada'    }
+                         :                               { color: '#888580', bg: 'rgba(136,133,128,0.1)', border: '#88858055', label: inv.status   }
                 return (
-                  <div key={inv.id} style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 10, padding: 14 }}>
+                  <div key={inv.id} style={{ background: '#1a1a1f', border: `1px solid ${inv.status === 'anulada' ? 'rgba(239,68,68,0.2)' : '#2a2a30'}`, borderRadius: 10, padding: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div>
                         <div style={{ fontFamily: 'monospace', color: '#c9a84c', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
                         <div style={{ color: '#888580', fontSize: 12, marginTop: 2 }}>{(inv as any).contacts?.name ?? '—'}</div>
                       </div>
-                      <span style={{ background: statusBg, border: `1px solid ${statusColor}55`, color: statusColor, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
-                        {statusLabel}
+                      <span style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
+                        {sc.label}
                       </span>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
                       {[
                         { label: 'SUBTOTAL', value: `AED ${Number(inv.subtotal ?? 0).toFixed(2)}` },
-                        { label: 'VAT', value: `AED ${Number(inv.tax ?? 0).toFixed(2)}` },
-                        { label: 'TOTAL', value: `AED ${Number(inv.total ?? 0).toFixed(2)}` },
+                        { label: 'VAT',      value: `AED ${Number(inv.tax ?? 0).toFixed(2)}` },
+                        { label: 'TOTAL',    value: `AED ${Number(inv.total ?? 0).toFixed(2)}` },
                       ].map(f => (
                         <div key={f.label} style={{ textAlign: 'center' }}>
                           <div style={{ color: '#888580', fontSize: 9, fontWeight: 700, letterSpacing: '1px', marginBottom: 3 }}>{f.label}</div>
-                          <div style={{ color: f.label === 'TOTAL' ? '#00d4aa' : '#f0ede8', fontWeight: f.label === 'TOTAL' ? 800 : 600, fontSize: f.label === 'TOTAL' ? 14 : 12 }}>{f.value}</div>
+                          <div style={{ color: f.label === 'TOTAL' ? (inv.status === 'anulada' ? '#ef4444' : '#00d4aa') : '#f0ede8', fontWeight: f.label === 'TOTAL' ? 800 : 600, fontSize: f.label === 'TOTAL' ? 14 : 12 }}>{f.value}</div>
                         </div>
                       ))}
                     </div>
-                    {inv.status === 'draft' && (
-                      <button onClick={async () => { await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id); fetchInvoices() }}
-                        style={{ width: '100%', padding: '10px 0', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                        {lang === 'es' ? 'Enviar' : 'Send'}
-                      </button>
+                    {inv.status === 'por_cobrar' && (
+                      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                        <button onClick={() => handleMarkAsPaid(inv)}
+                          style={{ flex: 1, padding: '9px 0', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          ✓ MARCAR PAGADA
+                        </button>
+                        <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
+                          style={{ padding: '9px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          ✕ ANULAR
+                        </button>
+                      </div>
                     )}
-                    {(inv.status === 'por_cobrar' || inv.status === 'sent') && (
-                      <button onClick={() => handleMarkAsPaid(inv)}
-                        style={{ width: '100%', padding: '10px 0', background: '#c9a84c', border: 'none', color: '#0d0d0f', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                        {lang === 'es' ? 'Marcar Pagada' : 'Mark Paid'}
-                      </button>
-                    )}
-                    {inv.status === 'paid' && inv.transaction_id && (
-                      <div style={{ textAlign: 'center', fontSize: 11, color: '#888580', padding: '6px 0' }}>
+                    {inv.status === 'pagada' && inv.transaction_id && (
+                      <div style={{ textAlign: 'center', fontSize: 11, color: '#888580', padding: '4px 0 8px' }}>
                         Ref: {inv.transaction_id}
                       </div>
                     )}
+                    {inv.status === 'anulada' && inv.void_reason && (
+                      <div style={{ fontSize: 11, color: '#ef444480', padding: '4px 0 8px', fontStyle: 'italic' }}>
+                        Motivo: {inv.void_reason}
+                      </div>
+                    )}
                     <button onClick={() => setViewingInvoice(inv)}
-                      style={{ width: '100%', marginTop: 8, padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                      style={{ width: '100%', padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
                       👁 VER FACTURA
                     </button>
                   </div>
@@ -584,38 +605,41 @@ function CostsTab() {
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#00d4aa' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px' }}>
-                      <span style={{
-                        padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
-                        background: inv.status==='paid' ? 'rgba(52,211,153,0.1)' : inv.status==='por_cobrar' ? 'rgba(245,158,11,0.1)' : inv.status==='sent' ? 'rgba(79,163,255,0.1)' : inv.status==='overdue' ? 'rgba(255,79,79,0.1)' : 'rgba(136,133,128,0.1)',
-                        color:      inv.status==='paid' ? '#34d399'              : inv.status==='por_cobrar' ? '#f59e0b'              : inv.status==='sent' ? '#4fa3ff'              : inv.status==='overdue' ? '#ff4f4f'              : '#888580',
-                      }}>
-                        {inv.status==='paid'        ? (lang==='es' ? 'Pagada'     : 'Paid')
-                       : inv.status==='por_cobrar'  ? 'Por Cobrar'
-                       : inv.status==='sent'        ? (lang==='es' ? 'Enviada'    : 'Sent')
-                       : inv.status==='overdue'     ? (lang==='es' ? 'Vencida'    : 'Overdue')
-                       :                              (lang==='es' ? 'Borrador'   : 'Draft')}
-                      </span>
+                      {(() => {
+                        const sc = inv.status === 'pagada'     ? { color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   label: 'Pagada'     }
+                                 : inv.status === 'por_cobrar' ? { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', label: 'Por Cobrar' }
+                                 : inv.status === 'anulada'    ? { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  label: 'Anulada'    }
+                                 :                               { color: '#888580', bg: 'rgba(136,133,128,0.1)', label: inv.status   }
+                        return (
+                          <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, background: sc.bg, color: sc.color }}>
+                            {sc.label}
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td style={{ padding: '12px 0' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button onClick={() => setViewingInvoice(inv)}
-                          style={{ padding: '4px 10px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', color: '#c9a84c', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          style={{ padding: '4px 10px', background: '#2a2a30', border: '1px solid #3a3a40', color: '#f0ede8', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
                           👁 VER
                         </button>
-                        {inv.status === 'draft' && (
-                          <button onClick={async () => { await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id); fetchInvoices() }}
-                            style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            {lang === 'es' ? 'Enviar' : 'Send'}
-                          </button>
-                        )}
-                        {(inv.status === 'por_cobrar' || inv.status === 'sent') && (
+                        {inv.status === 'por_cobrar' && (
                           <button onClick={() => handleMarkAsPaid(inv)}
-                            style={{ padding: '4px 10px', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            {lang === 'es' ? 'Marcar Pagada' : 'Mark Paid'}
+                            style={{ padding: '4px 10px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            ✓ MARCAR PAGADA
                           </button>
                         )}
-                        {inv.status === 'paid' && inv.transaction_id && (
+                        {inv.status === 'por_cobrar' && (
+                          <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
+                            style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                            ✕ ANULAR
+                          </button>
+                        )}
+                        {inv.status === 'pagada' && inv.transaction_id && (
                           <span style={{ fontSize: 10, color: '#888580' }}>#{inv.transaction_id}</span>
+                        )}
+                        {inv.status === 'anulada' && inv.void_reason && (
+                          <span style={{ fontSize: 10, color: '#ef444480', fontStyle: 'italic' }} title={inv.void_reason}>Anulada</span>
                         )}
                       </div>
                     </td>
@@ -628,7 +652,7 @@ function CostsTab() {
                     {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
                   </td>
                   <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#00d4aa', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    AED {invoices.reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
+                    AED {invoices.filter(inv => inv.status !== 'anulada').reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
                   </td>
                   <td colSpan={2} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
                 </tr>
@@ -829,6 +853,40 @@ function CostsTab() {
               style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount && !saving && !uploadingReceipt) ? 1 : 0.5 }}>
               {uploadingReceipt ? 'Subiendo archivo...' : saving ? t('saving') : t('saveExpenseBtn')}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal anular factura */}
+      {voidingInvoice && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+          onClick={() => { setVoidingInvoice(null); setVoidReason('') }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: '#141416', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>⚠️</div>
+            <div style={{ color: '#f0ede8', fontSize: 20, fontWeight: 800, textAlign: 'center', marginBottom: 8 }}>Anular Factura</div>
+            <div style={{ color: '#888580', fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
+              {voidingInvoice.invoice_no} · AED {Number(voidingInvoice.total ?? 0).toFixed(2)}
+            </div>
+            <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 24 }}>Esta acción no se puede deshacer</div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888580', marginBottom: 6 }}>
+                MOTIVO DE ANULACIÓN *
+              </label>
+              <textarea autoFocus value={voidReason} onChange={e => setVoidReason(e.target.value)} rows={3}
+                placeholder="ej. Error en el monto, servicio cancelado, duplicado..."
+                style={{ width: '100%', padding: '12px 16px', background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: '#f0ede8', fontSize: 13, outline: 'none', resize: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => { setVoidingInvoice(null); setVoidReason('') }}
+                style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#888580', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                CANCELAR
+              </button>
+              <button onClick={handleVoidInvoice} disabled={voiding || !voidReason.trim()}
+                style={{ flex: 1, padding: 13, background: '#ef4444', border: 'none', borderRadius: 10, color: '#fff', fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: voiding || !voidReason.trim() ? 0.6 : 1, fontFamily: 'Outfit,sans-serif' }}>
+                {voiding ? 'ANULANDO...' : 'ANULAR FACTURA'}
+              </button>
+            </div>
           </div>
         </div>
       )}
