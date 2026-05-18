@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { EmptyState } from '@/components/ui/EmptyState'
+import { InvoiceViewer } from '@/components/finance/InvoiceViewer'
 
 // ─── shared inputs ─────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -108,6 +109,7 @@ function CostsTab() {
   const [selectedInvoice,    setSelectedInvoice]    = useState<any>(null)
   const [transactionId,      setTransactionId]      = useState('')
   const [paymentError,       setPaymentError]       = useState('')
+  const [viewingInvoice,     setViewingInvoice]     = useState<any>(null)
   const [receiptFile,        setReceiptFile]        = useState<File | null>(null)
   const [receiptPreview,     setReceiptPreview]     = useState<string | null>(null)
   const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
@@ -236,7 +238,7 @@ function CostsTab() {
   async function fetchInvoices() {
     const { data } = await createClient()
       .from('invoices')
-      .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, contact_id, contacts(name)')
+      .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, paid_at, transaction_id, contact_id, contacts(name, email, phone)')
       .order('created_at', { ascending: false })
       .limit(20)
     setInvoices(data ?? [])
@@ -552,6 +554,10 @@ function CostsTab() {
                         Ref: {inv.transaction_id}
                       </div>
                     )}
+                    <button onClick={() => setViewingInvoice(inv)}
+                      style={{ width: '100%', marginTop: 8, padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                      👁 VER FACTURA
+                    </button>
                   </div>
                 )
               })}
@@ -592,6 +598,10 @@ function CostsTab() {
                     </td>
                     <td style={{ padding: '12px 0' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        <button onClick={() => setViewingInvoice(inv)}
+                          style={{ padding: '4px 10px', background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', color: '#c9a84c', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                          👁 VER
+                        </button>
                         {inv.status === 'draft' && (
                           <button onClick={async () => { await createClient().from('invoices').update({ status: 'sent' }).eq('id', inv.id); fetchInvoices() }}
                             style={{ padding: '4px 10px', background: 'rgba(79,163,255,0.1)', border: '1px solid rgba(79,163,255,0.3)', color: '#4fa3ff', borderRadius: 6, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
@@ -861,6 +871,9 @@ function CostsTab() {
           </div>
         </div>
       )}
+
+      {/* Invoice PDF Viewer */}
+      {viewingInvoice && <InvoiceViewer invoice={viewingInvoice} onClose={() => setViewingInvoice(null)} />}
 
       {/* toasts */}
       <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 900, display: 'flex', flexDirection: 'column', gap: 8 }}>
