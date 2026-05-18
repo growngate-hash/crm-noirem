@@ -577,6 +577,12 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
   const [inviteSending, setInviteSending] = useState(false)
   const [inviteError, setInviteError] = useState('')
   const [inviteSuccess, setInviteSuccess] = useState('')
+  const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null)
+
+  function showToast(msg: string, type: 'success' | 'error') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   useEffect(() => {
     async function load() {
@@ -608,9 +614,24 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
     load()
   }, [])
 
-  function removeTeam(id: string) {
+  async function removeTeam(id: string) {
+    if (!window.confirm('¿Eliminar este miembro del equipo? Esta acción no se puede deshacer.')) return
+
+    const res = await fetch('/api/delete-member', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: id }),
+    })
+    const result = await res.json()
+
+    if (result.error) {
+      showToast(`Error al eliminar: ${result.error}`, 'error')
+      return
+    }
+
     setTeam(prev => prev.filter(m => m.id !== id))
-    setPermsMap(prev => { const c = {...prev}; delete c[id]; return c })
+    setPermsMap(prev => { const c = { ...prev }; delete c[id]; return c })
+    showToast('Miembro eliminado correctamente', 'success')
   }
 
   async function sendInvite() {
@@ -773,6 +794,19 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
           onSave={(role, perms) => handlePermsSaved(editingMember.id, role, perms)}
           onClose={() => setEditingMember(null)}
         />
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 900,
+          padding: '12px 18px', borderRadius: 10,
+          fontSize: 13, fontWeight: 600, fontFamily: 'Outfit,sans-serif', color: '#fff',
+          background: toast.type === 'success' ? 'rgba(34,197,94,0.95)' : 'rgba(255,79,79,0.95)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)',
+        }}>
+          {toast.msg}
+        </div>
       )}
     </div>
   )
