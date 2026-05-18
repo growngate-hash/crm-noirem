@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
@@ -8,7 +8,7 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InvoiceViewer } from '@/components/finance/InvoiceViewer'
 
-// ─── shared inputs ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ shared inputs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const INP: React.CSSProperties = {
   width: '100%', background: '#1a1a1e', borderRadius: 8, padding: '10px 12px',
   color: '#f0ede8', fontSize: 13, fontFamily: 'Outfit,sans-serif', outline: 'none', boxSizing: 'border-box',
@@ -34,7 +34,7 @@ function FLabel({ children }: { children: React.ReactNode }) {
 type Toast = { id: number; msg: string; type: 'success' | 'error' | 'warn' }
 let _toastId = 0
 
-// ─── icon button ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ icon button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IconBtn({ onClick, danger = false, children }: { onClick: () => void; danger?: boolean; children: React.ReactNode }) {
   const [hov, setHov] = useState(false)
   return (
@@ -47,10 +47,10 @@ function IconBtn({ onClick, danger = false, children }: { onClick: () => void; d
   )
 }
 
-// ─── main tabs ─────────────────────────────────────────────────────────────────
-const MAIN_TABS = ['Costs & Expenses', 'Banks', 'Chart of Accounts', 'Impuestos']
+// â”€â”€â”€ main tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+const MAIN_TABS = ['Costs & Expenses', 'Banks', 'Facturas']
 
-// ─── category pill ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ category pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CAT_STYLE: Record<string, { bg: string; border: string; color: string }> = {
   Fixed:       { bg: 'rgba(79,163,255,0.1)',    border: 'rgba(79,163,255,0.3)',    color: '#4fa3ff' },
   Variable:    { bg: 'rgba(201,168,76,0.12)',   border: 'rgba(201,168,76,0.3)',   color: '#c9a84c' },
@@ -63,11 +63,11 @@ function CatPill({ cat }: { cat: string }) {
 
 const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
 
-// ─── account type badge ────────────────────────────────────────────────────────
+// â”€â”€â”€ account type badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ACC_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
-  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#c9a84c', icon: '💳' },
-  'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff', icon: '🏦' },
-  'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: '💵' },
+  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#c9a84c', icon: 'ðŸ’³' },
+  'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff', icon: 'ðŸ¦' },
+  'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: 'ðŸ’µ' },
 }
 function AccTypeBadge({ type }: { type: string }) {
   const s = ACC_STYLE[type] ?? ACC_STYLE['Cash']
@@ -79,11 +79,11 @@ function AccTypeBadge({ type }: { type: string }) {
   )
 }
 
-// ─── COSTS & EXPENSES TAB ──────────────────────────────────────────────────────
+// â”€â”€â”€ COSTS & EXPENSES TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const EXP_FILTERS = ['All', 'Fixed', 'Variable', 'Operational']
 const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false, account_id: '' }
 
-function CostsTab() {
+function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const { t, lang } = useLanguage()
   const isMobile = useIsMobile()
   const [expenses,         setExpenses]         = useState<any[]>([])
@@ -167,21 +167,21 @@ function CostsTab() {
   }
 
   async function confirmPayment() {
-    if (!transactionId.trim()) { setPaymentError('Debes ingresar el ID de la transacción'); return }
+    if (!transactionId.trim()) { setPaymentError('Debes ingresar el ID de la transacciÃ³n'); return }
     const { error } = await createClient().from('invoices').update({
       status: 'pagada',
       transaction_id: transactionId.trim(),
       paid_at: new Date().toISOString(),
     }).eq('id', selectedInvoice.id)
     if (error) { setPaymentError('Error al actualizar la factura'); return }
-    addToast('Factura marcada como pagada ✓', 'success')
+    addToast('Factura marcada como pagada âœ“', 'success')
     setShowPaymentModal(false)
     fetchInvoices()
     fetchFinanceKPIs()
   }
 
   async function handleVoidInvoice() {
-    if (!voidReason.trim()) { addToast('Debes ingresar el motivo de anulación', 'error'); return }
+    if (!voidReason.trim()) { addToast('Debes ingresar el motivo de anulaciÃ³n', 'error'); return }
     setVoiding(true)
     const { error } = await createClient().from('invoices').update({
       status: 'anulada',
@@ -305,7 +305,7 @@ function CostsTab() {
     createNotification({
       type: 'payment',
       title: 'Gasto registrado',
-      message: `${form.description || form.category}${form.amount ? ` · AED ${form.amount}` : ''}`,
+      message: `${form.description || form.category}${form.amount ? ` Â· AED ${form.amount}` : ''}`,
     })
     setShowAdd(false); setForm({ ...EMPTY_EXP })
     resetReceiptState()
@@ -329,6 +329,8 @@ function CostsTab() {
 
   return (
     <>
+      {/* â”€â”€ SECCIÃ“N GASTOS (oculta en tab Facturas) â”€â”€ */}
+      {!invoicesOnly && <>
       {/* KPI row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: isMobile ? 8 : 10, marginBottom: 10 }}>
         {[
@@ -410,7 +412,7 @@ function CostsTab() {
         ) : expenses.length === 0 ? (
           <div style={{ padding: '0 16px' }}>
             <EmptyState
-              icon="💸"
+              icon="ðŸ’¸"
               title="Sin gastos registrados"
               subtitle="Registra los gastos del negocio para controlar tu rentabilidad"
               actionLabel="+ AGREGAR GASTO"
@@ -418,7 +420,7 @@ function CostsTab() {
             />
           </div>
         ) : isMobile ? (
-          /* ── Mobile: expense cards ── */
+          /* â”€â”€ Mobile: expense cards â”€â”€ */
           <div style={{ padding: '12px 12px 16px' }}>
             {displayed.length === 0 ? (
               <div style={{ padding: 32, textAlign: 'center', color: '#888580', fontSize: 13 }}>{t('noExpensesInCat')}</div>
@@ -437,12 +439,12 @@ function CostsTab() {
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ color: '#ff4f4f', fontWeight: 700, fontSize: 15 }}>{aed(e.amount ?? 0)}</div>
                   <div style={{ color: '#888580', fontSize: 11, marginTop: 3 }}>
-                    {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                    {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'â€”'}
                   </div>
                   {e.receipt_url && (
                     <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
                       title="Ver comprobante" style={{ color: '#c9a84c', fontSize: 16, textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
-                      📎
+                      ðŸ“Ž
                     </a>
                   )}
                 </div>
@@ -454,7 +456,7 @@ function CostsTab() {
             </div>
           </div>
         ) : (
-          /* ── Desktop: expense table ── */
+          /* â”€â”€ Desktop: expense table â”€â”€ */
           <>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
@@ -473,14 +475,14 @@ function CostsTab() {
                       onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                       onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
                       <td style={{ padding: '12px 16px', fontSize: 11, color: '#888580', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                        {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                        {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'â€”'}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{e.description}</td>
                       <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>
                         {e.account?.code
                           ? <><span style={{ color: '#c9a84c', fontFamily: 'monospace', marginRight: 4 }}>{e.account.code}</span>{e.account.name}</>
-                          : e.subcat ?? '—'}
+                          : e.subcat ?? 'â€”'}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                         {aed(e.amount ?? 0)}
@@ -488,14 +490,14 @@ function CostsTab() {
                       <td style={{ padding: '12px 16px' }}>
                         {e.recurring
                           ? <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 99, padding: '2px 8px' }}>YES</span>
-                          : <span style={{ fontSize: 10, color: '#888580' }}>—</span>}
+                          : <span style={{ fontSize: 10, color: '#888580' }}>â€”</span>}
                       </td>
                       <td style={{ padding: '12px 16px' }}>
                         {e.receipt_url && (
                           <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
                             title="Ver comprobante"
                             style={{ color: '#c9a84c', fontSize: 17, textDecoration: 'none', lineHeight: 1 }}>
-                            📎
+                            ðŸ“Ž
                           </a>
                         )}
                       </td>
@@ -513,7 +515,9 @@ function CostsTab() {
         )}
       </div>
 
-      {/* SECCIÓN FACTURAS */}
+      </>}
+
+      {/* SECCIÃ“N FACTURAS */}
       <div style={{ background: '#141416', border: '1px solid rgba(201,168,76,0.2)', borderRadius: 10, padding: 16, marginTop: 16 }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -530,15 +534,15 @@ function CostsTab() {
           </button>
         </div>
 
-        {/* Tabla / vacío */}
+        {/* Tabla / vacÃ­o */}
         {invoices.length === 0 ? (
           <EmptyState
-            icon="🧾"
+            icon="ðŸ§¾"
             title="Sin facturas generadas"
-            subtitle="Las facturas se generan automáticamente al completar una reserva"
+            subtitle="Las facturas se generan automÃ¡ticamente al completar una reserva"
           />
         ) : isMobile ? (
-          /* ── Mobile: invoice cards ── */
+          /* â”€â”€ Mobile: invoice cards â”€â”€ */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {invoices
               .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
@@ -552,7 +556,7 @@ function CostsTab() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div>
                         <div style={{ fontFamily: 'monospace', color: '#c9a84c', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
-                        <div style={{ color: '#888580', fontSize: 12, marginTop: 2 }}>{(inv as any).contacts?.name ?? '—'}</div>
+                        <div style={{ color: '#888580', fontSize: 12, marginTop: 2 }}>{(inv as any).contacts?.name ?? 'â€”'}</div>
                       </div>
                       <span style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
                         {sc.label}
@@ -574,11 +578,11 @@ function CostsTab() {
                       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                         <button onClick={() => handleMarkAsPaid(inv)}
                           style={{ flex: 1, padding: '9px 0', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          ✓ MARCAR PAGADA
+                          âœ“ MARCAR PAGADA
                         </button>
                         <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
                           style={{ padding: '9px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          ✕ ANULAR
+                          âœ• ANULAR
                         </button>
                       </div>
                     )}
@@ -594,14 +598,14 @@ function CostsTab() {
                     )}
                     <button onClick={() => setViewingInvoice(inv)}
                       style={{ width: '100%', padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                      👁 VER FACTURA
+                      ðŸ‘ VER FACTURA
                     </button>
                   </div>
                 )
               })}
           </div>
         ) : (
-          /* ── Desktop: invoice table ── */
+          /* â”€â”€ Desktop: invoice table â”€â”€ */
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
               <thead>
@@ -617,7 +621,7 @@ function CostsTab() {
                   .map((inv: any) => (
                   <tr key={inv.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#c9a84c', fontWeight: 600 }}>{inv.invoice_no}</td>
-                    <td style={{ padding: '12px 8px', fontSize: 13, color: '#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 13, color: '#f0ede8' }}>{(inv as any).contacts?.name ?? 'â€”'}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#888580' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#00d4aa' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
@@ -638,18 +642,18 @@ function CostsTab() {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button onClick={() => setViewingInvoice(inv)}
                           style={{ padding: '4px 10px', background: '#2a2a30', border: '1px solid #3a3a40', color: '#f0ede8', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          👁 VER
+                          ðŸ‘ VER
                         </button>
                         {inv.status === 'por_cobrar' && (
                           <button onClick={() => handleMarkAsPaid(inv)}
                             style={{ padding: '4px 10px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            ✓ MARCAR PAGADA
+                            âœ“ MARCAR PAGADA
                           </button>
                         )}
                         {inv.status === 'por_cobrar' && (
                           <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
                             style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            ✕ ANULAR
+                            âœ• ANULAR
                           </button>
                         )}
                         {inv.status === 'pagada' && inv.transaction_id && (
@@ -690,7 +694,7 @@ function CostsTab() {
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div><FLabel>Description *</FLabel><FInput placeholder="e.g. Office Rent — June" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+              <div><FLabel>Description *</FLabel><FInput placeholder="e.g. Office Rent â€” June" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
 
               {/* Cuenta contable */}
               <div>
@@ -702,7 +706,7 @@ function CostsTab() {
                 >
                   <option value="">Seleccionar cuenta contable</option>
                   {expenseAccounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>
+                    <option key={acc.id} value={acc.id}>{acc.code} â€” {acc.name}</option>
                   ))}
                 </select>
               </div>
@@ -729,9 +733,9 @@ function CostsTab() {
                 </div>
               </div>
 
-              {/* Sub-Categoría — custom dropdown */}
+              {/* Sub-CategorÃ­a â€” custom dropdown */}
               <div>
-                <FLabel>Sub-Categoría</FLabel>
+                <FLabel>Sub-CategorÃ­a</FLabel>
                 <div style={{ position: 'relative' }}>
                   {/* Trigger */}
                   <div onClick={() => setDropdownAbierto(p => !p)}
@@ -742,11 +746,11 @@ function CostsTab() {
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       {cuentaSeleccionada
                         ? <><span style={{ fontFamily: 'monospace', color: '#c9a84c', marginRight: 6 }}>{cuentaSeleccionada.code}</span>{cuentaSeleccionada.name}</>
-                        : 'Seleccionar cuenta…'}
+                        : 'Seleccionar cuentaâ€¦'}
                     </span>
                     <span style={{ color: '#888580', fontSize: 10, flexShrink: 0, marginLeft: 8,
                       display: 'inline-block', transition: 'transform 0.2s',
-                      transform: dropdownAbierto ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                      transform: dropdownAbierto ? 'rotate(180deg)' : 'rotate(0deg)' }}>â–¾</span>
                   </div>
 
                   {/* Dropdown panel */}
@@ -759,7 +763,7 @@ function CostsTab() {
                       <div style={{ padding: '10px 12px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                         <input autoFocus type="text" value={busqueda}
                           onChange={e => setBusqueda(e.target.value)}
-                          placeholder="🔍 Buscar cuenta…"
+                          placeholder="ðŸ” Buscar cuentaâ€¦"
                           style={{ width: '100%', boxSizing: 'border-box', background: '#141416',
                             border: '1px solid rgba(255,255,255,0.08)', borderRadius: 6,
                             padding: '7px 10px', fontSize: 12, color: '#f0ede8',
@@ -782,9 +786,9 @@ function CostsTab() {
                           return (['Gasto', 'Costo de Ventas', 'Costo Produccion'] as const).map(tipo => {
                             const grupo = todas.filter(c => c.type === tipo)
                             if (grupo.length === 0) return null
-                            const grupoLabel = tipo === 'Costo de Ventas' ? '💰 Costos de Ventas'
-                              : tipo === 'Costo Produccion' ? '⚙️ Costos de Producción'
-                              : '📋 Gastos'
+                            const grupoLabel = tipo === 'Costo de Ventas' ? 'ðŸ’° Costos de Ventas'
+                              : tipo === 'Costo Produccion' ? 'âš™ï¸ Costos de ProducciÃ³n'
+                              : 'ðŸ“‹ Gastos'
                             return (
                               <div key={tipo}>
                                 <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700,
@@ -812,13 +816,13 @@ function CostsTab() {
                                       <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#c9a84c', minWidth: 44, flexShrink: 0 }}>
                                         {cuenta.code}
                                       </span>
-                                      <span style={{ color: '#3a3836', fontSize: 10 }}>—</span>
+                                      <span style={{ color: '#3a3836', fontSize: 10 }}>â€”</span>
                                       <span style={{ fontSize: cuenta.level === 2 ? 13 : 12,
                                         fontWeight: cuenta.level === 2 ? 600 : 400,
                                         color: cuenta.level === 2 ? '#f0ede8' : '#c0bdb8', flex: 1 }}>
                                         {cuenta.name}
                                       </span>
-                                      {selected && <span style={{ color: '#c9a84c', fontSize: 12, flexShrink: 0 }}>✓</span>}
+                                      {selected && <span style={{ color: '#c9a84c', fontSize: 12, flexShrink: 0 }}>âœ“</span>}
                                     </div>
                                   )
                                 })}
@@ -854,15 +858,15 @@ function CostsTab() {
                     <img src={receiptPreview} alt="preview" style={{ maxHeight: 110, maxWidth: '100%', borderRadius: 6, objectFit: 'contain' }} />
                   ) : receiptFile ? (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 28, marginBottom: 4 }}>📄</div>
+                      <div style={{ fontSize: 28, marginBottom: 4 }}>ðŸ“„</div>
                       <div style={{ color: '#c9a84c', fontSize: 12, fontWeight: 600 }}>{receiptFile.name}</div>
                       <div style={{ color: '#888580', fontSize: 11 }}>{(receiptFile.size / 1024).toFixed(0)} KB</div>
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>
+                      <div style={{ fontSize: 24, marginBottom: 6 }}>ðŸ“Ž</div>
                       <div style={{ color: '#888580', fontSize: 12 }}>Toca para adjuntar factura o recibo</div>
-                      <div style={{ color: '#3a3836', fontSize: 11, marginTop: 2 }}>JPG, PNG o PDF · Máx 5MB</div>
+                      <div style={{ color: '#3a3836', fontSize: 11, marginTop: 2 }}>JPG, PNG o PDF Â· MÃ¡x 5MB</div>
                     </div>
                   )}
                 </label>
@@ -871,7 +875,7 @@ function CostsTab() {
                 {receiptFile && (
                   <button type="button" onClick={() => resetReceiptState()}
                     style={{ marginTop: 6, background: 'transparent', border: 'none', color: '#ff4f4f', fontSize: 12, cursor: 'pointer', padding: '2px 0', fontFamily: 'Outfit,sans-serif' }}>
-                    ✕ Quitar archivo
+                    âœ• Quitar archivo
                   </button>
                 )}
               </div>
@@ -895,15 +899,15 @@ function CostsTab() {
           onClick={() => { setVoidingInvoice(null); setVoidReason('') }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: '#141416', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>⚠️</div>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>âš ï¸</div>
             <div style={{ color: '#f0ede8', fontSize: 20, fontWeight: 800, textAlign: 'center', marginBottom: 8 }}>Anular Factura</div>
             <div style={{ color: '#888580', fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
-              {voidingInvoice.invoice_no} · AED {Number(voidingInvoice.total ?? 0).toFixed(2)}
+              {voidingInvoice.invoice_no} Â· AED {Number(voidingInvoice.total ?? 0).toFixed(2)}
             </div>
-            <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 24 }}>Esta acción no se puede deshacer</div>
+            <div style={{ color: '#ef4444', fontSize: 12, textAlign: 'center', marginBottom: 24 }}>Esta acciÃ³n no se puede deshacer</div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888580', marginBottom: 6 }}>
-                MOTIVO DE ANULACIÓN *
+                MOTIVO DE ANULACIÃ“N *
               </label>
               <textarea autoFocus value={voidReason} onChange={e => setVoidReason(e.target.value)} rows={3}
                 placeholder="ej. Error en el monto, servicio cancelado, duplicado..."
@@ -929,16 +933,16 @@ function CostsTab() {
           onClick={() => setShowPaymentModal(false)}>
           <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>💳</div>
+            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>ðŸ’³</div>
             <div style={{ fontSize: 18, fontWeight: 800, color: '#f0ede8', textAlign: 'center', marginBottom: 6 }}>
               {lang === 'es' ? 'Confirmar Pago' : 'Confirm Payment'}
             </div>
             <div style={{ fontSize: 12, color: '#888580', textAlign: 'center', marginBottom: 24 }}>
-              {selectedInvoice?.invoice_no} · AED {Number(selectedInvoice?.total ?? 0).toFixed(2)}
+              {selectedInvoice?.invoice_no} Â· AED {Number(selectedInvoice?.total ?? 0).toFixed(2)}
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888580', marginBottom: 6 }}>
-                ID DE TRANSACCIÓN *
+                ID DE TRANSACCIÃ“N *
               </label>
               <input autoFocus type="text" value={transactionId}
                 onChange={e => { setTransactionId(e.target.value); setPaymentError('') }}
@@ -946,7 +950,7 @@ function CostsTab() {
                 placeholder="ej. TXN-123456 / REF-789"
                 style={{ width: '100%', boxSizing: 'border-box', background: '#1a1a1e', border: `1px solid ${paymentError ? '#ff4f4f' : 'rgba(255,255,255,0.08)'}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#f0ede8', outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
               {paymentError && <div style={{ fontSize: 11, color: '#ff4f4f', marginTop: 5 }}>{paymentError}</div>}
-              <div style={{ fontSize: 11, color: '#3a3836', marginTop: 6 }}>Este ID quedará registrado como comprobante del pago</div>
+              <div style={{ fontSize: 11, color: '#3a3836', marginTop: 6 }}>Este ID quedarÃ¡ registrado como comprobante del pago</div>
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowPaymentModal(false)}
@@ -979,9 +983,9 @@ function CostsTab() {
   )
 }
 
-// ─── BANKS TAB ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ BANKS TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const SEED_ACCOUNTS = [
-  { name: 'Tarjeta de crédito empresarial', account_type: 'Credit Card', account_number: null, balance: 0 },
+  { name: 'Tarjeta de crÃ©dito empresarial', account_type: 'Credit Card', account_number: null, balance: 0 },
   { name: 'Banco 1',                         account_type: 'Bank',        account_number: null, balance: 0 },
   { name: 'Caja general',                    account_type: 'Cash',        account_number: null, balance: 0 },
   { name: 'Caja chica',                      account_type: 'Cash',        account_number: null, balance: 0 },
@@ -1090,7 +1094,7 @@ function BanksTab() {
             </div>
             <div><FLabel>{t('accountNumber')}</FLabel><FInput placeholder="XXXX XXXX XXXX XXXX" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} style={{ fontFamily: 'monospace' }} /></div>
             <div><FLabel>{t('balance')} (AED)</FLabel><FInput type="number" placeholder="0" value={form.balance} onChange={e => setForm({ ...form, balance: e.target.value })} /></div>
-            <div><FLabel>{t('notes')}</FLabel><FTextarea placeholder="Observaciones opcionales…" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
+            <div><FLabel>{t('notes')}</FLabel><FTextarea placeholder="Observaciones opcionalesâ€¦" value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></div>
           </div>
 
           {/* delete confirm (edit only) */}
@@ -1113,7 +1117,7 @@ function BanksTab() {
             )}
             <button onClick={onSave} disabled={saving || !form.name.trim()}
               style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: form.name.trim() ? 1 : 0.5 }}>
-              {saving ? 'Guardando…' : saveLabel}
+              {saving ? 'Guardandoâ€¦' : saveLabel}
             </button>
           </div>
         </div>
@@ -1158,7 +1162,7 @@ function BanksTab() {
                   {/* name */}
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#c9a84c', flexShrink: 0 }}>⊙</span>
+                      <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#c9a84c', flexShrink: 0 }}>âŠ™</span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', cursor: 'pointer' }}>{acc.name}</span>
                     </div>
                   </td>
@@ -1166,7 +1170,7 @@ function BanksTab() {
                   <td style={{ padding: '12px 16px' }}><AccTypeBadge type={acc.account_type} /></td>
                   {/* account number */}
                   <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580', fontFamily: 'monospace' }}>
-                    {acc.account_number ?? '—'}
+                    {acc.account_number ?? 'â€”'}
                   </td>
                   {/* balance */}
                   <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: balColor(acc.balance ?? 0) }}>
@@ -1229,551 +1233,14 @@ function BanksTab() {
   )
 }
 
-// ─── CHART OF ACCOUNTS ────────────────────────────────────────────────────────
-const GROUP_CFG: Record<string, { color: string; icon: string }> = {
-  '1': { color: '#00d4aa', icon: '▲' },
-  '2': { color: '#ff4f4f', icon: '▼' },
-  '3': { color: '#c9a84c', icon: '◆' },
-  '4': { color: '#34d399', icon: '↑' },
-  '5': { color: '#f87171', icon: '↓' },
-  '6': { color: '#fb923c', icon: '🏷' },
-  '7': { color: '#a78bfa', icon: '⚙' },
-  '8': { color: '#38bdf8', icon: 'D' },
-  '9': { color: '#f472b6', icon: 'A' },
-}
-const FILTER_TYPES   = ['All', 'Activo', 'Pasivo', 'Patrimonio', 'Ingreso', 'Gasto', 'Costo']
-const COA_ALL_TYPES  = ['Activo', 'Pasivo', 'Patrimonio', 'Ingreso', 'Gasto', 'Costo de Ventas', 'Costo Produccion', 'Orden Deudora', 'Orden Acreedora']
-const EMPTY_COA      = { code: '', name: '', type: 'Activo', description: '', currency: 'AED' }
-const COA_GROUPS     = ['1','2','3','4','5','6','7','8','9']
-
-function hexRgba(hex: string, a: number): string {
-  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16)
-  return `rgba(${r},${g},${b},${a})`
-}
-
-function ChartOfAccountsTab() {
-  const { t } = useLanguage()
-  const [accounts, setAccounts] = useState<any[]>([])
-  const [loading,  setLoading]  = useState(true)
-  const [search,   setSearch]   = useState('')
-  const [typeFil,  setTypeFil]  = useState('All')
-  const [expanded, setExpanded] = useState<Record<string,boolean>>({})
-  const [hovL2,    setHovL2]    = useState<string|null>(null)
-  const [hovL3,    setHovL3]    = useState<string|null>(null)
-  const [showAdd,  setShowAdd]  = useState(false)
-  const [form,     setForm]     = useState({ ...EMPTY_COA })
-  const [saving,   setSaving]   = useState(false)
-  const [toasts,   setToasts]   = useState<Toast[]>([])
-
-  function addToast(msg: string, type: Toast['type'] = 'success') {
-    const id = ++_toastId
-    setToasts(prev => [...prev, { id, msg, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
-  }
-
-  async function fetchAccounts() {
-    setLoading(true)
-    const { data } = await createClient().from('chart_of_accounts').select('*').order('code', { ascending: true })
-    setAccounts(data ?? [])
-    setLoading(false)
-  }
-  useEffect(() => { fetchAccounts() }, [])
-
-  function toggle(g: string) { setExpanded(p => ({ ...p, [g]: !p[g] })) }
-
-  function suggestCode(parentCode: string): string {
-    const depth = parentCode.split('.').length + 1
-    const children = accounts.filter(a => a.code.split('.').length === depth && a.code.startsWith(parentCode + '.'))
-    const maxN = children.length === 0 ? 0 : Math.max(...children.map(c => parseInt(c.code.split('.').pop() ?? '0') || 0))
-    return `${parentCode}.${maxN + 1}`
-  }
-
-  async function saveAccount() {
-    if (!form.code.trim() || !form.name.trim()) return
-    setSaving(true)
-    const { error } = await createClient().from('chart_of_accounts').insert({
-      code: form.code.trim(), name: form.name.trim(), type: form.type,
-      level: form.code.trim().split('.').length,
-      description: form.description || null, currency: form.currency || 'AED',
-    })
-    setSaving(false)
-    if (error) { addToast(error.message, 'error'); return }
-    addToast('Cuenta creada', 'success')
-    setShowAdd(false); setForm({ ...EMPTY_COA }); fetchAccounts()
-  }
-
-  // filtering
-  const q        = search.toLowerCase()
-  const filtered = accounts.filter(a => {
-    const typeOk   = typeFil === 'All' || (typeFil === 'Costo' ? a.type?.startsWith('Costo') : a.type === typeFil)
-    const searchOk = !q || a.name?.toLowerCase().includes(q) || a.code?.includes(q)
-    return typeOk && searchOk
-  })
-  const isFiltering  = q.length > 0 || typeFil !== 'All'
-  const activeGroups = new Set(filtered.map((a: any) => a.code.split('.')[0]))
-
-  function l1(g: string)         { return accounts.find(a => a.code === g) }
-  function l2s(g: string)        { return filtered.filter(a => { const p = a.code.split('.'); return p.length === 2 && p[0] === g }) }
-  function l3s(l2code: string)   { return filtered.filter(a => { const p = a.code.split('.'); return p.length === 3 && p.slice(0,-1).join('.') === l2code }) }
-
-  return (
-    <div>
-      {/* header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:18 }}>
-        <div>
-          <div style={{ fontSize:20, fontWeight:700, color:'#f0ede8' }}>Plan de Cuentas</div>
-          <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>Estándar Internacional IFRS/NIIF</div>
-        </div>
-        <button onClick={() => { setForm({ ...EMPTY_COA }); setShowAdd(true) }}
-          style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-          + Agregar Cuenta
-        </button>
-      </div>
-
-      {/* search + type filter */}
-      <div style={{ display:'flex', gap:10, marginBottom:20, flexWrap:'wrap', alignItems:'center' }}>
-        <FInput placeholder="Buscar cuenta por nombre o código…" value={search} onChange={e => setSearch(e.target.value)} style={{ maxWidth:320, flex:'0 0 auto' }}/>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-          {FILTER_TYPES.map(f => (
-            <button key={f} onClick={() => setTypeFil(f)}
-              style={{ padding:'5px 12px', borderRadius:99, fontSize:11, fontWeight: typeFil===f?700:500,
-                fontFamily:'Outfit,sans-serif', cursor:'pointer', transition:'all 0.15s',
-                background: typeFil===f?'#c9a84c':'#1a1a1e', color: typeFil===f?'#0d0d0f':'#888580',
-                border: typeFil===f?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
-              {f}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* accordion */}
-      {loading ? (
-        <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>{t('loading')}</div>
-      ) : (
-        <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
-          {COA_GROUPS.filter(g => !isFiltering || activeGroups.has(g)).map(g => {
-            const cfg    = GROUP_CFG[g]
-            const grp    = l1(g)
-            const isOpen = isFiltering ? true : (expanded[g] ?? false)
-            const subs   = l2s(g)
-            const total  = filtered.filter(a => a.code !== g && (a.code.startsWith(g+'.') || a.code === g)).length
-
-            return (
-              <div key={g}>
-                {/* ── group header ── */}
-                <div onClick={() => !isFiltering && toggle(g)}
-                  style={{ display:'flex', alignItems:'center', gap:10, background:'#1a1a1e',
-                    borderLeft:`4px solid ${cfg.color}`, borderRadius: isOpen ? '8px 8px 0 0' : 8,
-                    padding:'12px 16px', cursor: isFiltering ? 'default' : 'pointer', userSelect:'none' }}>
-                  <span style={{ color:cfg.color, width:20, textAlign:'center', fontSize:13, flexShrink:0 }}>{cfg.icon}</span>
-                  <span style={{ fontFamily:'monospace', color:'#888580', fontSize:12, flexShrink:0 }}>{g}</span>
-                  <span style={{ fontWeight:700, color:'#f0ede8', fontSize:14, flex:1 }}>{grp?.name ?? `Grupo ${g}`}</span>
-                  <span style={{ fontSize:11, color:'#888580', background:'rgba(255,255,255,0.06)', borderRadius:99, padding:'2px 8px', flexShrink:0 }}>
-                    {total} cuentas
-                  </span>
-                  {!isFiltering && (
-                    <span style={{ color:'#888580', fontSize:11, display:'inline-block', transition:'transform 0.2s', transform: isOpen ? 'rotate(90deg)' : 'none', flexShrink:0 }}>▸</span>
-                  )}
-                </div>
-
-                {/* ── expanded body ── */}
-                {isOpen && subs.length > 0 && (
-                  <div style={{ background:'#141416', borderRadius:'0 0 8px 8px', border:`1px solid ${hexRgba(cfg.color,0.12)}`, borderTop:'none', overflow:'hidden' }}>
-                    {subs.map(l2 => {
-                      const sub3s = l3s(l2.code)
-                      return (
-                        <div key={l2.id}>
-                          {/* level-2 row */}
-                          <div onMouseEnter={() => setHovL2(l2.code)} onMouseLeave={() => setHovL2(null)}
-                            style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 16px 10px 32px',
-                              borderLeft:`2px solid ${hexRgba(cfg.color,0.3)}`,
-                              borderBottom:'1px solid rgba(255,255,255,0.04)',
-                              background: hovL2===l2.code ? 'rgba(255,255,255,0.02)' : 'transparent' }}>
-                            <span style={{ fontFamily:'monospace', color:'#888580', fontSize:11, flexShrink:0 }}>{l2.code}</span>
-                            <span style={{ color:'#c0bdb8', fontSize:13, fontWeight:500, flex:1 }}>{l2.name}</span>
-                            {hovL2 === l2.code && (
-                              <button onClick={e => { e.stopPropagation(); setForm({ ...EMPTY_COA, code: suggestCode(l2.code), type: grp?.type ?? 'Activo' }); setShowAdd(true) }}
-                                style={{ fontSize:11, color:'#c9a84c', background:'none', border:'none', cursor:'pointer', fontFamily:'Outfit,sans-serif', padding:'2px 8px', whiteSpace:'nowrap', flexShrink:0 }}>
-                                + Subcuenta
-                              </button>
-                            )}
-                          </div>
-
-                          {/* level-3 rows */}
-                          {sub3s.map(l3 => (
-                            <div key={l3.id} onMouseEnter={() => setHovL3(l3.id)} onMouseLeave={() => setHovL3(null)}
-                              style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px 8px 52px',
-                                borderLeft:'1px solid rgba(255,255,255,0.04)',
-                                borderBottom:'1px solid rgba(255,255,255,0.03)',
-                                background: hovL3===l3.id ? 'rgba(255,255,255,0.015)' : 'transparent',
-                                transition:'background 0.1s' }}>
-                              <span style={{ fontFamily:'monospace', color:'#3a3836', fontSize:11, flexShrink:0 }}>{l3.code}</span>
-                              <span style={{ color:'#888580', fontSize:12, flex:1 }}>{l3.name}</span>
-                              <span style={{ fontSize:12, color:cfg.color, fontVariantNumeric:'tabular-nums', flexShrink:0 }}>AED 0</span>
-                              {hovL3 === l3.id && (
-                                <div style={{ display:'flex', gap:4, flexShrink:0 }}>
-                                  <IconBtn onClick={() => {}}><Pencil size={9}/></IconBtn>
-                                  <IconBtn danger onClick={() => {}}><X size={9}/></IconBtn>
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Add Account modal */}
-      {showAdd && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
-          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_COA }) }}>
-          <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:28, width:'100%', maxWidth:500, maxHeight:'90vh', overflowY:'auto' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-              <span style={{ fontSize:16, fontWeight:700, color:'#f0ede8' }}>Nueva Cuenta Contable</span>
-              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_COA }) }} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
-            </div>
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'120px 1fr', gap:12 }}>
-                <div>
-                  <FLabel>Código *</FLabel>
-                  <FInput placeholder="1.1.5" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} style={{ fontFamily:'monospace' }}/>
-                </div>
-                <div>
-                  <FLabel>Nombre de la Cuenta *</FLabel>
-                  <FInput placeholder="Ej: Cuentas por Cobrar Clientes" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}/>
-                </div>
-              </div>
-              <div>
-                <FLabel>Tipo *</FLabel>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {COA_ALL_TYPES.map(t => (
-                    <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
-                      style={{ padding:'6px 12px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif',
-                        background: form.type===t?'#c9a84c':'#1a1a1e', color: form.type===t?'#0d0d0f':'#888580',
-                        border: form.type===t?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
-                      {t}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <FLabel>Cuenta Padre</FLabel>
-                <select value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-                  style={{ ...INP, border:'1px solid rgba(255,255,255,0.08)', cursor:'pointer' }}>
-                  <option value="">Sin cuenta padre (nivel raíz)</option>
-                  {accounts.filter(a => a.level <= 2).map(a => (
-                    <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <FLabel>Descripción</FLabel>
-                <FTextarea placeholder="Descripción opcional de la cuenta…" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}/>
-              </div>
-              <div>
-                <FLabel>Moneda</FLabel>
-                <FInput placeholder="AED" value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })} style={{ maxWidth:120 }}/>
-              </div>
-            </div>
-            <button onClick={saveAccount} disabled={saving || !form.code.trim() || !form.name.trim()}
-              style={{ width:'100%', padding:14, borderRadius:10, border:'none', marginTop:22, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer',
-                opacity: form.code.trim() && form.name.trim() ? 1 : 0.5 }}>
-              {saving ? 'Creando…' : 'Crear Cuenta'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* toasts */}
-      <div style={{ position:'fixed', bottom:24, right:24, zIndex:900, display:'flex', flexDirection:'column', gap:8 }}>
-        {toasts.map(t => (
-          <div key={t.id} style={{ padding:'12px 18px', borderRadius:10, fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', color:'#fff',
-            background: t.type==='success'?'rgba(34,197,94,0.95)':t.type==='warn'?'rgba(251,191,36,0.95)':'rgba(255,79,79,0.95)',
-            boxShadow:'0 4px 20px rgba(0,0,0,0.4)', backdropFilter:'blur(8px)' }}>
-            {t.msg}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── IMPUESTOS TAB ────────────────────────────────────────────────────────────
-const TAX_TYPES = ['Standard', 'Zero-rated', 'Exento', 'Municipal']
-const TAX_TYPE_STYLE: Record<string, { bg: string; color: string }> = {
-  'Standard':   { bg: 'rgba(79,163,255,0.12)',   color: '#4fa3ff' },
-  'Zero-rated': { bg: 'rgba(136,133,128,0.12)',  color: '#888580' },
-  'Exento':     { bg: 'rgba(168,139,250,0.12)',  color: '#a78bfa' },
-  'Municipal':  { bg: 'rgba(251,146,60,0.12)',   color: '#fb923c' },
-}
-const SEED_TAXES = [
-  { name: 'IVA — UAE VAT',        code: 'VAT-AE-5',  rate: 5, type: 'Standard',   applies_to: 'Todos los servicios', is_active: true,  collected_mtd: 42362 },
-  { name: 'VAT Zero-rated',       code: 'VAT-AE-0',  rate: 0, type: 'Zero-rated', applies_to: 'Exportaciones',       is_active: true,  collected_mtd: 0     },
-  { name: 'Tarifa Municipal DXB', code: 'MUNI-DXB',  rate: 2, type: 'Municipal',  applies_to: 'Servicios de lujo',   is_active: false, collected_mtd: 0     },
-]
-const EMPTY_TAX = { name: '', code: '', rate: '', type: 'Standard', applies_to: '', is_active: true }
-
-function TaxTypeBadge({ type }: { type: string }) {
-  const s = TAX_TYPE_STYLE[type] ?? TAX_TYPE_STYLE['Standard']
-  return <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:10, fontWeight:700, background:s.bg, color:s.color }}>{type}</span>
-}
-function TaxStatusBadge({ active }: { active: boolean }) {
-  return (
-    <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:10, fontWeight:700,
-      background: active?'rgba(52,211,153,0.12)':'rgba(136,133,128,0.12)',
-      color:      active?'#34d399':'#888580' }}>
-      {active ? 'Activo' : 'Inactivo'}
-    </span>
-  )
-}
-
-function ImpuestosTab() {
-  const { t } = useLanguage()
-  const [taxes,   setTaxes]   = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [editTax, setEditTax] = useState<any|null>(null)
-  const [form,    setForm]    = useState({ ...EMPTY_TAX })
-  const [saving,  setSaving]  = useState(false)
-  const [delConf, setDelConf] = useState(false)
-  const [toasts,  setToasts]  = useState<Toast[]>([])
-
-  function addToast(msg: string, type: Toast['type'] = 'success') {
-    const id = ++_toastId
-    setToasts(prev => [...prev, { id, msg, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
-  }
-
-  async function fetchTaxes() {
-    setLoading(true)
-    const sb = createClient()
-    const { data: existing } = await sb.from('taxes').select('*').order('created_at', { ascending: true })
-    if (existing && existing.length > 0) { setTaxes(existing); setLoading(false); return }
-    const { data: seeded } = await sb.from('taxes').insert(SEED_TAXES).select()
-    setTaxes(seeded ?? [])
-    setLoading(false)
-  }
-  useEffect(() => { fetchTaxes() }, [])
-
-  function openAdd() { setForm({ ...EMPTY_TAX }); setShowAdd(true) }
-
-  function openEdit(t: any) {
-    setForm({ name: t.name, code: t.code, rate: String(t.rate), type: t.type, applies_to: t.applies_to ?? '', is_active: t.is_active })
-    setDelConf(false); setEditTax(t)
-  }
-
-  async function saveTax() {
-    if (!form.name.trim() || !form.code.trim()) return
-    setSaving(true)
-    const payload = { name: form.name.trim(), code: form.code.trim().toUpperCase(), rate: Number(form.rate) || 0, type: form.type, applies_to: form.applies_to || null, is_active: form.is_active }
-    const { error } = editTax
-      ? await createClient().from('taxes').update(payload).eq('id', editTax.id)
-      : await createClient().from('taxes').insert(payload)
-    setSaving(false)
-    if (error) { addToast(error.message, 'error'); return }
-    addToast(editTax ? 'Impuesto actualizado' : 'Impuesto creado', 'success')
-    setShowAdd(false); setEditTax(null); setForm({ ...EMPTY_TAX }); fetchTaxes()
-  }
-
-  async function deleteTax() {
-    if (!editTax) return
-    const { error } = await createClient().from('taxes').delete().eq('id', editTax.id)
-    if (error) { addToast(error.message, 'error'); return }
-    addToast('Impuesto eliminado', 'success'); setEditTax(null); fetchTaxes()
-  }
-
-  async function toggleActive(t: any) {
-    await createClient().from('taxes').update({ is_active: !t.is_active }).eq('id', t.id)
-    fetchTaxes()
-  }
-
-  const activeCount    = taxes.filter(t => t.is_active).length
-  const gravadosCount  = taxes.filter(t => t.is_active && t.type === 'Standard').length
-  const recaudadoMTD   = taxes.reduce((s, t) => s + (t.collected_mtd ?? 0), 0)
-
-  function TaxModal({ onClose }: { onClose: () => void }) {
-    return (
-      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={onClose}>
-        <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:28, width:'100%', maxWidth:480 }} onClick={e => e.stopPropagation()}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:22 }}>
-            <span style={{ fontSize:16, fontWeight:700, color:'#f0ede8' }}>{editTax ? 'Editar Impuesto' : 'Nuevo Impuesto'}</span>
-            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
-          </div>
-          <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-              <div><FLabel>Nombre *</FLabel><FInput placeholder="IVA UAE" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}/></div>
-              <div><FLabel>Código *</FLabel><FInput placeholder="VAT-AE-5" value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} style={{ fontFamily:'monospace', textTransform:'uppercase' }}/></div>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'120px 1fr', gap:12 }}>
-              <div><FLabel>Tasa %</FLabel><FInput type="number" min={0} max={100} step={0.1} placeholder="5" value={form.rate as any} onChange={e => setForm({ ...form, rate: e.target.value })}/></div>
-              <div><FLabel>Aplica a</FLabel><FInput placeholder="Todos los servicios" value={form.applies_to} onChange={e => setForm({ ...form, applies_to: e.target.value })}/></div>
-            </div>
-            <div>
-              <FLabel>Tipo</FLabel>
-              <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                {TAX_TYPES.map(t => (
-                  <button key={t} type="button" onClick={() => setForm({ ...form, type: t })}
-                    style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif',
-                      background: form.type===t?'#c9a84c':'#1a1a1e', color: form.type===t?'#0d0d0f':'#888580',
-                      border: form.type===t?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)' }}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <label style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }}>
-              <input type="checkbox" checked={form.is_active} onChange={e => setForm({ ...form, is_active: e.target.checked })} style={{ width:16, height:16, accentColor:'#c9a84c' }}/>
-              <span style={{ fontSize:13, color:'#f0ede8' }}>Activo</span>
-            </label>
-          </div>
-
-          {/* delete confirm (edit only) */}
-          {editTax && delConf && (
-            <div style={{ marginTop:16, padding:12, background:'rgba(255,79,79,0.08)', border:'1px solid rgba(255,79,79,0.25)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-              <span style={{ fontSize:12, color:'#ff4f4f' }}>¿Eliminar este impuesto?</span>
-              <div style={{ display:'flex', gap:6 }}>
-                <button onClick={() => setDelConf(false)} style={{ padding:'5px 12px', borderRadius:6, border:'1px solid rgba(255,255,255,0.1)', background:'#1a1a1e', color:'#888580', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>No</button>
-                <button onClick={deleteTax} style={{ padding:'5px 12px', borderRadius:6, border:'none', background:'#ff4f4f', color:'#fff', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>Sí, eliminar</button>
-              </div>
-            </div>
-          )}
-
-          <div style={{ display:'flex', justifyContent: editTax ? 'space-between' : 'flex-end', alignItems:'center', marginTop:22, gap:10 }}>
-            {editTax && (
-              <button onClick={() => setDelConf(true)}
-                style={{ padding:'9px 16px', borderRadius:8, border:'1px solid rgba(255,79,79,0.3)', background:'transparent', color:'#ff4f4f', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-                Eliminar
-              </button>
-            )}
-            <button onClick={saveTax} disabled={saving || !form.name.trim() || !form.code.trim()}
-              style={{ padding:'10px 24px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer',
-                opacity: form.name.trim() && form.code.trim() ? 1 : 0.5 }}>
-              {saving ? 'Guardando…' : editTax ? 'Guardar Cambios' : 'Crear Impuesto'}
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      {/* header */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
-        <div>
-          <div style={{ fontSize:20, fontWeight:700, color:'#f0ede8' }}>Gestión de Impuestos</div>
-          <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>Configura los impuestos aplicables a tus servicios</div>
-        </div>
-        <button onClick={openAdd}
-          style={{ padding:'8px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
-          + Nuevo Impuesto
-        </button>
-      </div>
-
-      {/* KPI cards */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:20 }}>
-        {[
-          { label:'IMPUESTOS ACTIVOS',  value: String(activeCount),          color:'#00d4aa' },
-          { label:'SERVICIOS GRAVADOS', value: String(gravadosCount),         color:'#c9a84c' },
-          { label:'RECAUDADO MTD',      value: aed(recaudadoMTD),            color:'#34d399' },
-        ].map(k => (
-          <div key={k.label} style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, padding:16 }}>
-            <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>{k.label}</div>
-            <div style={{ fontSize:22, fontWeight:800, color:k.color }}>{k.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* taxes table */}
-      <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.06)', borderRadius:12, overflow:'hidden' }}>
-        <table style={{ width:'100%', borderCollapse:'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-              {['Nombre','Código','Tasa %','Tipo','Aplica a','Estado','Acciones'].map(h => (
-                <th key={h} style={{ padding:'10px 16px', fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>{t('loading')}</td></tr>
-            ) : taxes.length === 0 ? (
-              <tr>
-                <td colSpan={7} style={{ padding:'60px 20px', textAlign:'center' }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:'#3a3836', marginBottom:14 }}>No hay impuestos configurados</div>
-                  <button onClick={openAdd} style={{ padding:'9px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ Nuevo Impuesto</button>
-                </td>
-              </tr>
-            ) : taxes.map(t => (
-              <tr key={t.id} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', transition:'background 0.1s' }}
-                onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
-                onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
-                <td style={{ padding:'12px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{t.name}</td>
-                <td style={{ padding:'12px 16px', fontFamily:'monospace', fontSize:12, color:'#c9a84c' }}>{t.code}</td>
-                <td style={{ padding:'12px 16px', fontSize:14, fontWeight:700, color:'#f0ede8', fontVariantNumeric:'tabular-nums' }}>{t.rate}%</td>
-                <td style={{ padding:'12px 16px' }}><TaxTypeBadge type={t.type}/></td>
-                <td style={{ padding:'12px 16px', fontSize:12, color:'#888580' }}>{t.applies_to ?? '—'}</td>
-                <td style={{ padding:'12px 16px' }}>
-                  <button onClick={() => toggleActive(t)} style={{ background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                    <TaxStatusBadge active={t.is_active}/>
-                  </button>
-                </td>
-                <td style={{ padding:'12px 16px' }}>
-                  <div style={{ display:'flex', gap:6 }}>
-                    <IconBtn onClick={() => openEdit(t)}><Pencil size={11}/></IconBtn>
-                    <IconBtn danger onClick={() => { openEdit(t); setDelConf(true) }}><X size={11}/></IconBtn>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* modal */}
-      {(showAdd || editTax) && <TaxModal onClose={() => { setShowAdd(false); setEditTax(null); setDelConf(false) }}/>}
-
-      {/* toasts */}
-      <div style={{ position:'fixed', bottom:24, right:24, zIndex:900, display:'flex', flexDirection:'column', gap:8 }}>
-        {toasts.map(t => (
-          <div key={t.id} style={{ padding:'12px 18px', borderRadius:10, fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', color:'#fff',
-            background: t.type==='success'?'rgba(34,197,94,0.95)':t.type==='warn'?'rgba(251,191,36,0.95)':'rgba(255,79,79,0.95)',
-            boxShadow:'0 4px 20px rgba(0,0,0,0.4)', backdropFilter:'blur(8px)' }}>
-            {t.msg}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// ─── placeholder ───────────────────────────────────────────────────────────────
-function ComingSoon({ label }: { label: string }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '80px 0', color: '#888580' }}>
-      <div style={{ fontSize: 36, filter: 'grayscale(1) opacity(0.3)' }}>🏗️</div>
-      <div style={{ fontSize: 14, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 12 }}>Coming soon</div>
-    </div>
-  )
-}
-
-// ─── PAGE ──────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ PAGE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FinancePage() {
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('Costs & Expenses')
   const TAB_LABELS: Record<string, string> = {
     'Costs & Expenses': t('costsExpenses'),
     'Banks':            t('banks'),
-    'Chart of Accounts': t('chartOfAccounts'),
-    'Impuestos':        t('taxes'),
+    'Facturas':         'Facturas',
   }
 
   return (
@@ -1804,10 +1271,9 @@ export default function FinancePage() {
       </div>
 
       {/* content */}
-      {activeTab === 'Costs & Expenses'  && <CostsTab />}
-      {activeTab === 'Banks'             && <BanksTab />}
-      {activeTab === 'Chart of Accounts' && <ChartOfAccountsTab />}
-      {activeTab === 'Impuestos'          && <ImpuestosTab />}
+      {activeTab === 'Costs & Expenses' && <CostsTab />}
+      {activeTab === 'Banks'            && <BanksTab />}
+      {activeTab === 'Facturas'         && <CostsTab invoicesOnly />}
     </div>
   )
 }
