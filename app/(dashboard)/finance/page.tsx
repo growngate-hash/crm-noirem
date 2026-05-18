@@ -276,8 +276,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     fetchInvoices()
     createClient()
       .from('chart_of_accounts')
-      .select('id, code, name')
-      .eq('type', 'expense')
+      .select('id, code, name, type')
       .eq('is_active', true)
       .order('code')
       .then(({ data }) => setExpenseAccounts(data ?? []))
@@ -705,9 +704,27 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   style={{ width: '100%', padding: '10px 14px', background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: form.account_id ? '#f0ede8' : '#3a3836', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}
                 >
                   <option value="">Seleccionar cuenta contable</option>
-                  {expenseAccounts.map(acc => (
-                    <option key={acc.id} value={acc.id}>{acc.code} â€” {acc.name}</option>
-                  ))}
+                    {expenseAccounts.filter(a => a.type === 'expense').length > 0 && (
+                      <optgroup label="GASTOS">
+                        {expenseAccounts.filter(a => a.type === 'expense').map(a => (
+                          <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {expenseAccounts.filter(a => a.type === 'asset').length > 0 && (
+                      <optgroup label="ACTIVOS">
+                        {expenseAccounts.filter(a => a.type === 'asset').map(a => (
+                          <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {expenseAccounts.filter(a => !['expense', 'asset'].includes(a.type)).length > 0 && (
+                      <optgroup label="OTROS">
+                        {expenseAccounts.filter(a => !['expense', 'asset'].includes(a.type)).map(a => (
+                          <option key={a.id} value={a.id}>{a.code} - {a.name}</option>
+                        ))}
+                      </optgroup>
+                    )}
                 </select>
               </div>
 

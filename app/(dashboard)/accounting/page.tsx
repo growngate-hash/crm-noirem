@@ -18,6 +18,13 @@ export default function AccountingPage() {
   const [accounts, setAccounts] = useState<any[]>([])
 
   const [showManualEntry, setShowManualEntry] = useState(false)
+  const [showNewAccount, setShowNewAccount] = useState(false)
+  const [newAccount, setNewAccount] = useState({
+    code: '', name: '', type: 'expense',
+    normal_balance: 'debit', parent_id: '', description: ''
+  })
+  const [savingAccount, setSavingAccount] = useState(false)
+
   const [manualEntry, setManualEntry] = useState({
     description: '',
     entry_date: new Date().toISOString().split('T')[0],
@@ -135,6 +142,39 @@ export default function AccountingPage() {
       ],
     })
     loadData()
+  }
+
+  async function handleSaveAccount() {
+    if (!newAccount.code.trim() || !newAccount.name.trim()) {
+      alert('El código y nombre son obligatorios')
+      return
+    }
+    const supabase = createClient()
+    const { data: existing } = await supabase
+      .from('chart_of_accounts')
+      .select('id')
+      .eq('code', newAccount.code.trim())
+      .single()
+    if (existing) { alert(`El código ${newAccount.code} ya existe`); return }
+
+    setSavingAccount(true)
+    const normalBalance = ['asset', 'expense'].includes(newAccount.type) ? 'debit' : 'credit'
+    const { error } = await supabase.from('chart_of_accounts').insert({
+      code:           newAccount.code.trim(),
+      name:           newAccount.name.trim(),
+      type:           newAccount.type,
+      normal_balance: normalBalance,
+      parent_id:      newAccount.parent_id || null,
+      description:    newAccount.description.trim(),
+      is_active:      true,
+    })
+    if (error) { alert('Error: ' + error.message); setSavingAccount(false); return }
+
+    const { data } = await supabase.from('chart_of_accounts').select('*').order('code')
+    setAccounts(data ?? [])
+    setShowNewAccount(false)
+    setSavingAccount(false)
+    setNewAccount({ code: '', name: '', type: 'expense', normal_balance: 'debit', parent_id: '', description: '' })
   }
 
   function typeColor(type: string) {
@@ -433,40 +473,187 @@ export default function AccountingPage() {
 
       {/* ── PLAN DE CUENTAS ── */}
       {!loading && activeTab === 'chart_of_accounts' && (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
-            <thead>
-              <tr style={{ background: '#1a1a1f' }}>
-                {['Código', 'Nombre', 'Tipo', 'Saldo Normal', 'Activa'].map(h => (
-                  <th key={h} style={th}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.length === 0 ? (
-                <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#666', fontSize: 13 }}>No hay cuentas en el plan contable.</td></tr>
-              ) : accounts.map(account => (
-                <tr key={account.id} style={{ borderBottom: '1px solid #1a1a1f' }}>
-                  <td style={{ ...td, color: '#c9a84c', fontWeight: 700 }}>{account.code}</td>
-                  <td style={{
-                    ...td, color: '#f0ede8',
-                    paddingLeft: account.code?.length > 3 ? `${(account.code.length - 3) * 12 + 14}px` : 14,
-                  }}>
-                    {account.name}
-                  </td>
-                  <td style={td}>
-                    <span style={{ background: typeColor(account.type) + '20', border: `1px solid ${typeColor(account.type)}40`, color: typeColor(account.type), borderRadius: 4, padding: '2px 8px', fontSize: 10, fontWeight: 700 }}>
-                      {account.type?.toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ ...td, color: '#888' }}>{account.normal_balance === 'debit' ? '← Débito' : 'Crédito →'}</td>
-                  <td style={{ ...td, color: account.is_active ? '#22c55e' : '#ef4444', fontSize: 16 }}>
-                    {account.is_active ? '✓' : '✗'}
-                  </td>
+        <div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <div style={{ color: '#f0ede8', fontSize: 16, fontWeight: 800 }}>Plan de Cuentas</div>
+              <div style={{ color: '#666', fontSize: 12, marginTop: 2 }}>{accounts.length} cuentas activas</div>
+            </div>
+            <button
+              onClick={() => setShowNewAccount(true)}
+              style={{ padding: '10px 20px', background: '#c9a84c', color: '#0d0d0f', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+            >
+              + NUEVA CUENTA
+            </button>
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 600 }}>
+              <thead>
+                <tr style={{ background: '#1a1a1f' }}>
+                  {['Código', 'Nombre', 'Tipo', 'Saldo Normal', 'Activa'].map(h => (
+                    <th key={h} style={th}>{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {accounts.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: 40, textAlign: 'center', color: '#666', fontSize: 13 }}>No hay cuentas en el plan contable.</td></tr>
+                ) : accounts.map(account => (
+                  <tr key={account.id} style={{ borderBottom: '1px solid #1a1a1f' }}>
+                    <td style={{ ...td, color: '#c9a84c', fontWeight: 700 }}>{account.code}</td>
+                    <td style={{
+                      ...td, color: '#f0ede8',
+                      paddingLeft: account.code?.length > 3 ? `${(account.code.length - 3) * 12 + 14}px` : 14,
+                    }}>
+                      {account.name}
+                    </td>
+                    <td style={td}>
+                      <span style={{ background: typeColor(account.type) + '20', border: `1px solid ${typeColor(account.type)}40`, color: typeColor(account.type), borderRadius: 4, padding: '2px 8px', fontSize: 10, fontWeight: 700 }}>
+                        {account.type?.toUpperCase()}
+                      </span>
+                    </td>
+                    <td style={{ ...td, color: '#888' }}>{account.normal_balance === 'debit' ? '← Débito' : 'Crédito →'}</td>
+                    <td style={{ ...td, color: account.is_active ? '#22c55e' : '#ef4444', fontSize: 16 }}>
+                      {account.is_active ? '✓' : '✗'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL NUEVA CUENTA ── */}
+      {showNewAccount && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          <div style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 16, padding: 32, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>PLAN DE CUENTAS</div>
+            <div style={{ color: '#f0ede8', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Cuenta Contable</div>
+
+            {/* Código y Nombre */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>CÓDIGO *</div>
+                <input
+                  value={newAccount.code}
+                  onChange={e => setNewAccount(p => ({ ...p, code: e.target.value }))}
+                  placeholder="ej. 5211"
+                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#f0ede8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                />
+                <div style={{ color: '#555', fontSize: 10, marginTop: 4 }}>5210 = cuenta · 5211 = subcuenta</div>
+              </div>
+              <div>
+                <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOMBRE *</div>
+                <input
+                  value={newAccount.name}
+                  onChange={e => setNewAccount(p => ({ ...p, name: e.target.value }))}
+                  placeholder="ej. Combustible Vehículos"
+                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#f0ede8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Tipo de cuenta */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>TIPO DE CUENTA *</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {[
+                  { value: 'asset',     label: 'Activo',     color: '#3b82f6' },
+                  { value: 'liability', label: 'Pasivo',     color: '#ef4444' },
+                  { value: 'equity',    label: 'Patrimonio', color: '#8b5cf6' },
+                  { value: 'revenue',   label: 'Ingreso',    color: '#22c55e' },
+                  { value: 'expense',   label: 'Gasto',      color: '#f59e0b' },
+                  { value: 'vat',       label: 'VAT/IVA',    color: '#06b6d4' },
+                ].map(type => (
+                  <button
+                    key={type.value}
+                    onClick={() => setNewAccount(p => ({
+                      ...p, type: type.value,
+                      normal_balance: ['asset', 'expense'].includes(type.value) ? 'debit' : 'credit'
+                    }))}
+                    style={{
+                      padding: 10,
+                      background: newAccount.type === type.value ? type.color + '25' : '#0d0d0f',
+                      border: `2px solid ${newAccount.type === type.value ? type.color : '#2a2a30'}`,
+                      borderRadius: 8,
+                      color: newAccount.type === type.value ? type.color : '#666',
+                      fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                    }}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ color: '#555', fontSize: 11, marginTop: 8, textAlign: 'center' }}>
+                Saldo normal: <span style={{ color: '#c9a84c', fontWeight: 700 }}>
+                  {['asset', 'expense'].includes(newAccount.type) ? 'Débito' : 'Crédito'}
+                </span>
+              </div>
+            </div>
+
+            {/* Cuenta padre */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>
+                CUENTA PADRE <span style={{ color: '#555', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(si es subcuenta)</span>
+              </div>
+              <select
+                value={newAccount.parent_id}
+                onChange={e => setNewAccount(p => ({ ...p, parent_id: e.target.value }))}
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: newAccount.parent_id ? '#f0ede8' : '#666', fontSize: 13, outline: 'none' }}
+              >
+                <option value="">— Es cuenta principal</option>
+                {accounts.filter(a => a.type === newAccount.type).map(a => (
+                  <option key={a.id} value={a.id}>{a.code} — {a.name}</option>
+                ))}
+              </select>
+              <div style={{ color: '#555', fontSize: 10, marginTop: 4 }}>Solo muestra cuentas del mismo tipo</div>
+            </div>
+
+            {/* Descripción */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>
+                DESCRIPCIÓN <span style={{ color: '#555', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span>
+              </div>
+              <input
+                value={newAccount.description}
+                onChange={e => setNewAccount(p => ({ ...p, description: e.target.value }))}
+                placeholder="ej. Gasolina y mantenimiento vehículos"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#f0ede8', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            {/* Preview */}
+            {newAccount.code && newAccount.name && (
+              <div style={{ background: '#0d0d0f', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 8, padding: '12px 16px', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: '#c9a84c', fontWeight: 700, fontFamily: 'monospace' }}>{newAccount.code}</span>
+                <span style={{ color: '#f0ede8', fontSize: 13 }}>{newAccount.name}</span>
+                <span style={{ background: typeColor(newAccount.type) + '20', border: `1px solid ${typeColor(newAccount.type)}40`, borderRadius: 4, padding: '2px 8px', color: typeColor(newAccount.type), fontSize: 10, fontWeight: 700 }}>
+                  {newAccount.type.toUpperCase()}
+                </span>
+              </div>
+            )}
+
+            {/* Botones */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => {
+                  setShowNewAccount(false)
+                  setNewAccount({ code: '', name: '', type: 'expense', normal_balance: 'debit', parent_id: '', description: '' })
+                }}
+                style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid #2a2a30', borderRadius: 10, color: '#888', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleSaveAccount}
+                disabled={savingAccount || !newAccount.code || !newAccount.name}
+                style={{ flex: 2, padding: 13, background: '#c9a84c', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', opacity: savingAccount || !newAccount.code || !newAccount.name ? 0.6 : 1 }}
+              >
+                {savingAccount ? 'GUARDANDO...' : 'CREAR CUENTA'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
