@@ -258,8 +258,8 @@ export default function DashboardPage() {
         .gte('scheduled_at', new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString())
         .lte('scheduled_at', new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()),
 
-      // All-time expenses (same table as finance module)
-      supabase.from('expenses').select('amount'),
+      // This-month expenses — same query as finance module (date column, YYYY-MM-DD)
+      supabase.from('expenses').select('amount').gte('date', inicioMesStr).lte('date', finMesStr),
 
       // Active bookings
       supabase.from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending']),
@@ -283,10 +283,11 @@ export default function DashboardPage() {
     const revenueMTD     = calcRevenue(bookingsMes ?? [])
     const revenuePrevMes = calcRevenue(bookingsMesAnterior ?? [])
 
-    // Expenses all-time
-    const totalExpenses = (allExpenses ?? []).reduce((sum, g) => sum + (g.amount ?? 0), 0)
+    // Expenses this month — identical filter to finance module
+    const totalExpenses = (allExpenses ?? []).reduce((sum, g) => sum + (Number(g.amount) || 0), 0)
 
-    const totalProfit  = totalRevenue - totalExpenses
+    // Profit = revenue MTD - expenses MTD → matches finance module exactly
+    const totalProfit = revenueMTD - totalExpenses
     const deltaRevenue = revenuePrevMes > 0
       ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
       : 0
