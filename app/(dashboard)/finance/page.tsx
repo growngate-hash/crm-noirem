@@ -104,11 +104,49 @@ function CostsTab() {
   const [busqueda,           setBusqueda]           = useState('')
   const [invoices,           setInvoices]           = useState<any[]>([])
   const [invoiceFilter,      setInvoiceFilter]      = useState('all')
+  const [receiptFile,        setReceiptFile]        = useState<File | null>(null)
+  const [receiptPreview,     setReceiptPreview]     = useState<string | null>(null)
+  const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
     setToasts(prev => [...prev, { id, msg, type }])
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500)
+  }
+
+  function handleReceiptChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) { addToast('El archivo no debe superar 5MB', 'error'); return }
+    setReceiptFile(file)
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onload = () => setReceiptPreview(reader.result as string)
+      reader.readAsDataURL(file)
+    } else {
+      setReceiptPreview(null)
+    }
+  }
+
+  async function uploadReceipt(): Promise<string | null> {
+    if (!receiptFile) return null
+    setUploadingReceipt(true)
+    const supabase = createClient()
+    const fileName = `${Date.now()}-${receiptFile.name.replace(/\s+/g, '_')}`
+    const { error } = await supabase.storage
+      .from('expense-receipts')
+      .upload(fileName, receiptFile, { cacheControl: '3600', upsert: false })
+    setUploadingReceipt(false)
+    if (error) { addToast('Error al subir el archivo', 'error'); return null }
+    const { data: { publicUrl } } = supabase.storage
+      .from('expense-receipts')
+      .getPublicUrl(fileName)
+    return publicUrl
+  }
+
+  function resetReceiptState() {
+    setReceiptFile(null)
+    setReceiptPreview(null)
   }
 
   async function fetchExpenses() {
@@ -190,6 +228,7 @@ function CostsTab() {
   async function saveExpense() {
     if (!form.description.trim() || !form.amount) return
     setSaving(true)
+    const receiptUrl = await uploadReceipt()
     const selectedAccount = cuentasContables.find(c => c.id === form.subcat)
     const payload: any = {
       description: form.description,
@@ -198,6 +237,7 @@ function CostsTab() {
       amount: Number(form.amount),
       recurring: form.recurring,
       date: new Date().toISOString().split('T')[0],
+      receipt_url: receiptUrl,
     }
     if (selectedAccount) payload.account_id = form.subcat
     const { error } = await createClient().from('expenses').insert(payload)
@@ -210,6 +250,7 @@ function CostsTab() {
       message: `${form.description || form.category}${form.amount ? ` · AED ${form.amount}` : ''}`,
     })
     setShowAdd(false); setForm({ ...EMPTY_EXP })
+    resetReceiptState()
     setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false)
     fetchExpenses(); fetchFinanceKPIs()
   }
@@ -340,6 +381,12 @@ function CostsTab() {
                   <div style={{ color: '#888580', fontSize: 11, marginTop: 3 }}>
                     {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                   </div>
+                  {e.receipt_url && (
+                    <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
+                      title="Ver comprobante" style={{ color: '#c9a84c', fontSize: 16, textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
+                      📎
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
@@ -355,7 +402,7 @@ function CostsTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Date', 'Description', 'Category', 'Sub-Cat.', 'AED', 'Recur.'].map(h => (
+                    {['Date', 'Description', 'Category', 'Sub-Cat.', 'AED', 'Recur.', ''].map(h => (
                       <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -380,6 +427,15 @@ function CostsTab() {
                         {e.recurring
                           ? <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.3)', borderRadius: 99, padding: '2px 8px' }}>YES</span>
                           : <span style={{ fontSize: 10, color: '#888580' }}>—</span>}
+                      </td>
+                      <td style={{ padding: '12px 16px' }}>
+                        {e.receipt_url && (
+                          <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
+                            title="Ver comprobante"
+                            style={{ color: '#c9a84c', fontSize: 17, textDecoration: 'none', lineHeight: 1 }}>
+                            📎
+                          </a>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -545,11 +601,11 @@ function CostsTab() {
       {/* Add Expense modal */}
       {showAdd && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}>
+          onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); resetReceiptState(); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}>
           <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: 28, width: '100%', maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
               <span style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>{t('addExpense')}</span>
-              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}
+              <button onClick={() => { setShowAdd(false); setForm({ ...EMPTY_EXP }); resetReceiptState(); setCuentaSeleccionada(null); setBusqueda(''); setDropdownAbierto(false) }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -686,14 +742,52 @@ function CostsTab() {
                 </div>
               </div>
               <div><FLabel>Amount (AED) *</FLabel><FInput type="number" min={0} placeholder="0" value={form.amount as any} onChange={e => setForm({ ...form, amount: e.target.value })} /></div>
+
+              {/* Soporte / Comprobante */}
+              <div>
+                <FLabel>Soporte / Comprobante <span style={{ color: '#3a3836', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(opcional)</span></FLabel>
+                <label htmlFor="receipt-upload" style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  padding: receiptFile ? 12 : 20,
+                  border: `2px dashed ${receiptFile ? '#c9a84c' : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 10, cursor: 'pointer',
+                  background: receiptFile ? 'rgba(201,168,76,0.06)' : 'transparent',
+                  transition: 'all 0.2s', gap: 8,
+                }}>
+                  {receiptPreview ? (
+                    <img src={receiptPreview} alt="preview" style={{ maxHeight: 110, maxWidth: '100%', borderRadius: 6, objectFit: 'contain' }} />
+                  ) : receiptFile ? (
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 28, marginBottom: 4 }}>📄</div>
+                      <div style={{ color: '#c9a84c', fontSize: 12, fontWeight: 600 }}>{receiptFile.name}</div>
+                      <div style={{ color: '#888580', fontSize: 11 }}>{(receiptFile.size / 1024).toFixed(0)} KB</div>
+                    </div>
+                  ) : (
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 24, marginBottom: 6 }}>📎</div>
+                      <div style={{ color: '#888580', fontSize: 12 }}>Toca para adjuntar factura o recibo</div>
+                      <div style={{ color: '#3a3836', fontSize: 11, marginTop: 2 }}>JPG, PNG o PDF · Máx 5MB</div>
+                    </div>
+                  )}
+                </label>
+                <input id="receipt-upload" type="file" accept="image/jpeg,image/png,image/jpg,application/pdf"
+                  onChange={handleReceiptChange} style={{ display: 'none' }} />
+                {receiptFile && (
+                  <button type="button" onClick={() => resetReceiptState()}
+                    style={{ marginTop: 6, background: 'transparent', border: 'none', color: '#ff4f4f', fontSize: 12, cursor: 'pointer', padding: '2px 0', fontFamily: 'Outfit,sans-serif' }}>
+                    ✕ Quitar archivo
+                  </button>
+                )}
+              </div>
+
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input type="checkbox" checked={form.recurring} onChange={e => setForm({ ...form, recurring: e.target.checked })} style={{ width: 16, height: 16, accentColor: '#c9a84c' }} />
                 <span style={{ fontSize: 13, color: '#f0ede8' }}>{t('recurringMonthly')}</span>
               </label>
             </div>
-            <button onClick={saveExpense} disabled={saving || !form.description.trim() || !form.amount}
-              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount) ? 1 : 0.5 }}>
-              {saving ? t('saving') : t('saveExpenseBtn')}
+            <button onClick={saveExpense} disabled={saving || uploadingReceipt || !form.description.trim() || !form.amount}
+              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#c9a84c', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount && !saving && !uploadingReceipt) ? 1 : 0.5 }}>
+              {uploadingReceipt ? 'Subiendo archivo...' : saving ? t('saving') : t('saveExpenseBtn')}
             </button>
           </div>
         </div>
