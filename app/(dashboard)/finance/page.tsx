@@ -117,6 +117,8 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const [receiptFile,        setReceiptFile]        = useState<File | null>(null)
   const [receiptPreview,     setReceiptPreview]     = useState<string | null>(null)
   const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
+  const [bankAccounts,       setBankAccounts]       = useState<any[]>([])
+  const [selectedBankAccount, setSelectedBankAccount] = useState('')
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -159,7 +161,13 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     setReceiptPreview(null)
   }
 
-  function handleMarkAsPaid(inv: any) {
+  async function handleMarkAsPaid(inv: any) {
+    const { data: banks } = await createClient()
+      .from('bank_accounts')
+      .select('*')
+      .order('name')
+    setBankAccounts(banks ?? [])
+    setSelectedBankAccount('')
     setSelectedInvoice(inv)
     setTransactionId('')
     setPaymentError('')
@@ -168,13 +176,21 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
 
   async function confirmPayment() {
     if (!transactionId.trim()) { setPaymentError('Debes ingresar el ID de la transacciÃ³n'); return }
-    const { error } = await createClient().from('invoices').update({
+    if (!selectedBankAccount) { setPaymentError('Debes seleccionar una cuenta bancaria'); return }
+    const supabase = createClient()
+    const { error } = await supabase.from('invoices').update({
       status: 'pagada',
       transaction_id: transactionId.trim(),
       paid_at: new Date().toISOString(),
+      bank_account_id: selectedBankAccount,
     }).eq('id', selectedInvoice.id)
     if (error) { setPaymentError('Error al actualizar la factura'); return }
-    addToast('Factura marcada como pagada', 'success')
+    const bank = bankAccounts.find(b => b.id === selectedBankAccount)
+    if (bank) {
+      const newBal = (parseFloat(bank.balance || 0)) + parseFloat(selectedInvoice.total || 0)
+      await supabase.from('bank_accounts').update({ balance: newBal }).eq('id', selectedBankAccount)
+    }
+    addToast('Pago registrado correctamente', 'success')
     setShowPaymentModal(false)
     fetchInvoices()
     fetchFinanceKPIs()
@@ -969,6 +985,41 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
               {paymentError && <div style={{ fontSize: 11, color: '#ff4f4f', marginTop: 5 }}>{paymentError}</div>}
               <div style={{ fontSize: 11, color: '#3a3836', marginTop: 6 }}>Este ID quedarÃ¡ registrado como comprobante del pago</div>
             </div>
+            {/* Selector cuenta bancaria */}
+            {bankAccounts.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888580', marginBottom: 10 }}>INGRESO A *</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {bankAccounts.map(account => {
+                    const sel = selectedBankAccount === account.id
+                    const icon = (account.name || '').toLowerCase().includes('efectivo') || (account.name || '').toLowerCase().includes('caja') ? 'CA'
+                      : (account.name || '').toLowerCase().includes('tarjeta') || (account.account_type || '').toLowerCase().includes('credit') ? 'CC' : 'BK'
+                    return (
+                      <div key={account.id} onClick={() => { setSelectedBankAccount(account.id); setPaymentError('') }}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '12px 16px',
+                          background: sel ? 'rgba(201,168,76,0.1)' : '#0d0d0f',
+                          border: `2px solid ${sel ? '#c9a84c' : '#2a2a30'}`,
+                          borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 8,
+                            background: sel ? 'rgba(201,168,76,0.2)' : '#1a1a1f',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 11, fontWeight: 800, color: sel ? '#c9a84c' : '#888580' }}>
+                            {icon}
+                          </div>
+                          <div>
+                            <div style={{ color: '#f0ede8', fontSize: 13, fontWeight: 700 }}>{account.name}</div>
+                            <div style={{ color: '#666', fontSize: 11 }}>Saldo: AED {parseFloat(account.balance || 0).toFixed(2)}</div>
+                          </div>
+                        </div>
+                        {sel && <span style={{ color: '#c9a84c', fontSize: 14, fontWeight: 800 }}>+</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowPaymentModal(false)}
                 style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#888580', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
