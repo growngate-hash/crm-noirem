@@ -1118,7 +1118,11 @@ function BanksTab() {
   const [toasts,    setToasts]    = useState<Toast[]>([])
   const [editingBank,  setEditingBank]  = useState<any | null>(null)
   const [editBankForm, setEditBankForm] = useState({ name: '', account_type: '', account_number: '', currency: 'AED', notes: '' })
-  const [savingBank,   setSavingBank]   = useState(false)
+  const [savingBank,      setSavingBank]      = useState(false)
+  const [showNewBankAccount, setShowNewBankAccount] = useState(false)
+  const [newBankForm,    setNewBankForm]    = useState({ name: '', account_type: 'Bank', account_number: '', currency: 'AED', notes: '' })
+  const [savingNewBank,  setSavingNewBank]  = useState(false)
+  const isMobile = useIsMobile()
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -1177,6 +1181,26 @@ function BanksTab() {
     const { error } = await createClient().from('bank_accounts').delete().eq('id', editAcc.id)
     if (error) { addToast(error.message, 'error'); return }
     addToast(t('accountDeleted'), 'success'); setEditAcc(null); fetchAccounts()
+  }
+
+  async function handleSaveNewBank() {
+    if (!newBankForm.name.trim()) { addToast('El nombre es obligatorio', 'error'); return }
+    setSavingNewBank(true)
+    const { error } = await createClient().from('bank_accounts').insert({
+      name: newBankForm.name.trim(),
+      account_type: newBankForm.account_type,
+      account_number: newBankForm.account_number.trim() || null,
+      currency: newBankForm.currency,
+      notes: newBankForm.notes.trim() || null,
+      current_balance: 0,
+      is_active: true,
+    })
+    setSavingNewBank(false)
+    if (error) { addToast('Error: ' + error.message, 'error'); return }
+    addToast('Cuenta bancaria creada', 'success')
+    setShowNewBankAccount(false)
+    setNewBankForm({ name: '', account_type: 'Bank', account_number: '', currency: 'AED', notes: '' })
+    fetchAccounts()
   }
 
   async function handleSaveBank() {
@@ -1346,12 +1370,16 @@ function BanksTab() {
         ))}
       </div>
 
-      {/* bank account cards */}
-      <div style={{ marginTop: 20, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Grid de cuentas bancarias */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)',
+        gap: 16,
+        marginBottom: 24,
+      }}>
         {accounts.map(account => {
-          const color = getBankColor(account.account_type)
-          const icon  = getBankIcon(account.account_type, account.name)
-          const bal   = parseFloat(account.current_balance ?? account.balance ?? 0)
+          const color   = getBankColor(account.account_type)
+          const balance = parseFloat(account.current_balance ?? account.balance ?? 0)
           return (
             <div key={account.id} style={{
               background: '#1a1a1f',
@@ -1359,8 +1387,9 @@ function BanksTab() {
               borderRadius: 16,
               padding: 20,
               position: 'relative',
+              transition: 'border-color 0.2s',
             }}>
-              {/* EDITAR button */}
+              {/* Botón editar */}
               <button
                 onClick={() => {
                   setEditingBank(account)
@@ -1373,43 +1402,73 @@ function BanksTab() {
                   })
                 }}
                 style={{
-                  position: 'absolute', top: 14, right: 14,
+                  position: 'absolute', top: 12, right: 12,
                   background: 'transparent',
                   border: '1px solid #2a2a30',
                   borderRadius: 6,
-                  color: '#666',
-                  fontSize: 11, fontWeight: 700,
-                  padding: '4px 10px',
+                  color: '#555',
+                  fontSize: 10, fontWeight: 700,
+                  padding: '3px 8px',
                   cursor: 'pointer',
                   letterSpacing: '0.5px',
                   fontFamily: 'Outfit,sans-serif',
                 }}
               >EDITAR</button>
-              {/* icon + name */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+              {/* Header: badge tipo + nombre */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <div style={{
-                  padding: '8px 12px', borderRadius: 8,
+                  padding: '5px 10px', borderRadius: 6,
                   background: color + '20',
-                  fontSize: 11, fontWeight: 800, color,
-                }}>{icon}</div>
-                <div>
-                  <div style={{ color: '#f0ede8', fontSize: 15, fontWeight: 700 }}>{account.name}</div>
-                  <div style={{ color: '#666', fontSize: 11, marginTop: 2 }}>{account.account_type}{account.currency ? ' · ' + account.currency : ''}</div>
+                  border: `1px solid ${color}40`,
+                  color,
+                  fontSize: 9, fontWeight: 800, letterSpacing: '1px', flexShrink: 0,
+                }}>
+                  {getBankIcon(account.account_type, account.name)}
                 </div>
+                <div style={{
+                  color: '#fff', fontSize: 14, fontWeight: 700,
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                  paddingRight: 40,
+                }}>{account.name}</div>
               </div>
-              {/* balance */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                <div>
-                  <div style={{ color: '#666', fontSize: 10, fontWeight: 700, letterSpacing: '1px', marginBottom: 4 }}>SALDO ACTUAL</div>
-                  <div style={{ color: bal >= 0 ? '#34d399' : '#ff4f4f', fontSize: 22, fontWeight: 800 }}>{aed(bal)}</div>
-                </div>
-                {account.account_number && (
-                  <div style={{ color: '#555', fontSize: 11, fontFamily: 'monospace' }}>{account.account_number}</div>
-                )}
+              {/* Saldo */}
+              <div style={{ color: '#888', fontSize: 10, fontWeight: 700, letterSpacing: '1px', marginBottom: 4 }}>SALDO ACTUAL</div>
+              <div style={{
+                color: balance >= 0 ? color : '#ef4444',
+                fontSize: 26, fontWeight: 900, letterSpacing: '-0.5px', marginBottom: 12,
+              }}>AED {balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+              {/* Footer */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid #2a2a30' }}>
+                <span style={{ color: '#555', fontSize: 11 }}>
+                  {account.currency || 'AED'}
+                  {account.account_number ? ` · ****${account.account_number.slice(-4)}` : ''}
+                </span>
+                <span style={{ color: balance > 0 ? '#22c55e' : '#666', fontSize: 10, fontWeight: 700 }}>
+                  {balance > 0 ? 'ACTIVO' : 'SIN MOVIMIENTOS'}
+                </span>
               </div>
             </div>
           )
         })}
+        {/* Card agregar nueva cuenta */}
+        <div
+          onClick={() => setShowNewBankAccount(true)}
+          style={{
+            background: 'transparent',
+            border: '2px dashed #2a2a30',
+            borderRadius: 16,
+            padding: 20,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', minHeight: 140, gap: 8,
+            transition: 'border-color 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = '#c9a84c'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = '#2a2a30'}
+        >
+          <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#c9a84c20', border: '1px solid #c9a84c40', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c9a84c', fontSize: 20 }}>+</div>
+          <div style={{ color: '#666', fontSize: 12, fontWeight: 700 }}>AGREGAR CUENTA</div>
+        </div>
       </div>
 
       {/* modals */}
@@ -1519,6 +1578,62 @@ function BanksTab() {
                 disabled={savingBank || !editBankForm.name.trim()}
                 style={{ flex: 2, padding: 13, background: '#c9a84c', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingBank || !editBankForm.name.trim() ? 0.6 : 1 }}
               >{savingBank ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* nueva cuenta bancaria modal */}
+      {showNewBankAccount && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowNewBankAccount(false)}>
+          <div style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }} onClick={e => e.stopPropagation()}>
+            <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
+            <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Cuenta</div>
+            {/* Nombre */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOMBRE *</div>
+              <input value={newBankForm.name} onChange={e => setNewBankForm(p => ({...p, name: e.target.value}))} placeholder="ej. Emirates NBD"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+            </div>
+            {/* Tipo */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>TIPO DE CUENTA</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
+                {([
+                  { value: 'Cash',        label: 'Efectivo / Caja',    color: '#22c55e' },
+                  { value: 'Bank',        label: 'Cuenta Bancaria',    color: '#c9a84c' },
+                  { value: 'Transfer',    label: 'Transfer / IBAN',    color: '#3b82f6' },
+                  { value: 'Credit Card', label: 'Tarjeta de Crédito', color: '#ef4444' },
+                ] as const).map(type => (
+                  <button key={type.value} onClick={() => setNewBankForm(p => ({...p, account_type: type.value}))}
+                    style={{ padding: '10px 14px', background: newBankForm.account_type === type.value ? type.color + '20' : '#0d0d0f', border: `2px solid ${newBankForm.account_type === type.value ? type.color : '#2a2a30'}`, borderRadius: 8, color: newBankForm.account_type === type.value ? type.color : '#666', fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left', fontFamily: 'Outfit,sans-serif' }}>
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Número */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NÚMERO DE CUENTA / IBAN <span style={{ color: '#555', marginLeft: 4 }}>(opcional)</span></div>
+              <input value={newBankForm.account_number} onChange={e => setNewBankForm(p => ({...p, account_number: e.target.value}))} placeholder="ej. AE07 0331 2345 6789 0123 456"
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+            </div>
+            {/* Moneda */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>MONEDA</div>
+              <select value={newBankForm.currency} onChange={e => setNewBankForm(p => ({...p, currency: e.target.value}))}
+                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
+                <option value="AED">AED — Dirham Emiratí</option>
+                <option value="USD">USD — Dólar Americano</option>
+                <option value="EUR">EUR — Euro</option>
+                <option value="GBP">GBP — Libra Esterlina</option>
+              </select>
+            </div>
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowNewBankAccount(false)} style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid #2a2a30', borderRadius: 10, color: '#888', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>CANCELAR</button>
+              <button onClick={handleSaveNewBank} disabled={savingNewBank || !newBankForm.name.trim()} style={{ flex: 2, padding: 13, background: '#c9a84c', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingNewBank || !newBankForm.name.trim() ? 0.6 : 1 }}>
+                {savingNewBank ? 'GUARDANDO...' : 'CREAR CUENTA'}
+              </button>
             </div>
           </div>
         </div>
