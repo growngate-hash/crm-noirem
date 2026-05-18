@@ -65,9 +65,9 @@ const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-AE', { maximumFrac
 
 // â”€â”€â”€ account type badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ACC_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
-  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#c9a84c', icon: 'ðŸ’³' },
-  'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff', icon: 'ðŸ¦' },
-  'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: 'ðŸ’µ' },
+  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#c9a84c', icon: 'CC' },
+  'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#4fa3ff', icon: 'BK' },
+  'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: 'CA' },
 }
 function AccTypeBadge({ type }: { type: string }) {
   const s = ACC_STYLE[type] ?? ACC_STYLE['Cash']
@@ -174,7 +174,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       paid_at: new Date().toISOString(),
     }).eq('id', selectedInvoice.id)
     if (error) { setPaymentError('Error al actualizar la factura'); return }
-    addToast('Factura marcada como pagada âœ“', 'success')
+    addToast('Factura marcada como pagada', 'success')
     setShowPaymentModal(false)
     fetchInvoices()
     fetchFinanceKPIs()
@@ -444,7 +444,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   {e.receipt_url && (
                     <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
                       title="Ver comprobante" style={{ color: '#c9a84c', fontSize: 16, textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
-                      ðŸ“Ž
+                      VER SOPORTE
                     </a>
                   )}
                 </div>
@@ -497,7 +497,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                           <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
                             title="Ver comprobante"
                             style={{ color: '#c9a84c', fontSize: 17, textDecoration: 'none', lineHeight: 1 }}>
-                            ðŸ“Ž
+                            VER SOPORTE
                           </a>
                         )}
                       </td>
@@ -578,11 +578,11 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                         <button onClick={() => handleMarkAsPaid(inv)}
                           style={{ flex: 1, padding: '9px 0', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          âœ“ MARCAR PAGADA
+                          MARCAR PAGADA
                         </button>
                         <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
                           style={{ padding: '9px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          âœ• ANULAR
+                          ANULAR
                         </button>
                       </div>
                     )}
@@ -598,7 +598,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                     )}
                     <button onClick={() => setViewingInvoice(inv)}
                       style={{ width: '100%', padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#c9a84c', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                      ðŸ‘ VER FACTURA
+                      VER FACTURA
                     </button>
                   </div>
                 )
@@ -642,18 +642,18 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         <button onClick={() => setViewingInvoice(inv)}
                           style={{ padding: '4px 10px', background: '#2a2a30', border: '1px solid #3a3a40', color: '#f0ede8', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                          ðŸ‘ VER
+                          VER
                         </button>
                         {inv.status === 'por_cobrar' && (
                           <button onClick={() => handleMarkAsPaid(inv)}
                             style={{ padding: '4px 10px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.3)', color: '#22c55e', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            âœ“ MARCAR PAGADA
+                            MARCAR PAGADA
                           </button>
                         )}
                         {inv.status === 'por_cobrar' && (
                           <button onClick={() => { setVoidingInvoice(inv); setVoidReason('') }}
                             style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444', borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
-                            âœ• ANULAR
+                            ANULAR
                           </button>
                         )}
                         {inv.status === 'pagada' && inv.transaction_id && (
@@ -786,9 +786,9 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                           return (['Gasto', 'Costo de Ventas', 'Costo Produccion'] as const).map(tipo => {
                             const grupo = todas.filter(c => c.type === tipo)
                             if (grupo.length === 0) return null
-                            const grupoLabel = tipo === 'Costo de Ventas' ? 'ðŸ’° Costos de Ventas'
-                              : tipo === 'Costo Produccion' ? 'âš™ï¸ Costos de ProducciÃ³n'
-                              : 'ðŸ“‹ Gastos'
+                            const grupoLabel = tipo === 'Costo de Ventas' ? 'Costos de Ventas'
+                              : tipo === 'Costo Produccion' ? 'Costos de ProducciÃ³n'
+                              : 'Gastos'
                             return (
                               <div key={tipo}>
                                 <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 700,
@@ -822,7 +822,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                                         color: cuenta.level === 2 ? '#f0ede8' : '#c0bdb8', flex: 1 }}>
                                         {cuenta.name}
                                       </span>
-                                      {selected && <span style={{ color: '#c9a84c', fontSize: 12, flexShrink: 0 }}>âœ“</span>}
+                                      {selected && <span style={{ color: '#c9a84c', fontSize: 12, flexShrink: 0 }}>✓</span>}
                                     </div>
                                   )
                                 })}
@@ -858,13 +858,13 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                     <img src={receiptPreview} alt="preview" style={{ maxHeight: 110, maxWidth: '100%', borderRadius: 6, objectFit: 'contain' }} />
                   ) : receiptFile ? (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 28, marginBottom: 4 }}>ðŸ“„</div>
+                      <div style={{ fontSize: 28, marginBottom: 4 }}>[doc]</div>
                       <div style={{ color: '#c9a84c', fontSize: 12, fontWeight: 600 }}>{receiptFile.name}</div>
                       <div style={{ color: '#888580', fontSize: 11 }}>{(receiptFile.size / 1024).toFixed(0)} KB</div>
                     </div>
                   ) : (
                     <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 24, marginBottom: 6 }}>ðŸ“Ž</div>
+                      <div style={{ fontSize: 24, marginBottom: 6 }}>[+]</div>
                       <div style={{ color: '#888580', fontSize: 12 }}>Toca para adjuntar factura o recibo</div>
                       <div style={{ color: '#3a3836', fontSize: 11, marginTop: 2 }}>JPG, PNG o PDF Â· MÃ¡x 5MB</div>
                     </div>
@@ -875,7 +875,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                 {receiptFile && (
                   <button type="button" onClick={() => resetReceiptState()}
                     style={{ marginTop: 6, background: 'transparent', border: 'none', color: '#ff4f4f', fontSize: 12, cursor: 'pointer', padding: '2px 0', fontFamily: 'Outfit,sans-serif' }}>
-                    âœ• Quitar archivo
+                    Quitar archivo
                   </button>
                 )}
               </div>
@@ -899,7 +899,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
           onClick={() => { setVoidingInvoice(null); setVoidReason('') }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background: '#141416', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>âš ï¸</div>
+            
             <div style={{ color: '#f0ede8', fontSize: 20, fontWeight: 800, textAlign: 'center', marginBottom: 8 }}>Anular Factura</div>
             <div style={{ color: '#888580', fontSize: 13, textAlign: 'center', marginBottom: 4 }}>
               {voidingInvoice.invoice_no} Â· AED {Number(voidingInvoice.total ?? 0).toFixed(2)}
@@ -933,7 +933,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
           onClick={() => setShowPaymentModal(false)}>
           <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 32, width: '100%', maxWidth: 420 }}
             onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 32, textAlign: 'center', marginBottom: 16 }}>ðŸ’³</div>
+            
             <div style={{ fontSize: 18, fontWeight: 800, color: '#f0ede8', textAlign: 'center', marginBottom: 6 }}>
               {lang === 'es' ? 'Confirmar Pago' : 'Confirm Payment'}
             </div>

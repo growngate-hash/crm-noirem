@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -146,11 +146,11 @@ export default function AccountingPage() {
   }
 
   const tabs = [
-    { id: 'journal',           label: 'Libro Diario',         icon: '📋' },
-    { id: 'trial_balance',     label: 'Balance Comprobación', icon: '⚖️' },
-    { id: 'income_statement',  label: 'Estado Resultados',    icon: '📊' },
-    { id: 'vat_report',        label: 'Reporte VAT',          icon: '🧾' },
-    { id: 'chart_of_accounts', label: 'Plan de Cuentas',      icon: '📒' },
+    { id: 'journal',           label: 'Libro Diario'         },
+    { id: 'trial_balance',     label: 'Balance Comprobación' },
+    { id: 'income_statement',  label: 'Estado Resultados'    },
+    { id: 'vat_report',        label: 'Reporte VAT'          },
+    { id: 'chart_of_accounts', label: 'Plan de Cuentas'      },
   ]
 
   const th: React.CSSProperties = {
@@ -196,7 +196,7 @@ export default function AccountingPage() {
               borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer',
             }}
           >
-            {tab.icon} {tab.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -391,7 +391,7 @@ export default function AccountingPage() {
             return (
               <div style={{ background: utilidad >= 0 ? '#22c55e15' : '#ef444415', border: `2px solid ${utilidad >= 0 ? '#22c55e40' : '#ef444440'}`, borderRadius: 12, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ color: '#f0ede8', fontWeight: 800, fontSize: 16 }}>
-                  {utilidad >= 0 ? '📈 UTILIDAD NETA' : '📉 PÉRDIDA NETA'}
+                  {utilidad >= 0 ? 'UTILIDAD NETA' : 'PÉRDIDA NETA'}
                 </span>
                 <span style={{ color: utilidad >= 0 ? '#22c55e' : '#ef4444', fontWeight: 900, fontSize: 24 }}>
                   AED {Math.abs(utilidad).toFixed(2)}
