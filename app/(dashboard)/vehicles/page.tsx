@@ -726,7 +726,7 @@ export default function VehiclesPage() {
         </div>
       ) : vehicles.length === 0 ? (
         <EmptyState
-          icon="🚗"
+          icon="vehicle"
           title="No hay vehículos registrados"
           subtitle="Registra el primer vehículo de un cliente para comenzar"
           actionLabel="+ AGREGAR VEHÍCULO"

@@ -556,7 +556,7 @@ export default function BookingsPage() {
               <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
             ) : vehicles.length===0 ? (
               <EmptyState
-                icon="🚗"
+                icon="booking"
                 title="Sin vehículos registrados"
                 subtitle="Agrega vehículos desde la sección Vehículos para poder crear reservas"
               />

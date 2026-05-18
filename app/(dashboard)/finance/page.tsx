@@ -460,7 +460,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
         ) : expenses.length === 0 ? (
           <div style={{ padding: '0 16px' }}>
             <EmptyState
-              icon="ðŸ’¸"
+              icon="expense"
               title="Sin gastos registrados"
               subtitle="Registra los gastos del negocio para controlar tu rentabilidad"
               actionLabel="+ AGREGAR GASTO"
@@ -585,7 +585,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
         {/* Tabla / vacío */}
         {invoices.length === 0 ? (
           <EmptyState
-            icon="ðŸ§¾"
+            icon="invoice"
             title="Sin facturas generadas"
             subtitle="Las facturas se generan automáticamente al completar una reserva"
           />

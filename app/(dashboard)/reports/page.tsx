@@ -716,7 +716,7 @@ export default function ReportsPage() {
           ) : activeCat.reports.length === 0 ? (
             <div style={{ padding:'0 16px' }}>
               <EmptyState
-                icon="📊"
+                icon="report"
                 title="Sin datos para mostrar"
                 subtitle="Completa reservas y registra gastos para ver tus reportes aquí"
               />

@@ -338,7 +338,7 @@ export default function ContactsPage() {
             <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando...</div>
           ) : filtered.length === 0 ? (
             <EmptyState
-              icon={activeTab === 'suppliers' ? '🏭' : '👤'}
+              icon={activeTab === 'suppliers' ? 'supplier' : 'contact'}
               title={activeTab === 'suppliers' ? 'No hay proveedores aún' : 'No hay contactos aún'}
               subtitle={activeTab === 'suppliers' ? 'Agrega tu primer proveedor para gestionar tus compras' : 'Agrega tu primer cliente para comenzar a gestionar tus relaciones'}
               actionLabel={activeTab === 'suppliers' ? '+ AGREGAR PROVEEDOR' : '+ AGREGAR CLIENTE'}
@@ -403,7 +403,7 @@ export default function ContactsPage() {
                 <tr>
                   <td colSpan={6}>
                     <EmptyState
-                      icon={activeTab === 'suppliers' ? '🏭' : '👤'}
+                      icon={activeTab === 'suppliers' ? 'supplier' : 'contact'}
                       title={activeTab === 'suppliers' ? 'No hay proveedores aún' : 'No hay contactos aún'}
                       subtitle={activeTab === 'suppliers' ? 'Agrega tu primer proveedor para gestionar tus compras' : 'Agrega tu primer cliente para comenzar a gestionar tus relaciones'}
                       actionLabel={activeTab === 'suppliers' ? '+ AGREGAR PROVEEDOR' : '+ AGREGAR CLIENTE'}

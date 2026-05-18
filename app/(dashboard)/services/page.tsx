@@ -482,7 +482,7 @@ export default function ServicesPage() {
           </div>
         ) : srcServices.length === 0 ? (
           <EmptyState
-            icon="✨"
+            icon="service"
             title="No hay servicios creados"
             subtitle="Define los servicios que ofreces para poder asignarlos a reservas"
             actionLabel="+ AGREGAR SERVICIO"
