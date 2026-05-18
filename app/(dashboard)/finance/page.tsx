@@ -81,7 +81,7 @@ function AccTypeBadge({ type }: { type: string }) {
 
 // ─── COSTS & EXPENSES TAB ──────────────────────────────────────────────────────
 const EXP_FILTERS = ['All', 'Fixed', 'Variable', 'Operational']
-const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false }
+const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', recurring: false, account_id: '' }
 
 function CostsTab() {
   const { t, lang } = useLanguage()
@@ -100,6 +100,7 @@ function CostsTab() {
     operational: { amount: 0, pct: 0 },
   })
   const [cuentasContables,  setCuentasContables]  = useState<any[]>([])
+  const [expenseAccounts,   setExpenseAccounts]   = useState<any[]>([])
   const [dropdownAbierto,   setDropdownAbierto]   = useState(false)
   const [cuentaSeleccionada, setCuentaSeleccionada] = useState<any>(null)
   const [busqueda,           setBusqueda]           = useState('')
@@ -198,7 +199,10 @@ function CostsTab() {
 
   async function fetchExpenses() {
     setLoading(true)
-    const { data } = await createClient().from('expenses').select('*').order('date', { ascending: false })
+    const { data } = await createClient()
+      .from('expenses')
+      .select('*, account:account_id(code, name)')
+      .order('date', { ascending: false })
     setExpenses(data ?? [])
     setLoading(false)
   }
@@ -270,6 +274,13 @@ function CostsTab() {
     fetchFinanceKPIs()
     fetchCuentasContables()
     fetchInvoices()
+    createClient()
+      .from('chart_of_accounts')
+      .select('id, code, name')
+      .eq('type', 'expense')
+      .eq('is_active', true)
+      .order('code')
+      .then(({ data }) => setExpenseAccounts(data ?? []))
   }, [])
 
   async function saveExpense() {
@@ -285,8 +296,8 @@ function CostsTab() {
       recurring: form.recurring,
       date: new Date().toISOString().split('T')[0],
       receipt_url: receiptUrl,
+      account_id: form.account_id || (selectedAccount ? form.subcat : null) || null,
     }
-    if (selectedAccount) payload.account_id = form.subcat
     const { error } = await createClient().from('expenses').insert(payload)
     setSaving(false)
     if (error) { addToast(error.message, 'error'); return }
@@ -449,7 +460,7 @@ function CostsTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 580 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                    {['Date', 'Description', 'Category', 'Sub-Cat.', 'AED', 'Recur.', ''].map(h => (
+                    {['Date', 'Description', 'Category', 'Cuenta Contable', 'AED', 'Recur.', ''].map(h => (
                       <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -466,7 +477,11 @@ function CostsTab() {
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{e.description}</td>
                       <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>{e.subcat ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#888580' }}>
+                        {e.account?.code
+                          ? <><span style={{ color: '#c9a84c', fontFamily: 'monospace', marginRight: 4 }}>{e.account.code}</span>{e.account.name}</>
+                          : e.subcat ?? '—'}
+                      </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#f0ede8', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                         {aed(e.amount ?? 0)}
                       </td>
@@ -676,6 +691,21 @@ function CostsTab() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div><FLabel>Description *</FLabel><FInput placeholder="e.g. Office Rent — June" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} /></div>
+
+              {/* Cuenta contable */}
+              <div>
+                <FLabel>CUENTA CONTABLE</FLabel>
+                <select
+                  value={form.account_id}
+                  onChange={e => setForm(p => ({ ...p, account_id: e.target.value }))}
+                  style={{ width: '100%', padding: '10px 14px', background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: form.account_id ? '#f0ede8' : '#3a3836', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}
+                >
+                  <option value="">Seleccionar cuenta contable</option>
+                  {expenseAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>{acc.code} — {acc.name}</option>
+                  ))}
+                </select>
+              </div>
 
               {/* Category */}
               <div>
