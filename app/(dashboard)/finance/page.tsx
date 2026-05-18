@@ -94,7 +94,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const [saving,           setSaving]           = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
   const [financeKPIs,      setFinanceKPIs]      = useState({
-    totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: '0.0',
+    totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: '0.0', vatMTD: 0,
     fixedCosts: { amount: 0, pct: 0 },
     variableCosts: { amount: 0, pct: 0 },
     operational: { amount: 0, pct: 0 },
@@ -265,7 +265,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const [{ data: invoicesPagadas }, { data: gastos }] = await Promise.all([
       supabase
         .from('invoices')
-        .select('total')
+        .select('subtotal, tax, total')
         .eq('status', 'pagada')
         .gte('paid_at', inicioMesUTC)
         .lte('paid_at', finMesUTC),
@@ -277,7 +277,10 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     ])
 
     const totalRevenue = (invoicesPagadas ?? []).reduce(
-      (sum, inv) => sum + Number(inv.total ?? 0), 0
+      (sum, inv) => sum + Number(inv.subtotal ?? 0), 0
+    )
+    const vatMTD = (invoicesPagadas ?? []).reduce(
+      (sum, inv) => sum + Number(inv.tax ?? 0), 0
     )
     const totalExpenses = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
     const netProfit = totalRevenue - totalExpenses
@@ -290,7 +293,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const expTotal = totalExpenses || 1
 
     setFinanceKPIs({
-      totalRevenue, totalExpenses, netProfit, profitMargin,
+      totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD,
       fixedCosts: { amount: fixed, pct: Math.round(fixed / expTotal * 100) },
       variableCosts: { amount: variable, pct: Math.round(variable / expTotal * 100) },
       operational: { amount: operational, pct: Math.round(operational / expTotal * 100) },
@@ -369,7 +372,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
 
   const displayed = expFilter === 'All' ? expenses : expenses.filter(e => e.category === expFilter)
   const total = displayed.reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const { totalRevenue, totalExpenses, netProfit, profitMargin, fixedCosts, variableCosts, operational } = financeKPIs
+  const { totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD, fixedCosts, variableCosts, operational } = financeKPIs
 
   return (
     <>
@@ -378,10 +381,10 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       {/* KPI row 1 */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: isMobile ? 8 : 10, marginBottom: 10 }}>
         {[
-          { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa' },
-          { dot: '#ff4f4f', label: t('totalExpensesMTD'), value: aed(totalExpenses),  color: '#ff4f4f' },
-          { dot: '#c9a84c', label: t('netProfitMTD'),     value: aed(netProfit),      color: '#c9a84c' },
-          { dot: '#00d4aa', label: t('profitMargin'),      value: `${profitMargin}%`,  color: '#00d4aa' },
+          { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa', sub: `+ AED ${vatMTD.toFixed(0)} VAT` },
+          { dot: '#ff4f4f', label: t('totalExpensesMTD'), value: aed(totalExpenses),  color: '#ff4f4f', sub: null },
+          { dot: '#c9a84c', label: t('netProfitMTD'),     value: aed(netProfit),      color: '#c9a84c', sub: null },
+          { dot: '#06b6d4', label: 'VAT POR PAGAR',       value: aed(vatMTD),         color: '#06b6d4', sub: 'a entregar al FTA' },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -389,6 +392,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
               <span style={{ fontSize: 11, color: '#888580' }}>{k.label}</span>
             </div>
             <div style={{ fontSize: 22, fontWeight: 800, color: k.color, lineHeight: 1 }}>{k.value}</div>
+            {k.sub && <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>{k.sub}</div>}
           </div>
         ))}
       </div>

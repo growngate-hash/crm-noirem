@@ -197,7 +197,7 @@ export default function DashboardPage() {
   // ── KPI state ──
   const [kpis, setKpis] = useState({
     totalProfit: 0, totalRevenue: 0, totalExpenses: 0,
-    lowStockAlerts: 0, revenueMTD: 0, activeBookings: 0,
+    lowStockAlerts: 0, revenueMTD: 0, vatMTD: 0, activeBookings: 0,
     avgOrderValue: 0, csatScore: 0, deltaRevenue: 0,
   })
   const [recentBookings, setRecentBookings] = useState<any[]>([])
@@ -246,10 +246,10 @@ export default function DashboardPage() {
       { data: invoicesMesAnterior },
       { data: inventario },
     ] = await Promise.all([
-      supabase.from('invoices').select('total').eq('status', 'pagada'),
-      supabase.from('invoices').select('total, paid_at').eq('status', 'pagada')
+      supabase.from('invoices').select('subtotal, tax, total').eq('status', 'pagada'),
+      supabase.from('invoices').select('subtotal, tax, total, paid_at').eq('status', 'pagada')
         .gte('paid_at', inicioMesUTC).lte('paid_at', finMesUTC),
-      supabase.from('invoices').select('total, paid_at').eq('status', 'pagada')
+      supabase.from('invoices').select('subtotal, tax, total, paid_at').eq('status', 'pagada')
         .gte('paid_at', inicioMesAnteriorUTC).lte('paid_at', finMesAnteriorUTC),
       supabase.from('inventory_items').select('id, name, stock_qty, min_stock, unit, brand'),
     ])
@@ -291,14 +291,17 @@ export default function DashboardPage() {
     }
 
     const calcRevenue = (rows: any[]) =>
-      (rows ?? []).reduce((sum, inv) => sum + Number(inv.total ?? 0), 0)
+      (rows ?? []).reduce((sum, inv) => sum + Number(inv.subtotal ?? 0), 0)
+    const calcVAT = (rows: any[]) =>
+      (rows ?? []).reduce((sum, inv) => sum + Number(inv.tax ?? 0), 0)
 
-    // Revenue from paid invoices
+    // Revenue = subtotal (excl. VAT — VAT is not income)
     const totalRevenue   = calcRevenue(invoicesPagadas ?? [])
     const revenueMTD     = calcRevenue(invoicesMes ?? [])
     const revenuePrevMes = calcRevenue(invoicesMesAnterior ?? [])
+    const vatMTD         = calcVAT(invoicesMes ?? [])
 
-    // Profit = total revenue – total expenses (same arithmetic as finance module)
+    // Profit = subtotal revenue – expenses (VAT excluded from both sides)
     const totalProfit = totalRevenue - totalExpenses
     const deltaRevenue = revenuePrevMes > 0
       ? +((revenueMTD - revenuePrevMes) / revenuePrevMes * 100).toFixed(1)
@@ -326,7 +329,7 @@ export default function DashboardPage() {
 
     setKpis({
       totalRevenue, totalExpenses, totalProfit,
-      lowStockAlerts, revenueMTD,
+      lowStockAlerts, revenueMTD, vatMTD,
       activeBookings,
       avgOrderValue, csatScore, deltaRevenue,
     })
@@ -403,7 +406,7 @@ export default function DashboardPage() {
     { key:'totalProfit',   label:t('totalProfit'),    color: kpis.totalProfit >= 0 ? 'var(--cyan)' : 'var(--red)', iconBg:'rgba(0,212,170,0.1)',   icon: kpis.totalProfit >= 0 ? TrendingUp : TrendingDown,
       value: formatAED(kpis.totalProfit), sub:`— ${formatAED(kpis.revenueMTD)} ingresos este mes` },
     { key:'totalRevenue',  label:t('totalRevenue'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,
-      value: formatAED(kpis.totalRevenue),  sub:`— ${formatAED(kpis.revenueMTD)} este mes` },
+      value: formatAED(kpis.totalRevenue),  sub:`sin VAT · ${formatAED(kpis.revenueMTD)} este mes` },
     { key:'totalExpenses', label:t('totalExpenses'),  color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown,
       value: formatAED(kpis.totalExpenses), sub:'— gastos acumulados' },
     { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆', value: String(kpis.lowStockAlerts), bigNum: true,
