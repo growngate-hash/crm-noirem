@@ -216,6 +216,13 @@ export default function ServicesPage() {
   const [editMatSaving,        setEditMatSaving]        = useState(false)
   const [showMatDeleteConfirm, setShowMatDeleteConfirm] = useState(false)
 
+  // adjust stock modal
+  const [adjustItem,   setAdjustItem]   = useState<any|null>(null)
+  const [adjustType,   setAdjustType]   = useState<'add'|'subtract'>('add')
+  const [adjustAmount, setAdjustAmount] = useState('')
+  const [adjustNote,   setAdjustNote]   = useState('')
+  const [adjusting,    setAdjusting]    = useState(false)
+
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
@@ -232,6 +239,7 @@ export default function ServicesPage() {
   useEffect(()=>{
     function onKey(e: KeyboardEvent){
       if(e.key!=='Escape') return
+      if(adjustItem)   { setAdjustItem(null); return }
       if(editMat)      { closeEditMat();   return }
       if(selectedSvc)  { closeMaterials(); return }
       if(showService)  { closeService();   return }
@@ -239,7 +247,39 @@ export default function ServicesPage() {
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc,editMat])
+  },[showService,showInv,selectedSvc,editMat,adjustItem])
+
+  async function handleAdjustStock() {
+    const amount = Number(adjustAmount)
+    if (!adjustAmount || isNaN(amount) || amount <= 0) {
+      addToast('Ingresa una cantidad válida', 'error')
+      return
+    }
+    setAdjusting(true)
+    const currentStock = adjustItem.stock_qty ?? 0
+    const newStock = adjustType === 'add' ? currentStock + amount : Math.max(0, currentStock - amount)
+
+    const { error } = await createClient()
+      .from('inventory_items')
+      .update({ stock_qty: newStock })
+      .eq('id', adjustItem.id)
+
+    if (error) {
+      addToast('Error al ajustar inventario', 'error')
+      setAdjusting(false)
+      return
+    }
+
+    setInventory(prev => prev.map(i => i.id === adjustItem.id ? { ...i, stock_qty: newStock } : i))
+    addToast(
+      `Stock ${adjustType === 'add' ? 'aumentado' : 'reducido'}: ${adjustItem.name} → ${newStock} ${adjustItem.unit || 'u'}`,
+      'success'
+    )
+    setAdjustItem(null)
+    setAdjustAmount('')
+    setAdjustNote('')
+    setAdjusting(false)
+  }
 
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
 
@@ -459,8 +499,8 @@ export default function ServicesPage() {
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:'#f0ede8'}}>Inventario de Químicos</div>
-            <div style={{fontSize:12,color:'#888580',marginTop:2}}>Niveles de stock de productos premium</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#f0ede8'}}>Inventario</div>
+            <div style={{fontSize:12,color:'#888580',marginTop:2}}>Control de stock de productos</div>
           </div>
           <button style={BTN_GOLD} onClick={()=>setShowInv(true)}>+ Agregar Inventario</button>
         </div>
@@ -472,16 +512,22 @@ export default function ServicesPage() {
             ) : srcInventory.map((item:any)=>{
               const isLow = (item.stock_qty??0)<=(item.min_stock??0)
               return (
-                <div key={item.id} onClick={()=>setSelectedInventoryItem(item)}
-                  style={{background:'#1a1a1e',border:`1px solid ${isLow?'rgba(255,79,79,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:16,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <div>
-                    <div style={{color:'#f0ede8',fontWeight:700,fontSize:14,marginBottom:3}}>{item.name}</div>
-                    <div style={{color:'#888580',fontSize:12}}>{item.brand||'—'} · {item.unit||'mL'}</div>
+                <div key={item.id}
+                  style={{background:'#1a1a1e',border:`1px solid ${isLow?'rgba(255,79,79,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:16}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',marginBottom:10}} onClick={()=>setSelectedInventoryItem(item)}>
+                    <div>
+                      <div style={{color:'#f0ede8',fontWeight:700,fontSize:14,marginBottom:3}}>{item.name}</div>
+                      <div style={{color:'#888580',fontSize:12}}>{item.brand||'—'} · {item.unit||'mL'}</div>
+                    </div>
+                    <div style={{textAlign:'right',flexShrink:0,marginLeft:12}}>
+                      <div style={{color:isLow?'#ff4f4f':'#c9a84c',fontWeight:800,fontSize:22,lineHeight:1}}>{item.stock_qty??0}</div>
+                      <div style={{color:isLow?'#ff4f4f':'#22c55e',fontSize:10,fontWeight:700,textTransform:'uppercase',marginTop:3}}>{isLow?'LOW':'OK'}</div>
+                    </div>
                   </div>
-                  <div style={{textAlign:'right',flexShrink:0,marginLeft:12}}>
-                    <div style={{color:isLow?'#ff4f4f':'#c9a84c',fontWeight:800,fontSize:22,lineHeight:1}}>{item.stock_qty??0}</div>
-                    <div style={{color:isLow?'#ff4f4f':'#22c55e',fontSize:10,fontWeight:700,textTransform:'uppercase',marginTop:3}}>{isLow?'LOW':'OK'}</div>
-                  </div>
+                  <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
+                    style={{width:'100%',padding:'9px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    ± AJUSTAR STOCK
+                  </button>
                 </div>
               )
             })}
@@ -492,7 +538,7 @@ export default function ServicesPage() {
             <table style={{width:'100%',borderCollapse:'collapse',minWidth:500}}>
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                  {['Producto','Marca','Stock','Unidad','Nivel'].map(h=>(
+                  {['Producto','Marca','Stock','Unidad','Nivel','Ajuste'].map(h=>(
                     <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
@@ -514,6 +560,12 @@ export default function ServicesPage() {
                       </td>
                       <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
                       <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
+                      <td style={{padding:'14px 16px'}}>
+                        <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
+                          style={{padding:'5px 12px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
+                          ± AJUSTAR
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
@@ -522,6 +574,101 @@ export default function ServicesPage() {
           </div>
         )}
       </div>
+
+      {/* ── Modal: Ajuste de Inventario ── */}
+      {adjustItem && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
+          onClick={()=>setAdjustItem(null)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:400}}>
+
+            {/* Header */}
+            <div style={{marginBottom:24}}>
+              <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>AJUSTE DE INVENTARIO</div>
+              <div style={{color:'#f0ede8',fontSize:20,fontWeight:800}}>{adjustItem.name}</div>
+              <div style={{color:'#888580',fontSize:13,marginTop:4}}>
+                Stock actual: <span style={{color:'#f0ede8',fontWeight:700}}>{adjustItem.stock_qty ?? 0} {adjustItem.unit || 'u'}</span>
+              </div>
+            </div>
+
+            {/* Tipo — add / subtract */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:20}}>
+              {(['add','subtract'] as const).map(type => (
+                <button key={type} onClick={()=>setAdjustType(type)}
+                  style={{
+                    padding:12,
+                    background: adjustType===type ? (type==='add' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)') : '#0d0d0f',
+                    border: `2px solid ${adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#2a2a30'}`,
+                    borderRadius:10,
+                    color: adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#888580',
+                    fontSize:13,fontWeight:800,cursor:'pointer',
+                    display:'flex',alignItems:'center',justifyContent:'center',gap:6,
+                    fontFamily:'Outfit,sans-serif',
+                  }}>
+                  <span style={{fontSize:18}}>{type==='add' ? '+' : '−'}</span>
+                  {type==='add' ? 'AGREGAR' : 'RETIRAR'}
+                </button>
+              ))}
+            </div>
+
+            {/* Cantidad */}
+            <div style={{marginBottom:16}}>
+              <div style={{color:'#888580',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
+                CANTIDAD A {adjustType==='add' ? 'AGREGAR' : 'RETIRAR'}
+              </div>
+              <div style={{display:'flex',gap:6,marginBottom:10}}>
+                {[1,5,10,25].map(n=>(
+                  <button key={n} onClick={()=>setAdjustAmount(String(n))}
+                    style={{flex:1,padding:'8px',background:adjustAmount===String(n)?'#c9a84c':'#0d0d0f',border:`1px solid ${adjustAmount===String(n)?'#c9a84c':'#2a2a30'}`,borderRadius:6,color:adjustAmount===String(n)?'#0d0d0f':'#888580',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+              <input type="number" value={adjustAmount} onChange={e=>setAdjustAmount(e.target.value)}
+                placeholder="O ingresa cantidad manual" min="1" autoFocus
+                style={{width:'100%',padding:'12px 16px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#f0ede8',fontSize:14,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
+            </div>
+
+            {/* Preview */}
+            {adjustAmount && Number(adjustAmount) > 0 && (
+              <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,padding:'12px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{color:'#888580',fontSize:13}}>Nuevo stock:</span>
+                <span style={{color:'#c9a84c',fontSize:18,fontWeight:800}}>
+                  {adjustType==='add'
+                    ? (adjustItem.stock_qty??0) + Number(adjustAmount)
+                    : Math.max(0,(adjustItem.stock_qty??0) - Number(adjustAmount))
+                  } {adjustItem.unit || 'u'}
+                </span>
+              </div>
+            )}
+
+            {/* Nota */}
+            <div style={{marginBottom:20}}>
+              <div style={{color:'#888580',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
+                NOTA <span style={{color:'#555',fontWeight:400,textTransform:'none',letterSpacing:0}}>(opcional)</span>
+              </div>
+              <input type="text" value={adjustNote} onChange={e=>setAdjustNote(e.target.value)}
+                placeholder="ej. Compra proveedor, uso en servicio..."
+                style={{width:'100%',padding:'10px 16px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#f0ede8',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
+            </div>
+
+            {/* Botones */}
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setAdjustItem(null)}
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888580',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button onClick={handleAdjustStock} disabled={adjusting || !adjustAmount || Number(adjustAmount)<=0}
+                style={{flex:2,padding:13,background:adjustType==='add'?'#22c55e':'#ef4444',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',opacity:(adjusting||!adjustAmount||Number(adjustAmount)<=0)?0.6:1,fontFamily:'Outfit,sans-serif'}}>
+                {adjusting ? 'GUARDANDO…'
+                  : adjustType==='add'
+                  ? `+ AGREGAR ${adjustAmount||''} ${adjustItem.unit||'u'}`
+                  : `− RETIRAR ${adjustAmount||''} ${adjustItem.unit||'u'}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Mobile: bottom-sheet detalle de inventario ── */}
       {selectedInventoryItem && (
