@@ -262,7 +262,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const inicioMesStr = inicioMes.toISOString().split('T')[0]
     const finMesStr = finMes.toISOString().split('T')[0]
 
-    const [{ data: invoicesPagadas }, { data: gastos }, { data: comprasPagadas }] = await Promise.all([
+    const [{ data: invoicesPagadas }, { data: gastos }, { data: todasLasCompras }] = await Promise.all([
       supabase
         .from('invoices')
         .select('subtotal, tax, total')
@@ -276,10 +276,8 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
         .lte('date', finMesStr),
       supabase
         .from('purchase_invoices')
-        .select('subtotal, tax')
-        .eq('status', 'pagada')
-        .gte('payment_date', inicioMesStr)
-        .lte('payment_date', finMesStr),
+        .select('subtotal, tax, status, created_at, payment_date')
+        .neq('status', 'anulada'),
     ])
 
     const totalRevenue = (invoicesPagadas ?? []).reduce(
@@ -288,10 +286,14 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const vatMTD = (invoicesPagadas ?? []).reduce(
       (sum, inv) => sum + Number(inv.tax ?? 0), 0
     )
-    const vatPagadoMTD = (comprasPagadas ?? []).reduce((sum, p) => sum + Number(p.tax ?? 0), 0)
+    const vatPagadoMTD = (todasLasCompras ?? [])
+      .filter(p => (p.created_at ?? '') >= inicioMesStr)
+      .reduce((sum, p) => sum + Number(p.tax ?? 0), 0)
     const vatNetoMTD = vatMTD - vatPagadoMTD
     const expensesAmt  = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
-    const comprasAmt   = (comprasPagadas ?? []).reduce((sum, p) => sum + Number(p.subtotal ?? 0), 0)
+    const comprasAmt   = (todasLasCompras ?? [])
+      .filter(p => p.status === 'pagada' && (p.payment_date ?? '') >= inicioMesStr && (p.payment_date ?? '') <= finMesStr)
+      .reduce((sum, p) => sum + Number(p.subtotal ?? 0), 0)
     const totalExpenses = expensesAmt + comprasAmt
     const netProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0
