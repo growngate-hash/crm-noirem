@@ -1708,7 +1708,7 @@ function ComprasTab() {
     loadPurchaseInvoices()
     loadBankAccounts()
     supabase.from('contacts').select('id, name').order('name').then(({ data }: any) => setContacts(data ?? []))
-    supabase.from('inventory').select('id, name, product_name').order('name').then(({ data }: any) => setInventoryItems(data ?? []))
+    supabase.from('inventory_items').select('id, name, stock_qty, unit').order('name').then(({ data }: any) => setInventoryItems(data ?? []))
     supabase.from('chart_of_accounts').select('id, code, name, account_type').eq('account_type', 'expense').order('code').then(({ data }: any) => setExpenseAccounts(data ?? []))
   }, [])
 
@@ -2004,13 +2004,13 @@ function ComprasTab() {
                               onChange={e => {
                                 const item = inventoryItems.find((it: any) => it.id === e.target.value)
                                 updatePurchaseLine(i, 'inventory_item_id', e.target.value)
-                                updatePurchaseLine(i, 'description', item?.product_name || item?.name || '')
+                                updatePurchaseLine(i, 'description', item?.name || '')
                               }}
                               style={{ width: 180, padding: '6px 8px', background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 6, color: '#f0ede8', fontSize: 12, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
                               <option value="">Seleccionar producto...</option>
                               {inventoryItems.map((item: any) => (
                                 <option key={item.id} value={item.id}>
-                                  {item.product_name || item.name}{' '}({item.stock || 0} {item.unit || 'u'})
+                                  {item.name}{' '}({item.stock_qty ?? 0} {item.unit || 'u'})
                                 </option>
                               ))}
                             </select>
