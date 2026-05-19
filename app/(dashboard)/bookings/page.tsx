@@ -264,7 +264,7 @@ export default function BookingsPage() {
     const [cRes,vRes,sRes] = await Promise.all([
       sb.from('contacts').select('id, name'),
       sb.from('vehicles').select('id, name, license_plate, status, technician, technicians').order('created_at'),
-      sb.from('services').select('id, name, price'),
+      sb.from('services').select('id, name, price').eq('is_active', true).order('name'),
     ])
     console.log('[vehicles] cargados:', vRes.data?.length, vRes.data?.map(v=>({id:v.id,name:v.name})))
     setContacts(cRes.data??[])

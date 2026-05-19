@@ -100,7 +100,7 @@ function ABtn({ children, onClick, size=28 }: { children: React.ReactNode; onCli
 }
 
 // ─── service card ─────────────────────────────────────────────────────────────
-function ServiceCard({ s, onEdit }: { s: any; onEdit: () => void }) {
+function ServiceCard({ s, onEdit, onEditService, onToggle }: { s: any; onEdit: () => void; onEditService: () => void; onToggle: () => void }) {
   const [hov, setHov] = useState(false)
   const pills = (s.variants ?? '').split(',').map((v: string) => v.trim()).filter(Boolean)
   const priceStr = s.price_min != null && s.price_max != null
@@ -132,6 +132,19 @@ function ServiceCard({ s, onEdit }: { s: any; onEdit: () => void }) {
           ))}
         </div>
       )}
+      <div style={{display:'flex',gap:8,marginTop:12,paddingTop:12,borderTop:'1px solid #2a2a30'}}>
+        <div style={{flex:1,display:'flex',alignItems:'center'}}>
+          <span style={{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:700,background:s.is_active!==false?'#22c55e20':'#ef444420',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444'}}>
+            {s.is_active!==false?'ACTIVO':'INACTIVO'}
+          </span>
+        </div>
+        <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 14px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+          EDITAR
+        </button>
+        <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 14px',background:s.is_active!==false?'#ef444415':'#22c55e15',border:`1px solid ${s.is_active!==false?'#ef444435':'#22c55e35'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+          {s.is_active!==false?'DESACTIVAR':'ACTIVAR'}
+        </button>
+      </div>
     </div>
   )
 }
@@ -224,6 +237,10 @@ export default function ServicesPage() {
   const [adjusting,    setAdjusting]    = useState(false)
 
   const [toasts, setToasts] = useState<Toast[]>([])
+  const [editingService,  setEditingService]  = useState<any|null>(null)
+  const [editServiceForm, setEditServiceForm] = useState({ name:'', description:'', price:'', duration:'', category:'', is_active:true })
+  const [savingService,   setSavingService]   = useState(false)
+  const [confirmToggle,   setConfirmToggle]   = useState<any|null>(null)
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -305,6 +322,51 @@ export default function ServicesPage() {
 
     setServices(seeded ?? [])
     setLoadingS(false)
+  }
+
+  function handleEditService(service: any) {
+    setEditingService(service)
+    setEditServiceForm({
+      name:        service.name        || '',
+      description: service.description || '',
+      price:       String(service.base_price ?? service.price_min ?? ''),
+      duration:    service.duration    || service.duration_hrs || '',
+      category:    service.category    || '',
+      is_active:   service.is_active   !== false,
+    })
+  }
+
+  async function handleSaveEditService() {
+    if (!editServiceForm.name.trim()) { addToast('El nombre es obligatorio', 'error'); return }
+    setSavingService(true)
+    const { error } = await createClient()
+      .from('services')
+      .update({
+        name:        editServiceForm.name.trim(),
+        description: editServiceForm.description.trim(),
+        base_price:  parseFloat(editServiceForm.price) || 0,
+        duration:    editServiceForm.duration.trim(),
+        category:    editServiceForm.category.trim(),
+        updated_at:  new Date().toISOString(),
+      })
+      .eq('id', editingService.id)
+    if (error) { addToast('Error: ' + error.message, 'error'); setSavingService(false); return }
+    addToast('Servicio actualizado', 'success')
+    setSavingService(false)
+    setEditingService(null)
+    fetchServices()
+  }
+
+  async function handleToggleService(service: any) {
+    const newStatus = !service.is_active
+    const { error } = await createClient()
+      .from('services')
+      .update({ is_active: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', service.id)
+    if (error) { addToast('Error al cambiar estado', 'error'); return }
+    addToast(newStatus ? 'Servicio activado' : 'Servicio desactivado', 'success')
+    setConfirmToggle(null)
+    fetchServices()
   }
 
   useEffect(()=>{ fetchServices(); fetchInventory() },[])
@@ -490,7 +552,7 @@ export default function ServicesPage() {
           />
         ) : (
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
-            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)}/>)}
+            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)}/>)}
           </div>
         )}
       </div>
@@ -933,6 +995,77 @@ export default function ServicesPage() {
                   {editMatSaving?'Guardando…':'Guardar'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Confirm Toggle Modal ── */}
+      {confirmToggle && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+          <div style={{background:'#1a1a1f',border:`1px solid ${confirmToggle.is_active!==false?'#ef444440':'#22c55e40'}`,borderRadius:16,padding:32,width:'100%',maxWidth:420,textAlign:'center'}}>
+            <div style={{fontSize:40,marginBottom:16}}>{confirmToggle.is_active!==false?'⚠️':'✅'}</div>
+            <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:8}}>
+              {confirmToggle.is_active!==false?'Desactivar Servicio':'Activar Servicio'}
+            </div>
+            <div style={{color:'#888',fontSize:14,marginBottom:8}}>{confirmToggle.name}</div>
+            <div style={{color:confirmToggle.is_active!==false?'#ef4444':'#22c55e',fontSize:13,marginBottom:28,padding:'10px 16px',background:confirmToggle.is_active!==false?'#ef444415':'#22c55e15',borderRadius:8}}>
+              {confirmToggle.is_active!==false
+                ?'Este servicio no podrá ser seleccionado en nuevas reservas hasta que lo actives nuevamente.'
+                :'Este servicio estará disponible para nuevas reservas.'}
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setConfirmToggle(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button onClick={()=>handleToggleService(confirmToggle)} style={{flex:1,padding:13,background:confirmToggle.is_active!==false?'#ef4444':'#22c55e',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                {confirmToggle.is_active!==false?'SÍ, DESACTIVAR':'SÍ, ACTIVAR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Service Modal ── */}
+      {editingService && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:500,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>SERVICIOS</div>
+            <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:24}}>Editar Servicio</div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>NOMBRE *</div>
+              <MInput value={editServiceForm.name} onChange={e=>setEditServiceForm(p=>({...p,name:e.target.value}))} />
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>DESCRIPCIÓN</div>
+              <MTextarea value={editServiceForm.description} onChange={e=>setEditServiceForm(p=>({...p,description:e.target.value}))} rows={3} />
+            </div>
+
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>PRECIO (AED)</div>
+                <MInput type="number" min="0" value={editServiceForm.price} onChange={e=>setEditServiceForm(p=>({...p,price:e.target.value}))} />
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>DURACIÓN</div>
+                <MInput value={editServiceForm.duration} onChange={e=>setEditServiceForm(p=>({...p,duration:e.target.value}))} placeholder="ej. 2 horas" />
+              </div>
+            </div>
+
+            <div style={{marginBottom:24}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CATEGORÍA</div>
+              <MInput value={editServiceForm.category} onChange={e=>setEditServiceForm(p=>({...p,category:e.target.value}))} placeholder="ej. Detailing, Lavado, Protección" />
+            </div>
+
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setEditingService(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button onClick={handleSaveEditService} disabled={savingService||!editServiceForm.name.trim()} style={{flex:2,padding:13,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif',opacity:savingService||!editServiceForm.name.trim()?0.6:1}}>
+                {savingService?'GUARDANDO...':'GUARDAR CAMBIOS'}
+              </button>
             </div>
           </div>
         </div>
