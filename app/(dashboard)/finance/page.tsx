@@ -61,7 +61,7 @@ function CatPill({ cat }: { cat: string }) {
   return <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 99, fontSize: 10, fontWeight: 700, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>{cat}</span>
 }
 
-const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
+const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 // â”€â”€â”€ account type badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ACC_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
@@ -94,7 +94,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const [saving,           setSaving]           = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
   const [financeKPIs,      setFinanceKPIs]      = useState({
-    totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: '0.0', vatMTD: 0,
+    totalRevenue: 0, totalExpenses: 0, netProfit: 0, profitMargin: '0.0', vatMTD: 0, vatPagadoMTD: 0, vatNetoMTD: 0,
     fixedCosts: { amount: 0, pct: 0 },
     variableCosts: { amount: 0, pct: 0 },
     operational: { amount: 0, pct: 0 },
@@ -276,7 +276,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
         .lte('date', finMesStr),
       supabase
         .from('purchase_invoices')
-        .select('subtotal')
+        .select('subtotal, tax')
         .eq('status', 'pagada')
         .gte('payment_date', inicioMesStr)
         .lte('payment_date', finMesStr),
@@ -288,6 +288,8 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const vatMTD = (invoicesPagadas ?? []).reduce(
       (sum, inv) => sum + Number(inv.tax ?? 0), 0
     )
+    const vatPagadoMTD = (comprasPagadas ?? []).reduce((sum, p) => sum + Number(p.tax ?? 0), 0)
+    const vatNetoMTD = vatMTD - vatPagadoMTD
     const expensesAmt  = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
     const comprasAmt   = (comprasPagadas ?? []).reduce((sum, p) => sum + Number(p.subtotal ?? 0), 0)
     const totalExpenses = expensesAmt + comprasAmt
@@ -301,7 +303,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const expTotal = totalExpenses || 1
 
     setFinanceKPIs({
-      totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD,
+      totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD, vatPagadoMTD, vatNetoMTD,
       fixedCosts: { amount: fixed, pct: Math.round(fixed / expTotal * 100) },
       variableCosts: { amount: variable, pct: Math.round(variable / expTotal * 100) },
       operational: { amount: operational, pct: Math.round(operational / expTotal * 100) },
@@ -380,19 +382,18 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
 
   const displayed = expFilter === 'All' ? expenses : expenses.filter(e => e.category === expFilter)
   const total = displayed.reduce((s: number, e: any) => s + (e.amount ?? 0), 0)
-  const { totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD, fixedCosts, variableCosts, operational } = financeKPIs
+  const { totalRevenue, totalExpenses, netProfit, profitMargin, vatMTD, vatPagadoMTD, vatNetoMTD, fixedCosts, variableCosts, operational } = financeKPIs
 
   return (
     <>
       {/* â”€â”€ SECCIÓN GASTOS (oculta en tab Facturas) â”€â”€ */}
       {!invoicesOnly && <>
       {/* KPI row 1 */}
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: isMobile ? 8 : 10, marginBottom: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap: isMobile ? 8 : 10, marginBottom: 10 }}>
         {[
-          { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa', sub: `+ AED ${vatMTD.toFixed(0)} VAT` },
+          { dot: '#00d4aa', label: t('totalRevenueMTD'),  value: aed(totalRevenue),   color: '#00d4aa', sub: null },
           { dot: '#ff4f4f', label: t('totalExpensesMTD'), value: aed(totalExpenses),  color: '#ff4f4f', sub: null },
           { dot: '#c9a84c', label: t('netProfitMTD'),     value: aed(netProfit),      color: '#c9a84c', sub: null },
-          { dot: '#06b6d4', label: 'VAT POR PAGAR',       value: aed(vatMTD),         color: '#06b6d4', sub: 'a entregar al FTA' },
         ].map(k => (
           <div key={k.label} style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10, padding: isMobile ? 12 : 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
@@ -403,6 +404,26 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
             {k.sub && <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>{k.sub}</div>}
           </div>
         ))}
+      </div>
+      <div style={{ background: '#141416', border: '1px solid #06b6d430', borderRadius: 16, padding: 20, marginBottom: 10 }}>
+        <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 8 }}>VAT POR PAGAR (FTA)</div>
+        <div style={{ color: '#06b6d4', fontSize: 28, fontWeight: 900, marginBottom: 12 }}>
+          AED {vatNetoMTD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 12, borderTop: '1px solid #2a2a30' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666', fontSize: 11 }}>VAT cobrado (ventas)</span>
+            <span style={{ color: '#22c55e', fontSize: 11, fontWeight: 700 }}>+ AED {vatMTD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span style={{ color: '#666', fontSize: 11 }}>VAT pagado (compras)</span>
+            <span style={{ color: '#ef4444', fontSize: 11, fontWeight: 700 }}>- AED {vatPagadoMTD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: '1px solid #2a2a30' }}>
+            <span style={{ color: '#888', fontSize: 11, fontWeight: 700 }}>Neto a pagar FTA</span>
+            <span style={{ color: '#06b6d4', fontSize: 12, fontWeight: 800 }}>AED {vatNetoMTD.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+          </div>
+        </div>
       </div>
 
       {/* KPI row 2 */}

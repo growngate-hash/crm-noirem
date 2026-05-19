@@ -15,7 +15,7 @@ type Category   = {
 }
 
 let _tid = 0
-const aed = (v: number) => `AED ${(v || 0).toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
+const aed = (v: number) => `AED ${(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 // ─── catalogue ────────────────────────────────────────────────────────────────
 const CATEGORIES: Category[] = [
@@ -677,7 +677,7 @@ export default function ReportsPage() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
           <div>
             <div style={{ fontSize:10, fontWeight:700, color:'#f59e0b', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Cobrar</div>
-            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {Math.round(totalPorCobrar).toLocaleString('en-AE')}</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {(totalPorCobrar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
               {cuentasPorCobrar.length} factura{cuentasPorCobrar.length !== 1 ? 's' : ''} pendiente{cuentasPorCobrar.length !== 1 ? 's' : ''}
             </div>
@@ -696,7 +696,7 @@ export default function ReportsPage() {
                     {inv.invoice_no} · {new Date(inv.created_at).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' })}
                   </div>
                 </div>
-                <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-AE', { maximumFractionDigits:0 })}</div>
+                <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
             ))}
           </div>
@@ -708,7 +708,7 @@ export default function ReportsPage() {
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
           <div>
             <div style={{ fontSize:10, fontWeight:700, color:'#ff4f4f', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Pagar</div>
-            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {Math.round(totalPorPagar).toLocaleString('en-AE')}</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {(totalPorPagar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
             <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
               {cuentasPorPagar.length} factura{cuentasPorPagar.length !== 1 ? 's' : ''} pendiente{cuentasPorPagar.length !== 1 ? 's' : ''} de pago
             </div>
@@ -731,7 +731,7 @@ export default function ReportsPage() {
                       {isOverdue ? ' · VENCIDA' : ''}
                     </div>
                   </div>
-                  <div style={{ color: isOverdue ? '#ff4f4f' : '#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-AE', { maximumFractionDigits:0 })}</div>
+                  <div style={{ color: isOverdue ? '#ff4f4f' : '#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
               )
             })}
