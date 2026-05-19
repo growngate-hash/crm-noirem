@@ -1767,7 +1767,7 @@ function ComprasTab() {
         unit_price:          parseFloat(line.unit_price) || 0,
         discount:            parseFloat(line.discount)   || 0,
         subtotal:            lineSubtotal,
-        account_type:        line.account_id === 'inv-1300' ? 'inventory' : 'expense',
+        account_type:        line.inventory_item_id ? 'inventory' : 'expense',
       })
     }
     showToast('Factura de compra registrada', 'success')
