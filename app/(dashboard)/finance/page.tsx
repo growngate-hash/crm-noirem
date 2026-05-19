@@ -1987,7 +1987,7 @@ function ComprasTab() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#1a1a1e' }}>
-                    {['Descripción','Cuenta','Item Inv.','Cant.','P. Unit.','Desc.','Subtotal',''].map(h => (
+                    {['Producto','Cuenta','Cant.','P. Unit.','Desc.','Subtotal',''].map(h => (
                       <th key={h} style={{ padding: '8px 10px', textAlign: 'left', color: '#555', fontSize: 10, letterSpacing: '1px', fontFamily: 'Outfit,sans-serif', fontWeight: 700 }}>{h}</th>
                     ))}
                   </tr>
@@ -1998,10 +1998,30 @@ function ComprasTab() {
                     return (
                       <tr key={i} style={{ borderTop: '1px solid #1a1a1e' }}>
                         <td style={{ padding: '6px 8px' }}>
-                          <input value={line.description}
-                            onChange={e => updatePurchaseLine(i, 'description', e.target.value)}
-                            placeholder="Producto"
-                            style={{ width: 120, padding: '6px 8px', background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 6, color: '#f0ede8', fontSize: 12, outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <select
+                              value={line.inventory_item_id}
+                              onChange={e => {
+                                const item = inventoryItems.find((it: any) => it.id === e.target.value)
+                                updatePurchaseLine(i, 'inventory_item_id', e.target.value)
+                                updatePurchaseLine(i, 'description', item?.product_name || item?.name || '')
+                              }}
+                              style={{ width: 180, padding: '6px 8px', background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 6, color: '#f0ede8', fontSize: 12, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
+                              <option value="">Seleccionar producto...</option>
+                              {inventoryItems.map((item: any) => (
+                                <option key={item.id} value={item.id}>
+                                  {item.product_name || item.name}{' '}({item.stock || 0} {item.unit || 'u'})
+                                </option>
+                              ))}
+                            </select>
+                            {line.inventory_item_id && (
+                              <input
+                                value={line.description}
+                                onChange={e => updatePurchaseLine(i, 'description', e.target.value)}
+                                placeholder="Descripción adicional"
+                                style={{ width: 180, padding: '4px 8px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 6, color: '#888', fontSize: 11, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                            )}
+                          </div>
                         </td>
                         <td style={{ padding: '6px 8px' }}>
                           <select value={line.account_id}
@@ -2016,14 +2036,7 @@ function ComprasTab() {
                             </optgroup>
                           </select>
                         </td>
-                        <td style={{ padding: '6px 8px' }}>
-                          <select value={line.inventory_item_id}
-                            onChange={e => updatePurchaseLine(i, 'inventory_item_id', e.target.value)}
-                            style={{ width: 120, padding: '6px 8px', background: '#1a1a1e', border: '1px solid #2a2a30', borderRadius: 6, color: '#f0ede8', fontSize: 11, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
-                            <option value="">Sin item</option>
-                            {inventoryItems.map((item: any) => <option key={item.id} value={item.id}>{item.product_name || item.name}</option>)}
-                          </select>
-                        </td>
+                        
                         <td style={{ padding: '6px 8px' }}>
                           <input type="number" min="1"
                             value={line.quantity}
