@@ -271,23 +271,22 @@ export default function DashboardPage() {
       bookingsRecientes = data ?? []
     } catch { /* bookings schema may differ */ }
 
-    // Expenses — sequential call identical to finance module so it never fails silently
-    // Try this month first; if empty/error, fall back to all-time
     let totalExpenses = 0
     {
-      const { data: gastosMes, error: errMes } = await supabase
-        .from('expenses')
-        .select('amount')
-        .gte('date', inicioMesStr)
-        .lte('date', finMesStr)
-
+      const [{ data: gastosMes, error: errMes }, { data: comprasMes }] = await Promise.all([
+        supabase.from('expenses').select('amount').gte('date', inicioMesStr).lte('date', finMesStr),
+        supabase.from('purchase_invoices').select('subtotal').eq('status', 'pagada')
+          .gte('payment_date', inicioMesStr).lte('payment_date', finMesStr),
+      ])
+      let expensesAmt = 0
       if (!errMes && gastosMes && gastosMes.length > 0) {
-        totalExpenses = gastosMes.reduce((s, e) => s + (Number(e.amount) || 0), 0)
+        expensesAmt = gastosMes.reduce((s, e) => s + (Number(e.amount) || 0), 0)
       } else {
-        // Fallback: all-time (covers cases where date filter returns empty)
         const { data: gastosAll } = await supabase.from('expenses').select('amount')
-        totalExpenses = (gastosAll ?? []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
+        expensesAmt = (gastosAll ?? []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
       }
+      const comprasAmt = (comprasMes ?? []).reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
+      totalExpenses = expensesAmt + comprasAmt
     }
 
     const calcRevenue = (rows: any[]) =>

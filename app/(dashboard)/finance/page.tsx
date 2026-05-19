@@ -262,7 +262,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const inicioMesStr = inicioMes.toISOString().split('T')[0]
     const finMesStr = finMes.toISOString().split('T')[0]
 
-    const [{ data: invoicesPagadas }, { data: gastos }] = await Promise.all([
+    const [{ data: invoicesPagadas }, { data: gastos }, { data: comprasPagadas }] = await Promise.all([
       supabase
         .from('invoices')
         .select('subtotal, tax, total')
@@ -274,6 +274,12 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
         .select('amount, category')
         .gte('date', inicioMesStr)
         .lte('date', finMesStr),
+      supabase
+        .from('purchase_invoices')
+        .select('subtotal')
+        .eq('status', 'pagada')
+        .gte('payment_date', inicioMesStr)
+        .lte('payment_date', finMesStr),
     ])
 
     const totalRevenue = (invoicesPagadas ?? []).reduce(
@@ -282,7 +288,9 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     const vatMTD = (invoicesPagadas ?? []).reduce(
       (sum, inv) => sum + Number(inv.tax ?? 0), 0
     )
-    const totalExpenses = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
+    const expensesAmt  = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
+    const comprasAmt   = (comprasPagadas ?? []).reduce((sum, p) => sum + Number(p.subtotal ?? 0), 0)
+    const totalExpenses = expensesAmt + comprasAmt
     const netProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0
       ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0'
