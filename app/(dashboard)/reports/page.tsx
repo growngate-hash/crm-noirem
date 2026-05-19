@@ -594,6 +594,8 @@ export default function ReportsPage() {
   const [toasts,          setToasts]          = useState<Toast[]>([])
   const [cuentasPorCobrar, setCuentasPorCobrar] = useState<any[]>([])
   const [totalPorCobrar,   setTotalPorCobrar]   = useState(0)
+  const [cuentasPorPagar,  setCuentasPorPagar]  = useState<any[]>([])
+  const [totalPorPagar,    setTotalPorPagar]    = useState(0)
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -612,6 +614,16 @@ export default function ReportsPage() {
         const rows = data ?? []
         setCuentasPorCobrar(rows)
         setTotalPorCobrar(rows.reduce((s, inv) => s + (Number(inv.total) || 0), 0))
+      })
+    createClient()
+      .from('purchase_invoices')
+      .select('id, invoice_number, total, issue_date, due_date, supplier_name, contacts(name)')
+      .in('status', ['pendiente', 'vencida'])
+      .order('due_date', { ascending: true })
+      .then(({ data }) => {
+        const rows = data ?? []
+        setCuentasPorPagar(rows)
+        setTotalPorPagar(rows.reduce((s, inv) => s + (Number(inv.total) || 0), 0))
       })
   }, [])
 
@@ -687,6 +699,42 @@ export default function ReportsPage() {
                 <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-AE', { maximumFractionDigits:0 })}</div>
               </div>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Cuentas por Pagar */}
+      <div style={{ background:'#141416', border:'1px solid rgba(255,79,79,0.25)', borderRadius:12, padding:20, marginTop:12, marginBottom: activeCat ? 0 : 0 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:10, fontWeight:700, color:'#ff4f4f', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Pagar</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {Math.round(totalPorPagar).toLocaleString('en-AE')}</div>
+            <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
+              {cuentasPorPagar.length} factura{cuentasPorPagar.length !== 1 ? 's' : ''} pendiente{cuentasPorPagar.length !== 1 ? 's' : ''} de pago
+            </div>
+          </div>
+          <div style={{ background:'rgba(255,79,79,0.1)', border:'1px solid rgba(255,79,79,0.25)', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
+        </div>
+        {cuentasPorPagar.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#888580' }}>✅ No hay facturas de compra pendientes</div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {cuentasPorPagar.map((inv: any) => {
+              const isOverdue = inv.due_date && new Date(inv.due_date) < new Date()
+              return (
+                <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background: isOverdue ? 'rgba(255,79,79,0.04)' : 'rgba(255,255,255,0.02)', border:`1px solid ${isOverdue ? 'rgba(255,79,79,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius:8 }}>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{inv.contacts?.name ?? inv.supplier_name ?? '—'}</div>
+                    <div style={{ fontSize:11, color: isOverdue ? '#ff4f4f' : '#888580', marginTop:2 }}>
+                      {inv.invoice_number}
+                      {inv.due_date ? ` · vence ${new Date(inv.due_date + 'T12:00:00').toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' })}` : ''}
+                      {isOverdue ? ' · VENCIDA' : ''}
+                    </div>
+                  </div>
+                  <div style={{ color: isOverdue ? '#ff4f4f' : '#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-AE', { maximumFractionDigits:0 })}</div>
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
