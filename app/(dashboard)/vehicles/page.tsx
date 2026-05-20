@@ -275,89 +275,144 @@ function VehicleAgenda({ bookings }: { bookings: any[] }) {
 }
 
 // ─── vehicle card ─────────────────────────────────────────────────────────────
-function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory }: {
+function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory, onProgressUpdate }: {
   v: any; alertCount: number; agenda: any[];
-  onEdit: ()=>void; onClear: ()=>void; onAssign: ()=>void; onInventory: ()=>void
+  onEdit: ()=>void; onClear: ()=>void; onAssign: ()=>void; onInventory: ()=>void;
+  onProgressUpdate: (bookingId: string, pct: number) => void;
 }) {
-  const [confirmClear,setConfirmClear] = useState(false)
-  const enRuta = v.status === 'en_ruta'
-  const hasAlert = alertCount > 0
+  const [confirmClear, setConfirmClear] = useState(false)
+
+  const booking = v.currentBooking ?? null
+  const isActive = booking !== null
+
+  const vehicleStatus = !isActive ? 'disponible'
+    : booking.status === 'in_progress' ? 'en_ruta'
+    : booking.status === 'confirmed'   ? 'asignado'
+    : 'pendiente'
+
+  const statusConfig: Record<string, {label: string; color: string; bg: string}> = {
+    disponible: { label: 'DISPONIBLE', color: '#22c55e', bg: '#22c55e20' },
+    en_ruta:    { label: 'EN RUTA',    color: '#f59e0b', bg: '#f59e0b20' },
+    asignado:   { label: 'ASIGNADO',   color: '#3b82f6', bg: '#3b82f620' },
+    pendiente:  { label: 'PENDIENTE',  color: '#888',    bg: '#88888820' },
+  }
+  const sc = statusConfig[vehicleStatus]
+  const progress = booking?.progress ?? 0
 
   return (
-    <div style={{position:'relative',background:'#141416',border:`1px solid ${hasAlert?'rgba(255,79,79,0.5)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:16,width:224,flexShrink:0,display:'flex',flexDirection:'column',gap:10}}>
+    <div style={{position:'relative',background:'#1a1a1f',border:`1px solid ${isActive?'#c9a84c40':'#2a2a30'}`,borderRadius:16,padding:20,width:260,flexShrink:0,transition:'border-color 0.2s'}}>
 
-      {/* top action icons */}
-      <div style={{position:'absolute',top:12,right:12,display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
-        <IconBtn onClick={onEdit}><Pencil size={10}/></IconBtn>
-        <IconBtn danger onClick={()=>setConfirmClear(true)}><X size={10}/></IconBtn>
+      {/* Header: placa + estado + acciones */}
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
+        <div>
+          <div style={{color:'#fff',fontSize:16,fontWeight:800,marginBottom:4}}>
+            {v.license_plate || v.vin || v.name || 'MÓVIL'}
+          </div>
+          <div style={{color:'#666',fontSize:12}}>
+            {[v.make, v.model, v.year].filter(Boolean).join(' ') || v.name || ''}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
+          <span style={{padding:'4px 10px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'1px',background:sc.bg,color:sc.color,border:`1px solid ${sc.color}40`,whiteSpace:'nowrap'}}>
+            {sc.label}
+          </span>
+          <div style={{display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
+            <IconBtn onClick={onEdit}><Pencil size={10}/></IconBtn>
+            <IconBtn danger onClick={()=>setConfirmClear(true)}><X size={10}/></IconBtn>
+          </div>
+        </div>
       </div>
 
-      {/* name + badge */}
-      <div style={{paddingRight:60}}>
-        <div style={{fontSize:15,fontWeight:700,color:'#f0ede8',lineHeight:1.3,marginBottom:6}}>{v.name}</div>
-        <StatusBadge status={v.status}/>
-      </div>
-
-      {/* plate */}
-      <div style={{fontSize:12,fontFamily:'monospace',color:'#c9a84c',letterSpacing:'0.05em'}}>{v.license_plate||'—'}</div>
-
-      {/* stock alert badge */}
-      {hasAlert && (
-        <div style={{display:'flex',alignItems:'center',gap:6,padding:'4px 10px',borderRadius:6,background:'rgba(255,79,79,0.1)',border:'1px solid rgba(255,79,79,0.3)'}}>
-          <span style={{fontSize:11}}>⚠️</span>
-          <span style={{fontSize:11,color:'#ff4f4f',fontWeight:600}}>Stock Bajo · {alertCount} item{alertCount>1?'s':''}</span>
+      {/* Alerta stock bajo */}
+      {alertCount > 0 && (
+        <div style={{background:'#f59e0b15',border:'1px solid #f59e0b40',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
+          <span style={{color:'#f59e0b',fontSize:13}}>⚠</span>
+          <span style={{color:'#f59e0b',fontSize:12,fontWeight:600}}>Stock Bajo · {alertCount} item{alertCount !== 1 ? 's' : ''}</span>
         </div>
       )}
 
-      {enRuta ? (
-        <>
-          <div>
-            <div style={{fontSize:11,color:'#888580',marginBottom:2}}>Service</div>
-            <div style={{fontSize:14,fontWeight:600,color:'#f0ede8'}}>{v.service||'—'}</div>
-          </div>
-          <div>
-            <div style={{fontSize:11,color:'#888580',marginBottom:2}}>Client</div>
-            <div style={{fontSize:13,fontWeight:600,color:'#f0ede8'}}>{v.client_name||'—'}</div>
-            {v.client_address && <div style={{fontSize:11,color:'#888580',marginTop:2}}>📍 {v.client_address}</div>}
-          </div>
-          <div>
-            <div style={{display:'flex',justifyContent:'space-between',marginBottom:4}}>
-              <span style={{fontSize:11,color:'#888580'}}>Progress</span>
-              <span style={{fontSize:11,color:'#c9a84c'}}>{v.progress??0}%</span>
+      {/* Info del servicio activo */}
+      {isActive ? (
+        <div style={{background:'#0d0d0f',borderRadius:10,padding:14,marginBottom:12}}>
+          {booking.services?.name && (
+            <div style={{marginBottom:10}}>
+              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>SERVICIO</div>
+              <div style={{color:'#fff',fontSize:14,fontWeight:700}}>{booking.services.name}</div>
             </div>
-            <ProgBar pct={v.progress??0}/>
-          </div>
-        </>
+          )}
+          {booking.contacts?.name && (
+            <div style={{marginBottom:booking.technician||booking.scheduled_at?10:0}}>
+              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>CLIENTE</div>
+              <div style={{color:'#fff',fontSize:14,fontWeight:600}}>{booking.contacts.name}</div>
+            </div>
+          )}
+          {booking.technician && (
+            <div style={{marginBottom:booking.scheduled_at?10:0}}>
+              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>TÉCNICO</div>
+              <div style={{color:'#888',fontSize:13}}>{booking.technician}</div>
+            </div>
+          )}
+          {booking.scheduled_at && (
+            <div>
+              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>PROGRAMADO</div>
+              <div style={{color:'#888',fontSize:12}}>
+                {new Date(booking.scheduled_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+              </div>
+            </div>
+          )}
+        </div>
       ) : (
-        <>
-          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:'8px 0'}}>
-            <span style={{fontSize:28,filter:'grayscale(1) opacity(0.4)'}}>🚐</span>
-            <span style={{fontSize:12,color:'#888580'}}>Unit Available</span>
-          </div>
-          <button onClick={onAssign} style={{width:'100%',padding:10,borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
-            + Assign Job
-          </button>
-        </>
+        <div style={{background:'#0d0d0f',borderRadius:10,padding:20,marginBottom:12,textAlign:'center'}}>
+          <div style={{color:'#22c55e',fontSize:13,fontWeight:600}}>Sin reservas activas</div>
+          <div style={{color:'#555',fontSize:11,marginTop:4}}>Disponible para asignar</div>
+        </div>
       )}
 
-      {/* agenda: today + tomorrow bookings */}
+      {/* Barra de progreso funcional */}
+      {isActive && (
+        <div style={{marginBottom:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
+            <span style={{color:'#666',fontSize:11,fontWeight:700}}>PROGRESO DEL SERVICIO</span>
+            <span style={{color:'#c9a84c',fontSize:12,fontWeight:800}}>{progress}%</span>
+          </div>
+          <div style={{height:6,background:'#2a2a30',borderRadius:3,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${progress}%`,background:progress>=100?'#22c55e':progress>=50?'#c9a84c':'#3b82f6',borderRadius:3,transition:'width 0.5s ease'}}/>
+          </div>
+          <div style={{display:'flex',gap:6,marginTop:8}}>
+            {[0,25,50,75,100].map(pct=>(
+              <button key={pct} onClick={()=>onProgressUpdate(booking.id, pct)}
+                style={{flex:1,padding:'5px 0',background:progress===pct?'#c9a84c':'#0d0d0f',border:`1px solid ${progress===pct?'#c9a84c':'#2a2a30'}`,borderRadius:6,color:progress===pct?'#0d0d0f':'#666',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                {pct}%
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Precio */}
+      {isActive && booking.price && (
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,padding:'8px 12px',background:'#c9a84c10',borderRadius:8}}>
+          <span style={{color:'#666',fontSize:12}}>Valor del servicio</span>
+          <span style={{color:'#c9a84c',fontWeight:800,fontSize:15}}>AED {parseFloat(booking.price).toFixed(2)}</span>
+        </div>
+      )}
+
+      {/* Agenda: hoy + mañana */}
       <VehicleAgenda bookings={agenda}/>
 
-      {/* 📦 inventory button */}
-      <div style={{position:'relative'}}>
-        {hasAlert && (
-          <span style={{position:'absolute',top:-6,left:-4,background:'#ff4f4f',color:'#fff',fontSize:9,fontWeight:800,borderRadius:99,padding:'1px 5px',zIndex:1,lineHeight:'14px'}}>
-            {alertCount}
-          </span>
+      {/* Botón inventario */}
+      <div style={{position:'relative',marginTop:8}}>
+        {alertCount > 0 && (
+          <span style={{position:'absolute',top:-6,left:-4,background:'#ff4f4f',color:'#fff',fontSize:9,fontWeight:800,borderRadius:99,padding:'1px 5px',zIndex:1,lineHeight:'14px'}}>{alertCount}</span>
         )}
         <button onClick={onInventory} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'6px 12px',borderRadius:8,background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',color:'#c9a84c',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
           <Package size={12}/> Inventario
         </button>
       </div>
 
-      {/* clear confirmation overlay */}
+      {/* Clear confirmation overlay */}
       {confirmClear && (
-        <div style={{position:'absolute',inset:0,background:'rgba(13,13,15,0.94)',borderRadius:12,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:16,zIndex:10}}>
+        <div style={{position:'absolute',inset:0,background:'rgba(13,13,15,0.94)',borderRadius:16,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:16,zIndex:10}}>
           <span style={{fontSize:12,color:'#f0ede8',textAlign:'center',lineHeight:1.6}}>¿Marcar este vehículo como disponible?</span>
           <div style={{display:'flex',gap:8}}>
             <button onClick={()=>setConfirmClear(false)} style={{padding:'7px 16px',borderRadius:7,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
@@ -451,30 +506,34 @@ export default function VehiclesPage() {
   async function fetchVehicles() {
     setLoading(true)
     const sb = createClient()
-    const { data: existing } = await sb.from('vehicles').select('*').order('created_at',{ascending:true})
-    if (existing && existing.length > 0) {
-      setVehicles(existing); setLoading(false)
-      fetchAlertCounts(existing.map(v=>v.id))
+    const [{ data: existing }, { data: allVehicleInv }] = await Promise.all([
+      sb.from('vehicles')
+        .select(`*, active_booking:bookings(id, status, scheduled_at, progress, price, technician, contacts(name), services(name))`)
+        .order('created_at', {ascending: true}),
+      sb.from('vehicle_inventory').select('vehicle_id, stock_current, stock_minimum'),
+    ])
+
+    if (!existing || existing.length === 0) {
+      const { data: seeded } = await sb.from('vehicles').insert(SEED_VEHICLES).select()
+      setVehicles(seeded ?? [])
+      setLoading(false)
       return
     }
-    const { data: seeded } = await sb.from('vehicles').insert(SEED_VEHICLES).select()
-    const list = seeded ?? []
-    setVehicles(list); setLoading(false)
-    if (list.length > 0) fetchAlertCounts(list.map((v:any)=>v.id))
-  }
 
-  async function fetchAlertCounts(vehicleIds: string[]) {
-    if (!vehicleIds.length) return
-    const { data } = await createClient()
-      .from('vehicle_inventory')
-      .select('vehicle_id, stock_current, stock_minimum')
-    if (!data) return
-    const counts: Record<string,number> = {}
-    data.forEach(item => {
-      if ((item.stock_current??0) < (item.stock_minimum??0)) {
-        counts[item.vehicle_id] = (counts[item.vehicle_id]??0) + 1
-      }
+    const vehiclesWithData = existing.map((v: any) => {
+      const currentBooking = Array.isArray(v.active_booking)
+        ? v.active_booking.find((b: any) => ['confirmed', 'in_progress', 'pending'].includes(b.status)) || null
+        : null
+      const lowStockCount = (allVehicleInv ?? []).filter(vi =>
+        vi.vehicle_id === v.id && (vi.stock_current ?? 0) <= (vi.stock_minimum ?? 0)
+      ).length
+      return { ...v, currentBooking, lowStockCount }
     })
+
+    setVehicles(vehiclesWithData)
+    setLoading(false)
+    const counts: Record<string,number> = {}
+    vehiclesWithData.forEach((v: any) => { counts[v.id] = v.lowStockCount })
     setVehAlerts(counts)
   }
 
@@ -570,8 +629,8 @@ export default function VehiclesPage() {
     if (!invVeh) return
     const { data } = await createClient().from('vehicle_inventory').select('*').eq('vehicle_id', invVeh.id).order('created_at',{ascending:true})
     setVehInventory(data ?? [])
-    // refresh alert counts
-    fetchAlertCounts(vehicles.map(v=>v.id))
+    // refresh alert counts via full refetch
+    fetchVehicles()
   }
 
   async function loadStandardInventory() {
@@ -749,12 +808,20 @@ export default function VehiclesPage() {
         <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:8}}>
           {vehicles.map(v=>(
             <VehicleCard key={v.id} v={v}
-              alertCount={vehAlerts[v.id]??0}
+              alertCount={v.lowStockCount ?? vehAlerts[v.id] ?? 0}
               agenda={vehBookings[v.id]??[]}
               onEdit={()=>openEdit(v)}
               onClear={()=>clearVehicle(v)}
               onAssign={()=>{ setAssignVeh(v); setAssignForm({...EMPTY_ASSIGN}) }}
               onInventory={()=>openInventory(v)}
+              onProgressUpdate={async (bookingId, pct) => {
+                await createClient().from('bookings').update({
+                  progress: pct,
+                  status: pct === 100 ? 'completed' : pct > 0 ? 'in_progress' : 'confirmed',
+                  updated_at: new Date().toISOString(),
+                }).eq('id', bookingId)
+                fetchVehicles()
+              }}
             />
           ))}
         </div>
