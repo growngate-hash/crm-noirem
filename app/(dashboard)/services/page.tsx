@@ -241,6 +241,9 @@ export default function ServicesPage() {
   const [editServiceForm, setEditServiceForm] = useState({ name:'', description:'', price:'', duration:'', category:'', is_active:true })
   const [savingService,   setSavingService]   = useState(false)
   const [confirmToggle,   setConfirmToggle]   = useState<any|null>(null)
+  const [serviceInventory,  setServiceInventory]  = useState<any[]>([])
+  const [loadingServiceInv, setLoadingServiceInv] = useState(false)
+  const [insumoSelectVal,   setInsumoSelectVal]   = useState('')
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -324,7 +327,7 @@ export default function ServicesPage() {
     setLoadingS(false)
   }
 
-  function handleEditService(service: any) {
+  async function handleEditService(service: any) {
     setEditingService(service)
     setEditServiceForm({
       name:        service.name        || '',
@@ -334,6 +337,14 @@ export default function ServicesPage() {
       category:    service.category    || '',
       is_active:   service.is_active   !== false,
     })
+    setInsumoSelectVal('')
+    setLoadingServiceInv(true)
+    const { data } = await createClient()
+      .from('service_inventory')
+      .select('*, item:inventory_item_id(id, name, stock_qty, unit)')
+      .eq('service_id', service.id)
+    setServiceInventory(data ?? [])
+    setLoadingServiceInv(false)
   }
 
   async function handleSaveEditService() {
@@ -367,6 +378,35 @@ export default function ServicesPage() {
     addToast(newStatus ? 'Servicio activado' : 'Servicio desactivado', 'success')
     setConfirmToggle(null)
     fetchServices()
+  }
+
+  async function handleAddServiceInsumo(inventoryItemId: string) {
+    if (!inventoryItemId) return
+    if (serviceInventory.find(s => s.inventory_item_id === inventoryItemId)) {
+      addToast('Este insumo ya está asignado', 'error'); return
+    }
+    const item = inventory.find(i => i.id === inventoryItemId)
+    const { data, error } = await createClient()
+      .from('service_inventory')
+      .insert({ service_id: editingService.id, inventory_item_id: inventoryItemId, quantity: 1, unit: item?.unit || 'u' })
+      .select('*, item:inventory_item_id(id, name, stock_qty, unit)')
+      .single()
+    if (error) { addToast('Error: ' + error.message, 'error'); return }
+    setServiceInventory(prev => [...prev, data])
+    setInsumoSelectVal('')
+    addToast('Insumo agregado', 'success')
+  }
+
+  async function handleUpdateInsumoQty(insumoId: string, quantity: number) {
+    if (quantity <= 0) return
+    await createClient().from('service_inventory').update({ quantity }).eq('id', insumoId)
+    setServiceInventory(prev => prev.map(s => s.id === insumoId ? { ...s, quantity } : s))
+  }
+
+  async function handleRemoveInsumo(insumoId: string) {
+    await createClient().from('service_inventory').delete().eq('id', insumoId)
+    setServiceInventory(prev => prev.filter(s => s.id !== insumoId))
+    addToast('Insumo eliminado', 'success')
   }
 
   useEffect(()=>{ fetchServices(); fetchInventory() },[])
@@ -1058,6 +1098,75 @@ export default function ServicesPage() {
               <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CATEGORÍA</div>
               <MInput value={editServiceForm.category} onChange={e=>setEditServiceForm(p=>({...p,category:e.target.value}))} placeholder="ej. Detailing, Lavado, Protección" />
             </div>
+
+            {/* ─── Insumos y Materiales ─── */}
+            <div style={{display:'flex',alignItems:'center',gap:12,margin:'24px 0 16px'}}>
+              <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px'}}>INSUMOS Y MATERIALES</div>
+              <div style={{flex:1,height:1,background:'#2a2a30'}}/>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>AGREGAR INSUMO</div>
+              <div style={{display:'flex',gap:8}}>
+                <select
+                  value={insumoSelectVal}
+                  onChange={e=>setInsumoSelectVal(e.target.value)}
+                  style={{flex:1,padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:insumoSelectVal?'#fff':'#555',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}
+                >
+                  <option value="">Seleccionar item del inventario...</option>
+                  {inventory.filter(item=>!serviceInventory.find(s=>s.inventory_item_id===item.id)).map(item=>(
+                    <option key={item.id} value={item.id}>{item.name} — Stock: {item.stock_qty||0} {item.unit||'u'}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={()=>{ if(insumoSelectVal) handleAddServiceInsumo(insumoSelectVal) }}
+                  style={{padding:'10px 16px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}
+                >
+                  + AGREGAR
+                </button>
+              </div>
+            </div>
+
+            {loadingServiceInv ? (
+              <div style={{color:'#666',fontSize:13,textAlign:'center',padding:16}}>Cargando insumos...</div>
+            ) : serviceInventory.length === 0 ? (
+              <div style={{background:'#0d0d0f',border:'1px dashed #2a2a30',borderRadius:8,padding:20,textAlign:'center',color:'#555',fontSize:12,marginBottom:24}}>
+                No hay insumos asignados a este servicio
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:24}}>
+                {serviceInventory.map(insumo=>(
+                  <div key={insumo.id} style={{display:'flex',alignItems:'center',gap:10,background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,padding:'10px 14px'}}>
+                    <div style={{width:32,height:32,borderRadius:6,background:'#c9a84c20',border:'1px solid #c9a84c40',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                      </svg>
+                    </div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{color:'#fff',fontSize:13,fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{insumo.item?.name||'—'}</div>
+                      <div style={{color:'#555',fontSize:11,marginTop:2}}>Stock disponible: {insumo.item?.stock_qty||0} {insumo.item?.unit||'u'}</div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+                      <span style={{color:'#666',fontSize:11}}>Cant:</span>
+                      <input
+                        type="number" min="0.1" step="0.1"
+                        value={insumo.quantity}
+                        onChange={e=>handleUpdateInsumoQty(insumo.id, parseFloat(e.target.value)||1)}
+                        style={{width:60,padding:'4px 8px',background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:6,color:'#c9a84c',fontSize:13,fontWeight:700,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
+                      />
+                      <span style={{color:'#666',fontSize:11}}>{insumo.item?.unit||'u'}</span>
+                    </div>
+                    <button onClick={()=>handleRemoveInsumo(insumo.id)} style={{background:'transparent',border:'1px solid #ef444430',borderRadius:6,color:'#ef4444',fontSize:11,fontWeight:700,padding:'4px 10px',cursor:'pointer',flexShrink:0,fontFamily:'Outfit,sans-serif'}}>
+                      QUITAR
+                    </button>
+                  </div>
+                ))}
+                <div style={{background:'#1a1a1f',borderRadius:8,padding:'10px 14px',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:4}}>
+                  <span style={{color:'#666',fontSize:12}}>Total insumos asignados</span>
+                  <span style={{color:'#c9a84c',fontWeight:700,fontSize:13}}>{serviceInventory.length} item{serviceInventory.length!==1?'s':''}</span>
+                </div>
+              </div>
+            )}
 
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setEditingService(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
