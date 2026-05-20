@@ -239,6 +239,12 @@ export default function ServicesPage() {
   const [editingItem,  setEditingItem]  = useState<any|null>(null)
   const [editItemForm, setEditItemForm] = useState({ name:'', brand:'', category:'', stock_qty:0 as any, min_stock:0 as any, unit:'', unit_price:0 as any, sku:'', supplier:'' })
 
+  // despacho a móvil
+  const [vehicles,     setVehicles]     = useState<any[]>([])
+  const [showDespacho, setShowDespacho] = useState(false)
+  const [despachoItem, setDespachoItem] = useState<any|null>(null)
+  const [despachoForm, setDespachoForm] = useState({ vehicle_id:'', quantity:1 as any })
+
   const [toasts, setToasts] = useState<Toast[]>([])
   const [editingService,  setEditingService]  = useState<any|null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name:'', description:'', price:'', duration:'', category:'', is_active:true })
@@ -266,6 +272,7 @@ export default function ServicesPage() {
   useEffect(()=>{
     function onKey(e: KeyboardEvent){
       if(e.key!=='Escape') return
+      if(showDespacho) { setShowDespacho(false); return }
       if(editingItem)  { setEditingItem(null); return }
       if(adjustItem)   { setAdjustItem(null); return }
       if(editMat)      { closeEditMat();   return }
@@ -275,7 +282,7 @@ export default function ServicesPage() {
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem])
+  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem,showDespacho])
 
   async function handleAdjustStock() {
     const amount = Number(adjustAmount)
@@ -336,6 +343,38 @@ export default function ServicesPage() {
   }
 
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
+
+  useEffect(()=>{
+    createClient().from('vehicles').select('id, make, model, license_plate, vin').order('make').then(({data})=>setVehicles(data??[]))
+  },[])
+
+  async function handleDespachar() {
+    if (!despachoForm.vehicle_id || !despachoForm.quantity) { addToast('Completa todos los campos', 'error'); return }
+    const qty = parseFloat(despachoForm.quantity)
+    if (qty <= 0) { addToast('Cantidad inválida', 'error'); return }
+    if (qty > (despachoItem!.stock_qty ?? 0)) { addToast('Stock insuficiente en bodega', 'error'); return }
+    const sb = createClient()
+    const { data: existing } = await sb.from('vehicle_inventory').select('*')
+      .eq('vehicle_id', despachoForm.vehicle_id).eq('inventory_item_id', despachoItem!.id).single()
+    if (existing) {
+      await sb.from('vehicle_inventory').update({ stock_current: existing.stock_current + qty, updated_at: new Date().toISOString() }).eq('id', existing.id)
+    } else {
+      await sb.from('vehicle_inventory').insert({
+        vehicle_id:        despachoForm.vehicle_id,
+        inventory_item_id: despachoItem!.id,
+        item_name:         despachoItem!.name,
+        category:          despachoItem!.category || '',
+        stock_current:     qty,
+        stock_minimum:     despachoItem!.min_stock || 0,
+        unit:              despachoItem!.unit || 'u',
+      })
+    }
+    await sb.from('inventory_items').update({ stock_qty: despachoItem!.stock_qty - qty, updated_at: new Date().toISOString() }).eq('id', despachoItem!.id)
+    addToast(`${qty} ${despachoItem!.unit || 'u'} despachados al móvil`, 'success')
+    setShowDespacho(false)
+    setDespachoItem(null)
+    fetchInventory()
+  }
 
   // Fetch services; if table is empty, seed with real rows and set state from returned UUIDs
   async function fetchServices() {
@@ -691,6 +730,12 @@ export default function ServicesPage() {
                   >
                     EDITAR
                   </button>
+                  <button
+                    onClick={()=>{ setDespachoItem(item); setDespachoForm({vehicle_id:'',quantity:1}); setShowDespacho(true) }}
+                    style={{width:'100%',marginTop:8,padding:'9px',background:'#3b82f620',border:'1px solid #3b82f640',borderRadius:8,color:'#3b82f6',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  >
+                    DESPACHAR AL MÓVIL
+                  </button>
                   <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid #2a2a30',marginTop:8}}>
                     <div style={{textAlign:'center'}}>
                       <div style={{color:'#666',fontSize:9,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>COSTO UNIT.</div>
@@ -726,7 +771,7 @@ export default function ServicesPage() {
             <table style={{width:'100%',borderCollapse:'collapse',minWidth:720}}>
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                  {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste','Editar'].map(h=>(
+                  {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste','Editar','Despacho'].map(h=>(
                     <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
@@ -780,6 +825,14 @@ export default function ServicesPage() {
                           EDITAR
                         </button>
                       </td>
+                      <td style={{padding:'12px 14px'}}>
+                        <button
+                          onClick={()=>{ setDespachoItem(item); setDespachoForm({vehicle_id:'',quantity:1}); setShowDespacho(true) }}
+                          style={{padding:'5px 10px',background:'#3b82f620',border:'1px solid #3b82f640',borderRadius:6,color:'#3b82f6',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                        >
+                          DESPACHAR
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
@@ -795,6 +848,7 @@ export default function ServicesPage() {
                       AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
                     </span>
                   </td>
+                  <td/>
                   <td/>
                   <td/>
                 </tr>
@@ -1494,6 +1548,61 @@ export default function ServicesPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Despacho a Móvil ── */}
+      {showDespacho && despachoItem && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
+          onClick={()=>setShowDespacho(false)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:420}}>
+            <div style={{color:'#3b82f6',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>DESPACHO DE BODEGA</div>
+            <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:4}}>{despachoItem.name}</div>
+            <div style={{color:'#666',fontSize:13,marginBottom:24}}>
+              Stock bodega: <strong style={{color:'#fff'}}>{despachoItem.stock_qty ?? 0}</strong> {despachoItem.unit || 'u'}
+            </div>
+
+            {/* Seleccionar móvil */}
+            <div style={{marginBottom:16}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>DESPACHAR A</div>
+              <select value={despachoForm.vehicle_id} onChange={e=>setDespachoForm(p=>({...p,vehicle_id:e.target.value}))}
+                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:despachoForm.vehicle_id?'#fff':'#666',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}>
+                <option value="">Seleccionar móvil...</option>
+                {vehicles.map((v:any)=>(
+                  <option key={v.id} value={v.id}>{v.license_plate||v.vin} — {v.make} {v.model}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cantidad */}
+            <div style={{marginBottom:24}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CANTIDAD A DESPACHAR</div>
+              <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                {[1,5,10].map(n=>(
+                  <button key={n} onClick={()=>setDespachoForm(p=>({...p,quantity:n}))}
+                    style={{padding:'8px 16px',background:despachoForm.quantity===n?'#3b82f6':'#0d0d0f',border:`1px solid ${despachoForm.quantity===n?'#3b82f6':'#2a2a30'}`,borderRadius:6,color:despachoForm.quantity===n?'#fff':'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    {n}
+                  </button>
+                ))}
+                <input type="number" min="1" value={despachoForm.quantity}
+                  onChange={e=>setDespachoForm(p=>({...p,quantity:parseFloat(e.target.value)||1}))}
+                  style={{flex:1,padding:'8px 12px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#fff',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}/>
+                <span style={{color:'#666',fontSize:13}}>{despachoItem.unit||'u'}</span>
+              </div>
+            </div>
+
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setShowDespacho(false)}
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button onClick={handleDespachar} disabled={!despachoForm.vehicle_id}
+                style={{flex:2,padding:13,background:'#3b82f6',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',opacity:!despachoForm.vehicle_id?0.5:1,fontFamily:'Outfit,sans-serif'}}>
+                DESPACHAR AL MÓVIL
+              </button>
+            </div>
           </div>
         </div>
       )}

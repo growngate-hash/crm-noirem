@@ -434,8 +434,10 @@ export default function VehiclesPage() {
   const [editInvItem,   setEditInvItem]   = useState<any|null>(null)
   const [editInvForm,   setEditInvForm]   = useState<any>({})
   const [savingInvEdit, setSavingInvEdit] = useState(false)
-  const [allInvItems,   setAllInvItems]   = useState<any[]>([])  // from inventory_items
-  const [svcMaterials,  setSvcMaterials]  = useState<any[]>([])  // for possible services
+  const [allInvItems,      setAllInvItems]      = useState<any[]>([])
+  const [serviceInvMap,    setServiceInvMap]    = useState<Record<string, any[]>>({})
+  const [activeServices,   setActiveServices]   = useState<any[]>([])
+  const [availableServices,setAvailableServices]= useState<any[]>([])
 
   const [toasts, setToasts] = useState<Toast[]>([])
   const toastId = useRef(0)
@@ -508,7 +510,12 @@ export default function VehiclesPage() {
     sb.from('contacts').select('id, name').then(({data})=>setContacts(data??[]))
     sb.from('services').select('id, name').then(({data})=>setServices(data??[]))
     sb.from('inventory_items').select('id, name, unit').then(({data})=>setAllInvItems(data??[]))
-    sb.from('service_materials').select('service_id, material_name, services(name)').then(({data})=>setSvcMaterials(data??[]))
+    sb.from('services').select('*').eq('is_active', true).then(({data})=>setActiveServices(data??[]))
+    sb.from('service_inventory').select('*').then(({data})=>{
+      const map: Record<string, any[]> = {}
+      data?.forEach((si:any)=>{ if(!map[si.service_id]) map[si.service_id]=[]; map[si.service_id].push(si) })
+      setServiceInvMap(map)
+    })
 
     const channel = sb.channel('vehicles-realtime')
       .on('postgres_changes', {event:'*', schema:'public', table:'vehicles'}, (payload:any)=>{
@@ -543,8 +550,19 @@ export default function VehiclesPage() {
   async function openInventory(v: any) {
     setInvVeh(v)
     setLoadingInv(true)
-    const { data } = await createClient().from('vehicle_inventory').select('*').eq('vehicle_id', v.id).order('created_at',{ascending:true})
-    setVehInventory(data ?? [])
+    const sb = createClient()
+    const [{ data: vInv }, { data: siData }, { data: svcs }] = await Promise.all([
+      sb.from('vehicle_inventory').select('*').eq('vehicle_id', v.id).order('created_at',{ascending:true}),
+      sb.from('service_inventory').select('*'),
+      sb.from('services').select('*').eq('is_active', true),
+    ])
+    const vInvArr = vInv ?? []
+    const map: Record<string, any[]> = {}
+    siData?.forEach((si:any)=>{ if(!map[si.service_id]) map[si.service_id]=[]; map[si.service_id].push(si) })
+    setVehInventory(vInvArr)
+    setServiceInvMap(map)
+    setActiveServices(svcs ?? [])
+    setAvailableServices(getAvailableServices(vInvArr, svcs ?? [], map))
     setLoadingInv(false)
   }
 
@@ -608,19 +626,15 @@ export default function VehiclesPage() {
   }
 
   // ── possible services ────────────────────────────────────────────────────
-  function calcPossibleServices(): string[] {
-    if (!vehInventory.length || !svcMaterials.length) return []
-    const invNames = new Set(vehInventory.filter(i=>(i.stock_current??0)>0).map((i:any)=>i.item_name.toLowerCase()))
-    // group service_materials by service
-    const byService: Record<string,string[]> = {}
-    svcMaterials.forEach((m:any)=>{
-      const svcName = (m.services as any)?.name ?? m.service_id
-      if (!byService[svcName]) byService[svcName] = []
-      byService[svcName].push(m.material_name.toLowerCase())
+  function getAvailableServices(vInv: any[], svcs: any[], map: Record<string, any[]>) {
+    return svcs.filter(service => {
+      const required = map[service.id] || []
+      if (required.length === 0) return false
+      return required.every((insumo: any) => {
+        const vItem = vInv.find((vi: any) => vi.inventory_item_id === insumo.inventory_item_id)
+        return vItem && (vItem.stock_current ?? 0) >= (insumo.quantity ?? 0)
+      })
     })
-    return Object.entries(byService)
-      .filter(([, mats]) => mats.every(mat => invNames.has(mat)))
-      .map(([name]) => name)
   }
 
   // ── vehicle CRUD ─────────────────────────────────────────────────────────
@@ -696,8 +710,7 @@ export default function VehiclesPage() {
   }
 
   // ── computed ─────────────────────────────────────────────────────────────
-  const invAlerts   = vehInventory.filter(i=>(i.stock_current??0)<(i.stock_minimum??0)).length
-  const possibleSvc = calcPossibleServices()
+  const invAlerts = vehInventory.filter(i=>(i.stock_current??0)<(i.stock_minimum??0)).length
 
   // ── render ────────────────────────────────────────────────────────────────
   return (
@@ -776,7 +789,7 @@ export default function VehiclesPage() {
               {[
                 { label:'Total Items',        value:String(vehInventory.length),  color:'#f0ede8' },
                 { label:'Alertas Stock',       value:String(invAlerts),            color:invAlerts>0?'#ff4f4f':'#34d399' },
-                { label:'Servicios Posibles',  value:String(possibleSvc.length),   color:possibleSvc.length>0?'#c9a84c':'#888580' },
+                { label:'Servicios Posibles',  value:String(availableServices.length),   color:availableServices.length>0?'#c9a84c':'#888580' },
               ].map(k=>(
                 <div key={k.label} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
                   <div style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
@@ -846,20 +859,34 @@ export default function VehiclesPage() {
 
             {/* possible services */}
             {vehInventory.length > 0 && (
-              <div>
-                <div style={{fontSize:12,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:12}}>
-                  Servicios que puede realizar con stock actual
+              <div style={{marginTop:20,paddingTop:20,borderTop:'1px solid #2a2a30'}}>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:12}}>
+                  SERVICIOS QUE PUEDE REALIZAR CON STOCK ACTUAL
                 </div>
-                {possibleSvc.length > 0 ? (
-                  <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-                    {possibleSvc.map(name=>(
-                      <span key={name} style={{padding:'5px 14px',borderRadius:99,background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',color:'#c9a84c',fontSize:12,fontWeight:600}}>
-                        {name}
-                      </span>
-                    ))}
+                {availableServices.length === 0 ? (
+                  <div style={{background:'#ef444410',border:'1px solid #ef444430',borderRadius:8,padding:'12px 16px',color:'#ef4444',fontSize:13}}>
+                    Stock insuficiente para realizar servicios completos
                   </div>
                 ) : (
-                  <div style={{fontSize:13,color:'#888580'}}>Sin servicios disponibles con el stock actual.</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {availableServices.map((service:any)=>{
+                      const required = serviceInvMap[service.id] || []
+                      return (
+                        <div key={service.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'#22c55e10',border:'1px solid #22c55e30',borderRadius:8,padding:'10px 14px'}}>
+                          <div>
+                            <div style={{color:'#fff',fontWeight:600,fontSize:13}}>{service.name}</div>
+                            <div style={{color:'#666',fontSize:11,marginTop:2}}>
+                              {required.map((r:any)=>`${r.item?.name ?? r.inventory_item_id}: ${r.quantity} ${r.unit || 'u'}`).join(' · ')}
+                            </div>
+                          </div>
+                          <div style={{display:'flex',alignItems:'center',gap:6}}>
+                            <div style={{width:8,height:8,borderRadius:'50%',background:'#22c55e'}}/>
+                            <span style={{color:'#22c55e',fontSize:11,fontWeight:700}}>DISPONIBLE</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
               </div>
             )}
