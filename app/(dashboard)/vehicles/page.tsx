@@ -444,7 +444,7 @@ const UNITS = ['mL','L','unit','kg','g']
 const CATS  = ['Químico','Consumible','Herramienta']
 
 // ─── form defaults ────────────────────────────────────────────────────────────
-const EMPTY_VEH       = { name:'', license_plate:'', make:'', model:'', year:'', color:'', status:'libre', technician:'' }
+const EMPTY_VEH       = { name:'', license_plate:'', make:'', model:'', year:'', color:'', technician:'' }
 const EMPTY_ASSIGN    = { client_id:'', service_id:'', client_address:'', departed_at:'', eta:'', technician:'' }
 const EMPTY_INV_ITEM  = { item_name:'', category:'Químico', stock_current:'', stock_minimum:'', unit:'mL' }
 
@@ -703,7 +703,7 @@ export default function VehiclesPage() {
     const {error} = await createClient().from('vehicles').insert({
       name:addForm.name, license_plate:addForm.license_plate, make:addForm.make,
       model:addForm.model, year:addForm.year?Number(addForm.year):null,
-      color:addForm.color, status:addForm.status,
+      color:addForm.color, status:'libre',
       technician:addTechs.join(', '), technicians:addTechs,
     })
     setSaving(false)
@@ -713,7 +713,7 @@ export default function VehiclesPage() {
   }
 
   function openEdit(v: any) {
-    setEditForm({ name:v.name??'', license_plate:v.license_plate??'', make:v.make??'', model:v.model??'', year:v.year?String(v.year):'', color:v.color??'', status:v.status??'libre' })
+    setEditForm({ name:v.name??'', license_plate:v.license_plate??'', make:v.make??'', model:v.model??'', year:v.year?String(v.year):'', color:v.color??'' })
     const techs: string[] = Array.isArray(v.technicians) && v.technicians.length > 0
       ? v.technicians
       : v.technician ? v.technician.split(', ').map((t:string)=>t.trim()).filter(Boolean) : []
@@ -727,7 +727,7 @@ export default function VehiclesPage() {
     const {error} = await createClient().from('vehicles').update({
       name:editForm.name, license_plate:editForm.license_plate, make:editForm.make,
       model:editForm.model, year:editForm.year?Number(editForm.year):null,
-      color:editForm.color, status:editForm.status,
+      color:editForm.color,
       technician:editTechs.join(', '), technicians:editTechs,
     }).eq('id', editVeh.id)
     setSaving(false)
@@ -1003,7 +1003,6 @@ export default function VehiclesPage() {
               <div><MLabel>{t('year')}</MLabel><MInput type="number" placeholder="2023" value={addForm.year} onChange={e=>setAddForm({...addForm,year:e.target.value})}/></div>
               <div><MLabel>{t('color')}</MLabel><MInput placeholder="White" value={addForm.color} onChange={e=>setAddForm({...addForm,color:e.target.value})}/></div>
             </div>
-            <div><MLabel>{t('status')}</MLabel><StatusPill value={addForm.status} onChange={v=>setAddForm({...addForm,status:v})}/></div>
             <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={addTechs} onChange={setAddTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           <button onClick={saveAdd} disabled={saving||!addForm.name.trim()||!addForm.license_plate.trim()} style={{...SUBMIT_STYLE,opacity:(addForm.name.trim()&&addForm.license_plate.trim())?1:0.5}}>
@@ -1024,7 +1023,6 @@ export default function VehiclesPage() {
               <div><MLabel>{t('year')}</MLabel><MInput type="number" placeholder="2023" value={editForm.year} onChange={e=>setEditForm({...editForm,year:e.target.value})}/></div>
               <div><MLabel>{t('color')}</MLabel><MInput placeholder="White" value={editForm.color} onChange={e=>setEditForm({...editForm,color:e.target.value})}/></div>
             </div>
-            <div><MLabel>{t('status')}</MLabel><StatusPill value={editForm.status} onChange={v=>setEditForm({...editForm,status:v})}/></div>
             <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={contacts.map(c=>c.name)}/></div>
           </div>
           {showDeleteConfirm && (
