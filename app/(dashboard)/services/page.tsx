@@ -237,7 +237,7 @@ export default function ServicesPage() {
   const [adjusting,    setAdjusting]    = useState(false)
 
   const [editingItem,  setEditingItem]  = useState<any|null>(null)
-  const [editItemForm, setEditItemForm] = useState({ name:'', brand:'', category:'', stock_qty:0 as any, min_stock:0 as any, unit:'', unit_price:0 as any, notes:'' })
+  const [editItemForm, setEditItemForm] = useState({ name:'', brand:'', category:'', stock_qty:0 as any, min_stock:0 as any, unit:'', unit_price:0 as any, sku:'', supplier:'' })
 
   const [toasts, setToasts] = useState<Toast[]>([])
   const [editingService,  setEditingService]  = useState<any|null>(null)
@@ -315,14 +315,16 @@ export default function ServicesPage() {
     const { error } = await createClient()
       .from('inventory_items')
       .update({
-        name:      editItemForm.name.trim(),
-        brand:     editItemForm.brand.trim(),
-        category:  editItemForm.category.trim(),
-        stock_qty: parseFloat(editItemForm.stock_qty) || 0,
-        min_stock: parseFloat(editItemForm.min_stock) || 0,
-        unit:      editItemForm.unit.trim(),
+        name:       editItemForm.name.trim(),
+        brand:      editItemForm.brand.trim(),
+        category:   editItemForm.category.trim(),
+        stock_qty:  parseFloat(editItemForm.stock_qty) || 0,
+        min_stock:  parseFloat(editItemForm.min_stock) || 0,
+        unit:       editItemForm.unit.trim(),
         unit_price: parseFloat(editItemForm.unit_price) || 0,
-        notes:     editItemForm.notes.trim(),
+        unit_cost:  parseFloat(editItemForm.unit_price) || 0,
+        sku:        editItemForm.sku?.trim() || '',
+        supplier:   editItemForm.supplier?.trim() || '',
         updated_at: new Date().toISOString(),
       })
       .eq('id', editingItem!.id)
@@ -684,7 +686,7 @@ export default function ServicesPage() {
                     ± AJUSTAR STOCK
                   </button>
                   <button
-                    onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||0, notes:item.notes||'' }) }}
+                    onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||item.unit_cost||0, sku:item.sku||'', supplier:item.supplier||'' }) }}
                     style={{width:'100%',marginTop:10,padding:'9px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                   >
                     EDITAR
@@ -772,7 +774,7 @@ export default function ServicesPage() {
                       </td>
                       <td style={{padding:'12px 14px'}}>
                         <button
-                          onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||0, notes:item.notes||'' }) }}
+                          onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||item.unit_cost||0, sku:item.sku||'', supplier:item.supplier||'' }) }}
                           style={{padding:'5px 12px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                         >
                           EDITAR
@@ -858,11 +860,18 @@ export default function ServicesPage() {
               </div>
             </div>
 
-            {/* Notas */}
-            <div style={{marginBottom:24}}>
-              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>NOTAS <span style={{color:'#555'}}>(opcional)</span></div>
-              <input value={editItemForm.notes} onChange={e=>setEditItemForm(p=>({...p,notes:e.target.value}))} placeholder="Observaciones del producto"
-                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+            {/* SKU y Proveedor */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:24}}>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>SKU</div>
+                <input value={editItemForm.sku} onChange={e=>setEditItemForm(p=>({...p,sku:e.target.value}))} placeholder="ej. CER-001"
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>PROVEEDOR</div>
+                <input value={editItemForm.supplier} onChange={e=>setEditItemForm(p=>({...p,supplier:e.target.value}))} placeholder="ej. Meguiars UAE"
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
             </div>
 
             {/* Preview costo total */}
