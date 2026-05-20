@@ -348,7 +348,7 @@ export default function ServicesPage() {
     setInsumoSelectVal('')
     const { data } = await createClient()
       .from('service_inventory')
-      .select('*, item:inventory_item_id(id, name, stock_qty, unit, category)')
+      .select('*, item:inventory_item_id(id, name, stock_qty, unit, category, unit_price)')
       .eq('service_id', serviceId)
     setServiceInventory(data ?? [])
     setLoadingServiceInv(false)
@@ -388,10 +388,14 @@ export default function ServicesPage() {
   }
 
   async function handleSaveCostoHH(value: number) {
-    await createClient().from('services').update({ labor_cost: value }).eq('id', insumoService!.id)
+    const serviceId = insumoService?.id
+    if (!serviceId) return
+    const { error } = await createClient().from('services').update({ labor_cost: value }).eq('id', serviceId)
+    if (error) { addToast('Error al guardar', 'error'); return }
+    setServices(prev => prev.map(s => s.id === serviceId ? { ...s, labor_cost: value } : s))
     setCostoHoraHombre(value)
     setEditingCostoHH(false)
-    addToast('Costo hora hombre actualizado', 'success')
+    addToast('Costo hora hombre guardado', 'success')
   }
 
   async function handleAddServiceInsumo(inventoryItemId: string) {
@@ -403,12 +407,20 @@ export default function ServicesPage() {
     const { data, error } = await createClient()
       .from('service_inventory')
       .insert({ service_id: insumoService!.id, inventory_item_id: inventoryItemId, quantity: 1, unit: item?.unit || 'u' })
-      .select('*, item:inventory_item_id(id, name, stock_qty, unit)')
+      .select('*, item:inventory_item_id(id, name, stock_qty, unit, category, unit_price)')
       .single()
     if (error) { addToast('Error: ' + error.message, 'error'); return }
     setServiceInventory(prev => [...prev, data])
     setInsumoSelectVal('')
-    addToast('Insumo agregado', 'success')
+    addToast(`${item?.name ?? 'Insumo'} agregado`, 'success')
+  }
+
+  async function openInsumos(service: any) {
+    setInsumoService(service)
+    setShowInsumos(true)
+    const { data } = await createClient().from('services').select('labor_cost').eq('id', service.id).single()
+    setCostoHoraHombre(parseFloat(data?.labor_cost || 0))
+    await loadServiceInventory(service.id)
   }
 
   async function handleUpdateInsumoQty(insumoId: string, quantity: number) {
@@ -606,7 +618,7 @@ export default function ServicesPage() {
           />
         ) : (
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
-            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>{ setInsumoService(s); setCostoHoraHombre(s.labor_cost||0); setShowInsumos(true); loadServiceInventory(s.id) }}/>)}
+            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>)}
           </div>
         )}
       </div>
@@ -1308,12 +1320,16 @@ export default function ServicesPage() {
                         </td>
                         <td style={{padding:'14px 12px'}}>
                           <span style={{color:'#c9a84c',fontSize:13,fontWeight:600}}>
-                            {insumo.item?.unit_price?`AED ${parseFloat(insumo.item.unit_price).toFixed(2)}`:'—'}
+                            {insumo.item?.unit_price != null && parseFloat(insumo.item.unit_price) > 0
+                              ? `AED ${parseFloat(insumo.item.unit_price).toFixed(2)}`
+                              : '—'}
                           </span>
                         </td>
                         <td style={{padding:'14px 12px'}}>
                           <span style={{color:'#fff',fontSize:13,fontWeight:700}}>
-                            AED {((parseFloat(insumo.quantity)||0)*(parseFloat(insumo.item?.unit_price)||0)).toFixed(2)}
+                            {insumo.item?.unit_price != null && parseFloat(insumo.item.unit_price) > 0
+                              ? `AED ${((parseFloat(insumo.quantity)||0)*(parseFloat(insumo.item.unit_price))).toFixed(2)}`
+                              : '—'}
                           </span>
                         </td>
                         <td style={{padding:'14px 12px'}}>
