@@ -236,6 +236,9 @@ export default function ServicesPage() {
   const [adjustNote,   setAdjustNote]   = useState('')
   const [adjusting,    setAdjusting]    = useState(false)
 
+  const [editingItem,  setEditingItem]  = useState<any|null>(null)
+  const [editItemForm, setEditItemForm] = useState({ name:'', brand:'', category:'', stock_qty:0 as any, min_stock:0 as any, unit:'', unit_price:0 as any, notes:'' })
+
   const [toasts, setToasts] = useState<Toast[]>([])
   const [editingService,  setEditingService]  = useState<any|null>(null)
   const [editServiceForm, setEditServiceForm] = useState({ name:'', description:'', price:'', duration:'', category:'', is_active:true })
@@ -263,6 +266,7 @@ export default function ServicesPage() {
   useEffect(()=>{
     function onKey(e: KeyboardEvent){
       if(e.key!=='Escape') return
+      if(editingItem)  { setEditingItem(null); return }
       if(adjustItem)   { setAdjustItem(null); return }
       if(editMat)      { closeEditMat();   return }
       if(selectedSvc)  { closeMaterials(); return }
@@ -271,7 +275,7 @@ export default function ServicesPage() {
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc,editMat,adjustItem])
+  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem])
 
   async function handleAdjustStock() {
     const amount = Number(adjustAmount)
@@ -303,6 +307,30 @@ export default function ServicesPage() {
     setAdjustAmount('')
     setAdjustNote('')
     setAdjusting(false)
+  }
+
+  async function handleSaveEditItem() {
+    if (!editItemForm.name.trim()) { addToast('El nombre es obligatorio', 'error'); return }
+    setSavingItem(true)
+    const { error } = await createClient()
+      .from('inventory_items')
+      .update({
+        name:      editItemForm.name.trim(),
+        brand:     editItemForm.brand.trim(),
+        category:  editItemForm.category.trim(),
+        stock_qty: parseFloat(editItemForm.stock_qty) || 0,
+        min_stock: parseFloat(editItemForm.min_stock) || 0,
+        unit:      editItemForm.unit.trim(),
+        unit_price: parseFloat(editItemForm.unit_price) || 0,
+        notes:     editItemForm.notes.trim(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', editingItem!.id)
+    if (error) { addToast('Error: ' + error.message, 'error'); setSavingItem(false); return }
+    setInventory(prev => prev.map(i => i.id === editingItem!.id ? { ...i, ...editItemForm } : i))
+    addToast('Item actualizado correctamente', 'success')
+    setSavingItem(false)
+    setEditingItem(null)
   }
 
   function fetchInventory() { createClient().from('inventory_items').select('*').order('name').then(({data})=>{setInventory(data??[]);setLoadingI(false)}) }
@@ -598,7 +626,6 @@ export default function ServicesPage() {
         </div>
         <div style={{display:'flex',gap:10}}>
           <button style={BTN_OUTLINE} onClick={()=>setShowService(true)}>+ {t('addService')}</button>
-          <button style={BTN_GOLD}    onClick={()=>setShowInv(true)}>+ {t('addItem')}</button>
         </div>
       </div>
 
@@ -656,6 +683,12 @@ export default function ServicesPage() {
                     style={{width:'100%',padding:'9px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                     ± AJUSTAR STOCK
                   </button>
+                  <button
+                    onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||0, notes:item.notes||'' }) }}
+                    style={{width:'100%',marginTop:10,padding:'9px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  >
+                    EDITAR
+                  </button>
                   <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid #2a2a30',marginTop:8}}>
                     <div style={{textAlign:'center'}}>
                       <div style={{color:'#666',fontSize:9,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>COSTO UNIT.</div>
@@ -691,7 +724,7 @@ export default function ServicesPage() {
             <table style={{width:'100%',borderCollapse:'collapse',minWidth:720}}>
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                  {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste'].map(h=>(
+                  {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste','Editar'].map(h=>(
                     <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
@@ -737,6 +770,14 @@ export default function ServicesPage() {
                           ± AJUSTAR
                         </button>
                       </td>
+                      <td style={{padding:'12px 14px'}}>
+                        <button
+                          onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||0, notes:item.notes||'' }) }}
+                          style={{padding:'5px 12px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                        >
+                          EDITAR
+                        </button>
+                      </td>
                     </tr>
                   )
                 })}
@@ -753,12 +794,99 @@ export default function ServicesPage() {
                     </span>
                   </td>
                   <td/>
+                  <td/>
                 </tr>
               </tfoot>
             </table>
           </div>
         )}
       </div>
+
+      {/* ── Modal: Editar Item de Inventario ── */}
+      {editingItem && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
+          onClick={()=>setEditingItem(null)}>
+          <div onClick={e=>e.stopPropagation()}
+            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>INVENTARIO</div>
+            <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:24}}>Editar Item</div>
+
+            {/* Nombre y Marca */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>NOMBRE *</div>
+                <input value={editItemForm.name} onChange={e=>setEditItemForm(p=>({...p,name:e.target.value}))}
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>MARCA</div>
+                <input value={editItemForm.brand} onChange={e=>setEditItemForm(p=>({...p,brand:e.target.value}))} placeholder="ej. Meguiars"
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+            </div>
+
+            {/* Categoría y Unidad */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:16}}>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CATEGORÍA</div>
+                <input value={editItemForm.category} onChange={e=>setEditItemForm(p=>({...p,category:e.target.value}))} placeholder="ej. Consumible, Herramienta"
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>UNIDAD</div>
+                <input value={editItemForm.unit} onChange={e=>setEditItemForm(p=>({...p,unit:e.target.value}))} placeholder="ej. ml, kg, unit"
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+            </div>
+
+            {/* Stock actual, Stock mínimo, Costo unitario */}
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:16,marginBottom:16}}>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>STOCK ACTUAL</div>
+                <input type="number" min="0" value={editItemForm.stock_qty} onChange={e=>setEditItemForm(p=>({...p,stock_qty:e.target.value as any}))}
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>STOCK MÍNIMO</div>
+                <input type="number" min="0" value={editItemForm.min_stock} onChange={e=>setEditItemForm(p=>({...p,min_stock:e.target.value as any}))}
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+              <div>
+                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO UNIT. (AED)</div>
+                <input type="number" min="0" step="0.01" value={editItemForm.unit_price} onChange={e=>setEditItemForm(p=>({...p,unit_price:e.target.value as any}))}
+                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#c9a84c',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div style={{marginBottom:24}}>
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>NOTAS <span style={{color:'#555'}}>(opcional)</span></div>
+              <input value={editItemForm.notes} onChange={e=>setEditItemForm(p=>({...p,notes:e.target.value}))} placeholder="Observaciones del producto"
+                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+            </div>
+
+            {/* Preview costo total */}
+            <div style={{background:'#0d0d0f',borderRadius:8,padding:'12px 16px',marginBottom:20,display:'flex',justifyContent:'space-between'}}>
+              <span style={{color:'#666',fontSize:12}}>Costo total en inventario</span>
+              <span style={{color:'#c9a84c',fontWeight:800,fontSize:14}}>
+                AED {((parseFloat(editItemForm.unit_price)||0)*(parseFloat(editItemForm.stock_qty)||0)).toFixed(2)}
+              </span>
+            </div>
+
+            {/* Botones */}
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setEditingItem(null)}
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button onClick={handleSaveEditItem} disabled={savingItem||!editItemForm.name.trim()}
+                style={{flex:2,padding:13,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',opacity:savingItem||!editItemForm.name.trim()?0.6:1,fontFamily:'Outfit,sans-serif'}}>
+                {savingItem ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Modal: Ajuste de Inventario ── */}
       {adjustItem && (
