@@ -246,6 +246,8 @@ export default function ServicesPage() {
   const [insumoSelectVal,   setInsumoSelectVal]   = useState('')
   const [showInsumos,       setShowInsumos]       = useState(false)
   const [insumoService,     setInsumoService]     = useState<any|null>(null)
+  const [costoHoraHombre,   setCostoHoraHombre]   = useState(0)
+  const [editingCostoHH,    setEditingCostoHH]    = useState(false)
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -383,6 +385,13 @@ export default function ServicesPage() {
     addToast(newStatus ? 'Servicio activado' : 'Servicio desactivado', 'success')
     setConfirmToggle(null)
     fetchServices()
+  }
+
+  async function handleSaveCostoHH(value: number) {
+    await createClient().from('services').update({ labor_cost: value }).eq('id', insumoService!.id)
+    setCostoHoraHombre(value)
+    setEditingCostoHH(false)
+    addToast('Costo hora hombre actualizado', 'success')
   }
 
   async function handleAddServiceInsumo(inventoryItemId: string) {
@@ -597,7 +606,7 @@ export default function ServicesPage() {
           />
         ) : (
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
-            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>{ setInsumoService(s); setShowInsumos(true); loadServiceInventory(s.id) }}/>)}
+            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>{ setInsumoService(s); setCostoHoraHombre(s.labor_cost||0); setShowInsumos(true); loadServiceInventory(s.id) }}/>)}
           </div>
         )}
       </div>
@@ -635,17 +644,42 @@ export default function ServicesPage() {
                     style={{width:'100%',padding:'9px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                     ± AJUSTAR STOCK
                   </button>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid #2a2a30',marginTop:8}}>
+                    <div style={{textAlign:'center'}}>
+                      <div style={{color:'#666',fontSize:9,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>COSTO UNIT.</div>
+                      <input
+                        type="number" min="0" step="0.01"
+                        value={item.unit_price||0}
+                        onChange={async e=>{
+                          const newPrice=parseFloat(e.target.value)||0
+                          await createClient().from('inventory_items').update({unit_price:newPrice}).eq('id',item.id)
+                          setInventory(prev=>prev.map(i=>i.id===item.id?{...i,unit_price:newPrice}:i))
+                        }}
+                        style={{width:70,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#c9a84c',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
+                      />
+                    </div>
+                    <div style={{textAlign:'center'}}>
+                      <div style={{color:'#666',fontSize:9,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>COSTO TOTAL</div>
+                      <div style={{color:'#fff',fontWeight:700,fontSize:15}}>AED {((item.unit_price||0)*(item.stock_qty||0)).toFixed(2)}</div>
+                    </div>
+                  </div>
                 </div>
               )
             })}
+            <div style={{background:'#1a1a1f',border:'2px solid #c9a84c40',borderRadius:12,padding:16,display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
+              <span style={{color:'#888',fontSize:12,fontWeight:700}}>COSTO TOTAL INVENTARIO</span>
+              <span style={{color:'#c9a84c',fontSize:20,fontWeight:900}}>
+                AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
+              </span>
+            </div>
           </div>
         ) : (
           /* ── DESKTOP: tabla con scroll horizontal ── */
           <div className="glass" style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse',minWidth:500}}>
+            <table style={{width:'100%',borderCollapse:'collapse',minWidth:720}}>
               <thead>
                 <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                  {['Producto','Marca','Stock','Unidad','Nivel','Ajuste'].map(h=>(
+                  {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste'].map(h=>(
                     <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
@@ -668,6 +702,24 @@ export default function ServicesPage() {
                       <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
                       <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
                       <td style={{padding:'14px 16px'}}>
+                        <div style={{display:'flex',alignItems:'center',gap:4}}>
+                          <span style={{color:'#666',fontSize:11}}>AED</span>
+                          <input
+                            type="number" min="0" step="0.01"
+                            value={item.unit_price||0}
+                            onChange={async e=>{
+                              const newPrice=parseFloat(e.target.value)||0
+                              await createClient().from('inventory_items').update({unit_price:newPrice}).eq('id',item.id)
+                              setInventory(prev=>prev.map(i=>i.id===item.id?{...i,unit_price:newPrice}:i))
+                            }}
+                            style={{width:70,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#c9a84c',fontSize:12,outline:'none',textAlign:'right',fontFamily:'Outfit,sans-serif'}}
+                          />
+                        </div>
+                      </td>
+                      <td style={{padding:'14px 16px'}}>
+                        <span style={{color:'#fff',fontWeight:700,fontSize:13}}>AED {((item.unit_price||0)*(item.stock_qty||0)).toFixed(2)}</span>
+                      </td>
+                      <td style={{padding:'14px 16px'}}>
                         <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
                           style={{padding:'5px 12px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
                           ± AJUSTAR
@@ -677,6 +729,20 @@ export default function ServicesPage() {
                   )
                 })}
               </tbody>
+              <tfoot>
+                <tr style={{background:'#1a1a1f',borderTop:'2px solid #c9a84c40'}}>
+                  <td colSpan={5} style={{padding:'12px 16px',color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px'}}>COSTO TOTAL DE INVENTARIO</td>
+                  <td style={{padding:'12px 16px',color:'#c9a84c',fontSize:12,fontWeight:700}}>
+                    AED {srcInventory.reduce((s:number,i:any)=>s+(i.unit_price||0),0).toFixed(2)} prom.
+                  </td>
+                  <td style={{padding:'12px 16px'}}>
+                    <span style={{color:'#c9a84c',fontSize:16,fontWeight:900}}>
+                      AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
+                    </span>
+                  </td>
+                  <td/>
+                </tr>
+              </tfoot>
             </table>
           </div>
         )}
@@ -1159,20 +1225,44 @@ export default function ServicesPage() {
 
             {/* KPIs */}
             {(()=>{
-              const totalItems = serviceInventory.length
-              const alertas = serviceInventory.filter(i=>(i.item?.stock_qty||0) < (parseFloat(i.quantity)||1)).length
+              const totalItems   = serviceInventory.length
+              const costoInsumos = serviceInventory.reduce((s,i)=>s+((parseFloat(i.quantity)||0)*(parseFloat(i.item?.unit_price)||0)),0)
+              const costoTotal   = costoInsumos + (parseFloat(String(costoHoraHombre))||0)
               return (
                 <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,padding:'20px 24px',borderBottom:'1px solid #2a2a30'}}>
-                  {[
-                    { label:'TOTAL ARTÍCULOS',    value: totalItems,  color:'#fff' },
-                    { label:'COSTO EST. / SERV.',  value: `AED ${serviceInventory.reduce((s,i)=>s+((parseFloat(i.quantity)||0)*(i.item?.unit_price||0)),0).toFixed(2)}`, color:'#c9a84c' },
-                    { label:'ALERTAS',             value: alertas,     color: alertas>0?'#f59e0b':'#22c55e' },
-                  ].map(kpi=>(
-                    <div key={kpi.label} style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16}}>
-                      <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>{kpi.label}</div>
-                      <div style={{color:kpi.color,fontSize:24,fontWeight:900}}>{kpi.value}</div>
-                    </div>
-                  ))}
+                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16}}>
+                    <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>TOTAL ARTÍCULOS</div>
+                    <div style={{color:'#fff',fontSize:24,fontWeight:900}}>{totalItems}</div>
+                  </div>
+                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16}}>
+                    <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO EST. / SERV.</div>
+                    <div style={{color:'#c9a84c',fontSize:24,fontWeight:900}}>AED {costoTotal.toFixed(2)}</div>
+                  </div>
+                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16,position:'relative'}}>
+                    <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO HORA HOMBRE</div>
+                    {editingCostoHH ? (
+                      <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                        <span style={{color:'#666',fontSize:12}}>AED</span>
+                        <input
+                          type="number" min="0" step="0.01"
+                          defaultValue={costoHoraHombre}
+                          autoFocus
+                          onBlur={e=>handleSaveCostoHH(parseFloat(e.target.value)||0)}
+                          onKeyDown={e=>{
+                            if(e.key==='Enter') handleSaveCostoHH(parseFloat((e.target as HTMLInputElement).value)||0)
+                            if(e.key==='Escape') setEditingCostoHH(false)
+                          }}
+                          style={{width:80,padding:'4px 8px',background:'#1a1a1f',border:'1px solid #3b82f6',borderRadius:6,color:'#3b82f6',fontSize:18,fontWeight:900,outline:'none',fontFamily:'Outfit,sans-serif'}}
+                        />
+                      </div>
+                    ) : (
+                      <div onClick={()=>setEditingCostoHH(true)} style={{cursor:'pointer',display:'flex',alignItems:'baseline',gap:4}} title="Click para editar">
+                        <span style={{color:'#3b82f6',fontSize:24,fontWeight:900}}>AED {parseFloat(String(costoHoraHombre)).toFixed(2)}</span>
+                        <span style={{color:'#555',fontSize:10}}>/ hora</span>
+                      </div>
+                    )}
+                    <div style={{color:'#555',fontSize:10,marginTop:4}}>Click para editar</div>
+                  </div>
                 </div>
               )
             })()}
@@ -1189,67 +1279,65 @@ export default function ServicesPage() {
                 <table style={{width:'100%',borderCollapse:'collapse',marginTop:16}}>
                   <thead>
                     <tr>
-                      {['ÍTEM','CATEGORÍA','CANT. X SERVICIO','STOCK','COSTO UNIT.','ESTADO',''].map(h=>(
+                      {['ÍTEM','CATEGORÍA','CANT. X SERVICIO','COSTO UNIT.','COSTO TOTAL',''].map(h=>(
                         <th key={h} style={{padding:'10px 12px',textAlign:'left',color:'#555',fontSize:10,letterSpacing:'1px',fontWeight:700,borderBottom:'1px solid #2a2a30'}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {serviceInventory.map(insumo=>{
-                      const stock   = insumo.item?.stock_qty || 0
-                      const needed  = parseFloat(insumo.quantity) || 1
-                      const isLow   = stock < needed
-                      const isOut   = stock === 0
-                      return (
-                        <tr key={insumo.id} style={{borderBottom:'1px solid #1a1a1f'}}>
-                          <td style={{padding:'14px 12px'}}>
-                            <div style={{color:'#fff',fontWeight:700,fontSize:14}}>{insumo.item?.name?.toUpperCase()||'—'}</div>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <span style={{background:'#c9a84c20',border:'1px solid #c9a84c40',color:'#c9a84c',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:600}}>
-                              {insumo.item?.category||'Consumible'}
-                            </span>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <div style={{display:'flex',alignItems:'center',gap:6}}>
-                              <input
-                                type="number" min="0.1" step="0.1"
-                                value={insumo.quantity}
-                                onChange={e=>handleUpdateInsumoQty(insumo.id,parseFloat(e.target.value)||1)}
-                                style={{width:60,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#fff',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
-                              />
-                              <span style={{color:'#666',fontSize:12}}>{insumo.item?.unit||'unit'}</span>
-                            </div>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <span style={{color:isOut?'#ef4444':isLow?'#f59e0b':'#fff',fontWeight:700,fontSize:16}}>
-                              {stock>0?stock:'—'}
-                            </span>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <span style={{color:'#666',fontSize:13}}>
-                              {insumo.item?.unit_price?`AED ${parseFloat(insumo.item.unit_price).toFixed(2)}`:'—'}
-                            </span>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <div style={{display:'flex',alignItems:'center',gap:6}}>
-                              <div style={{width:8,height:8,borderRadius:'50%',background:isOut?'#ef4444':isLow?'#f59e0b':'#22c55e'}}/>
-                              <span style={{color:isOut?'#ef4444':isLow?'#f59e0b':'#22c55e',fontSize:12,fontWeight:700}}>
-                                {isOut?'Sin stock':isLow?'Bajo':'OK'}
-                              </span>
-                            </div>
-                          </td>
-                          <td style={{padding:'14px 12px'}}>
-                            <button
-                              onClick={()=>handleRemoveInsumo(insumo.id)}
-                              title="Quitar insumo"
-                              style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:6,color:'#555',padding:'4px 10px',fontSize:16,cursor:'pointer',lineHeight:1,fontFamily:'Outfit,sans-serif'}}
-                            >×</button>
-                          </td>
-                        </tr>
-                      )
-                    })}
+                    {serviceInventory.map(insumo=>(
+                      <tr key={insumo.id} style={{borderBottom:'1px solid #1a1a1f'}}>
+                        <td style={{padding:'14px 12px'}}>
+                          <div style={{color:'#fff',fontWeight:700,fontSize:14}}>{insumo.item?.name?.toUpperCase()||'—'}</div>
+                        </td>
+                        <td style={{padding:'14px 12px'}}>
+                          <span style={{background:'#c9a84c20',border:'1px solid #c9a84c40',color:'#c9a84c',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:600}}>
+                            {insumo.item?.category||'Consumible'}
+                          </span>
+                        </td>
+                        <td style={{padding:'14px 12px'}}>
+                          <div style={{display:'flex',alignItems:'center',gap:6}}>
+                            <input
+                              type="number" min="0.1" step="0.1"
+                              value={insumo.quantity}
+                              onChange={e=>handleUpdateInsumoQty(insumo.id,parseFloat(e.target.value)||1)}
+                              style={{width:60,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#fff',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
+                            />
+                            <span style={{color:'#666',fontSize:12}}>{insumo.item?.unit||'unit'}</span>
+                          </div>
+                        </td>
+                        <td style={{padding:'14px 12px'}}>
+                          <span style={{color:'#c9a84c',fontSize:13,fontWeight:600}}>
+                            {insumo.item?.unit_price?`AED ${parseFloat(insumo.item.unit_price).toFixed(2)}`:'—'}
+                          </span>
+                        </td>
+                        <td style={{padding:'14px 12px'}}>
+                          <span style={{color:'#fff',fontSize:13,fontWeight:700}}>
+                            AED {((parseFloat(insumo.quantity)||0)*(parseFloat(insumo.item?.unit_price)||0)).toFixed(2)}
+                          </span>
+                        </td>
+                        <td style={{padding:'14px 12px'}}>
+                          <button
+                            onClick={()=>handleRemoveInsumo(insumo.id)}
+                            title="Quitar insumo"
+                            style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:6,color:'#555',padding:'4px 10px',fontSize:16,cursor:'pointer',lineHeight:1,fontFamily:'Outfit,sans-serif'}}
+                          >×</button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
+                  <tfoot>
+                    <tr style={{borderTop:'2px solid #2a2a30',background:'#0d0d0f'}}>
+                      <td colSpan={3} style={{padding:12,color:'#888',fontSize:11,fontWeight:700}}>COSTO TOTAL INSUMOS</td>
+                      <td style={{padding:12,color:'#c9a84c',fontSize:11}}>—</td>
+                      <td style={{padding:12}}>
+                        <span style={{color:'#c9a84c',fontSize:16,fontWeight:900}}>
+                          AED {serviceInventory.reduce((s,i)=>s+((parseFloat(i.quantity)||0)*(parseFloat(i.item?.unit_price)||0)),0).toFixed(2)}
+                        </span>
+                      </td>
+                      <td/>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}
