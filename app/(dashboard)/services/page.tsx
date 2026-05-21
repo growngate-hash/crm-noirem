@@ -136,13 +136,13 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
           </span>
           <div style={{width:1,height:20,background:'#2a2a30',flexShrink:0}}/>
           <div style={{display:'flex',gap:6,marginLeft:'auto'}}>
-            <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 12px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 14px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               INSUMOS
             </button>
-            <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 12px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 14px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               EDITAR
             </button>
-            <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 12px',background:s.is_active!==false?'#ef444410':'#22c55e10',border:`1px solid ${s.is_active!==false?'#ef444430':'#22c55e30'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 14px',background:s.is_active!==false?'#ef444410':'#22c55e10',border:`1px solid ${s.is_active!==false?'#ef444430':'#22c55e30'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               {s.is_active!==false?'DESACTIVAR':'ACTIVAR'}
             </button>
           </div>
@@ -753,7 +753,7 @@ export default function ServicesPage() {
                     </span>
                     <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(420px, 1fr))',gap:'16px'}}>
                     {catServices.map((s:any)=>(
                       <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
                     ))}
@@ -772,7 +772,7 @@ export default function ServicesPage() {
                     <div style={{color:'#888',fontSize:'16px',fontWeight:800}}>Sin categoría</div>
                     <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(420px, 1fr))',gap:'16px'}}>
                     {uncategorized.map((s:any)=>(
                       <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
                     ))}
@@ -783,7 +783,7 @@ export default function ServicesPage() {
           </>
         ) : (
           // Vista filtrada
-          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(420px, 1fr))',gap:'16px'}}>
             {filteredServices.map((s:any)=>(
               <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
             ))}
