@@ -257,6 +257,14 @@ export default function ServicesPage() {
   const [insumoService,     setInsumoService]     = useState<any|null>(null)
   const [costoHoraHombre,   setCostoHoraHombre]   = useState(0)
   const [editingCostoHH,    setEditingCostoHH]    = useState(false)
+
+  // categories
+  const [categories,       setCategories]       = useState<any[]>([])
+  const [activeCategory,   setActiveCategory]   = useState('all')
+  const [showNewCategory,  setShowNewCategory]  = useState(false)
+  const [editingCategory,  setEditingCategory]  = useState<any|null>(null)
+  const [categoryForm,     setCategoryForm]     = useState({ name: '', description: '', color: '#c9a84c' })
+
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -272,17 +280,18 @@ export default function ServicesPage() {
   useEffect(()=>{
     function onKey(e: KeyboardEvent){
       if(e.key!=='Escape') return
-      if(showDespacho) { setShowDespacho(false); return }
-      if(editingItem)  { setEditingItem(null); return }
-      if(adjustItem)   { setAdjustItem(null); return }
-      if(editMat)      { closeEditMat();   return }
-      if(selectedSvc)  { closeMaterials(); return }
-      if(showService)  { closeService();   return }
-      if(showInv)      { closeInv();       return }
+      if(showDespacho)    { setShowDespacho(false); return }
+      if(editingItem)     { setEditingItem(null); return }
+      if(adjustItem)      { setAdjustItem(null); return }
+      if(editMat)         { closeEditMat();   return }
+      if(selectedSvc)     { closeMaterials(); return }
+      if(showNewCategory) { setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}); return }
+      if(showService)     { closeService();   return }
+      if(showInv)         { closeInv();       return }
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem,showDespacho])
+  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem,showDespacho,showNewCategory])
 
   async function handleAdjustStock() {
     const amount = Number(adjustAmount)
@@ -504,7 +513,16 @@ export default function ServicesPage() {
     addToast('Insumo eliminado', 'success')
   }
 
-  useEffect(()=>{ fetchServices(); fetchInventory() },[])
+  async function loadCategories() {
+    const { data } = await createClient()
+      .from('service_categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order')
+    setCategories(data || [])
+  }
+
+  useEffect(()=>{ fetchServices(); fetchInventory(); loadCategories() },[])
 
   async function openMaterials(svc: any) {
     setSelectedSvc(svc)
@@ -648,6 +666,10 @@ export default function ServicesPage() {
   const srcServices  = services   // always real Supabase UUIDs after fetchServices()
   const srcInventory = inventory.length > 0 && !loadingI ? inventory : (!loadingI ? DEMO_INVENTORY : [])
 
+  const filteredServices = activeCategory === 'all'
+    ? srcServices
+    : srcServices.filter((s:any) => s.category === activeCategory)
+
   // KPIs — recalculate from current svcMaterials + allInv
   const totalArticulos = svcMaterials.length
   const costoTotal     = svcMaterials.reduce((s,m)=>(s + (m.quantity??0)*(m.unit_cost??0)),0)
@@ -670,6 +692,34 @@ export default function ServicesPage() {
         </div>
       </div>
 
+      {/* ── Category filter bar ── */}
+      <div style={{display:'flex',gap:'8px',marginBottom:'24px',flexWrap:'wrap',alignItems:'center'}}>
+        <button
+          onClick={()=>setActiveCategory('all')}
+          style={{padding:'8px 16px',background:activeCategory==='all'?'#c9a84c':'#1a1a1f',color:activeCategory==='all'?'#0d0d0f':'#888',border:`1px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'20px',fontSize:'12px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+        >
+          Todos ({srcServices.length})
+        </button>
+        {categories.map((cat:any)=>{
+          const count = srcServices.filter((s:any)=>s.category===cat.name).length
+          const isActive = activeCategory===cat.name
+          return (
+            <button key={cat.id} onClick={()=>setActiveCategory(cat.name)}
+              style={{padding:'8px 16px',background:isActive?cat.color+'30':'#1a1a1f',color:isActive?cat.color:'#888',border:`1px solid ${isActive?cat.color:'#2a2a30'}`,borderRadius:'20px',fontSize:'12px',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontFamily:'Outfit,sans-serif'}}
+            >
+              {cat.name}
+              <span style={{background:isActive?cat.color+'30':'#2a2a30',color:isActive?cat.color:'#666',borderRadius:'10px',padding:'1px 7px',fontSize:'10px',fontWeight:800}}>{count}</span>
+            </button>
+          )
+        })}
+        <button
+          onClick={()=>setShowNewCategory(true)}
+          style={{padding:'8px 14px',background:'transparent',border:'1px dashed #2a2a30',borderRadius:'20px',color:'#555',fontSize:'11px',fontWeight:700,cursor:'pointer',marginLeft:'auto',fontFamily:'Outfit,sans-serif'}}
+        >
+          + Categoría
+        </button>
+      </div>
+
       {/* ── Services grid ── */}
       <div style={{marginBottom:40}}>
         {loadingS ? (
@@ -684,9 +734,56 @@ export default function ServicesPage() {
             actionLabel="+ AGREGAR SERVICIO"
             onAction={() => setShowService(true)}
           />
+        ) : activeCategory === 'all' ? (
+          // Vista agrupada por categoría
+          <>
+            {categories.map((cat:any)=>{
+              const catServices = srcServices.filter((s:any)=>s.category===cat.name)
+              if (catServices.length === 0) return null
+              return (
+                <div key={cat.id} style={{marginBottom:'32px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+                    <div style={{width:'4px',height:'24px',background:cat.color,borderRadius:'2px'}}/>
+                    <div style={{color:'#fff',fontSize:'16px',fontWeight:800}}>{cat.name}</div>
+                    <span style={{background:cat.color+'20',color:cat.color,borderRadius:'10px',padding:'2px 10px',fontSize:'11px',fontWeight:700}}>
+                      {catServices.length} servicio{catServices.length!==1?'s':''}
+                    </span>
+                    <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+                    {catServices.map((s:any)=>(
+                      <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+                    ))}
+                  </div>
+                </div>
+              )
+            })}
+            {/* Servicios sin categoría */}
+            {(()=>{
+              const uncategorized = srcServices.filter((s:any)=>!categories.some((c:any)=>c.name===s.category))
+              if (uncategorized.length === 0) return null
+              return (
+                <div style={{marginBottom:'32px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
+                    <div style={{width:'4px',height:'24px',background:'#555',borderRadius:'2px'}}/>
+                    <div style={{color:'#888',fontSize:'16px',fontWeight:800}}>Sin categoría</div>
+                    <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+                    {uncategorized.map((s:any)=>(
+                      <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+          </>
         ) : (
-          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:16}}>
-            {srcServices.map((s:any)=><ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>)}
+          // Vista filtrada
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
+            {filteredServices.map((s:any)=>(
+              <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+            ))}
           </div>
         )}
       </div>
@@ -1085,7 +1182,18 @@ export default function ServicesPage() {
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
               <div>
                 <MLabel>Categoría *</MLabel>
-                <PillSelector options={CATS} value={serviceForm.category} onChange={v=>setServiceForm({...serviceForm,category:v})}/>
+                {categories.length > 0 ? (
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    {categories.map((cat:any)=>(
+                      <button key={cat.id} type="button"
+                        onClick={()=>setServiceForm({...serviceForm,category:cat.name})}
+                        style={{padding:'8px 16px',background:serviceForm.category===cat.name?cat.color+'25':'#0d0d0f',border:`2px solid ${serviceForm.category===cat.name?cat.color:'#2a2a30'}`,borderRadius:8,color:serviceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                      >{cat.name}</button>
+                    ))}
+                  </div>
+                ) : (
+                  <PillSelector options={CATS} value={serviceForm.category} onChange={v=>setServiceForm({...serviceForm,category:v})}/>
+                )}
               </div>
               <div><MLabel>Precio (AED) *</MLabel><MInput type="number" min={0} placeholder="0" value={serviceForm.base_price} onChange={e=>setServiceForm({...serviceForm,base_price:e.target.value})}/></div>
             </div>
@@ -1369,8 +1477,19 @@ export default function ServicesPage() {
             </div>
 
             <div style={{marginBottom:24}}>
-              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CATEGORÍA</div>
-              <MInput value={editServiceForm.category} onChange={e=>setEditServiceForm(p=>({...p,category:e.target.value}))} placeholder="ej. Detailing, Lavado, Protección" />
+              <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>CATEGORÍA</div>
+              {categories.length > 0 ? (
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {categories.map((cat:any)=>(
+                    <button key={cat.id} type="button"
+                      onClick={()=>setEditServiceForm(p=>({...p,category:cat.name}))}
+                      style={{padding:'8px 16px',background:editServiceForm.category===cat.name?cat.color+'25':'#0d0d0f',border:`2px solid ${editServiceForm.category===cat.name?cat.color:'#2a2a30'}`,borderRadius:8,color:editServiceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                    >{cat.name}</button>
+                  ))}
+                </div>
+              ) : (
+                <MInput value={editServiceForm.category} onChange={e=>setEditServiceForm(p=>({...p,category:e.target.value}))} placeholder="ej. Detailing, Lavado, Protección" />
+              )}
             </div>
 
             <div style={{display:'flex',gap:10}}>
@@ -1603,6 +1722,116 @@ export default function ServicesPage() {
                 DESPACHAR AL MÓVIL
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Gestionar Categorías ── */}
+      {showNewCategory && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
+          onClick={()=>{ setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}>
+          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'16px',padding:'32px',width:'100%',maxWidth:'500px',maxHeight:'90vh',overflowY:'auto'}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{color:'#c9a84c',fontSize:'11px',fontWeight:700,letterSpacing:'2px',marginBottom:'6px'}}>SERVICIOS</div>
+            <div style={{color:'#fff',fontSize:'20px',fontWeight:800,marginBottom:'24px'}}>Gestionar Categorías</div>
+
+            {/* Lista de categorías existentes */}
+            <div style={{marginBottom:'24px'}}>
+              {categories.map((cat:any)=>(
+                <div key={cat.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',marginBottom:'8px'}}>
+                  <div style={{width:'12px',height:'12px',borderRadius:'50%',background:cat.color,flexShrink:0}}/>
+                  <div style={{flex:1}}>
+                    <div style={{color:'#fff',fontSize:'13px',fontWeight:600}}>{cat.name}</div>
+                    {cat.description && <div style={{color:'#555',fontSize:'11px'}}>{cat.description}</div>}
+                  </div>
+                  <span style={{color:'#666',fontSize:'11px'}}>{srcServices.filter((s:any)=>s.category===cat.name).length} servicios</span>
+                  <button
+                    onClick={()=>{ setEditingCategory(cat); setCategoryForm({name:cat.name,description:cat.description||'',color:cat.color||'#c9a84c'}) }}
+                    style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:'6px',color:'#888',fontSize:'11px',fontWeight:700,padding:'4px 10px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  >EDITAR</button>
+                </div>
+              ))}
+            </div>
+
+            {/* Formulario nueva/editar categoría */}
+            <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'10px',padding:'16px',marginBottom:'20px'}}>
+              <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'12px'}}>
+                {editingCategory ? 'EDITAR CATEGORÍA' : 'NUEVA CATEGORÍA'}
+              </div>
+
+              <div style={{marginBottom:'12px'}}>
+                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>NOMBRE *</div>
+                <input
+                  value={categoryForm.name}
+                  onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}
+                  placeholder="ej. Paint Protection"
+                  style={{width:'100%',padding:'10px 14px',background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+                />
+              </div>
+
+              <div style={{marginBottom:'12px'}}>
+                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>DESCRIPCIÓN</div>
+                <input
+                  value={categoryForm.description}
+                  onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}
+                  placeholder="Descripción breve"
+                  style={{width:'100%',padding:'10px 14px',background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+                />
+              </div>
+
+              <div style={{marginBottom:'16px'}}>
+                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>COLOR</div>
+                <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                  {['#c9a84c','#3b82f6','#22c55e','#8b5cf6','#ef4444','#f59e0b','#06b6d4','#ec4899'].map(color=>(
+                    <div key={color} onClick={()=>setCategoryForm(p=>({...p,color}))}
+                      style={{width:'28px',height:'28px',borderRadius:'50%',background:color,cursor:'pointer',border:categoryForm.color===color?'3px solid #fff':'3px solid transparent',transition:'border 0.2s'}}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div style={{display:'flex',gap:'8px'}}>
+                {editingCategory && (
+                  <button
+                    onClick={()=>{ setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}
+                    style={{flex:1,padding:'10px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'8px',color:'#888',fontSize:'12px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  >CANCELAR</button>
+                )}
+                <button
+                  onClick={async ()=>{
+                    if (!categoryForm.name.trim()) return
+                    if (editingCategory) {
+                      await createClient().from('service_categories').update({
+                        name: categoryForm.name.trim(),
+                        description: categoryForm.description.trim(),
+                        color: categoryForm.color,
+                      }).eq('id', editingCategory.id)
+                      addToast('Categoría actualizada', 'success')
+                    } else {
+                      await createClient().from('service_categories').insert({
+                        name: categoryForm.name.trim(),
+                        description: categoryForm.description.trim(),
+                        color: categoryForm.color,
+                        sort_order: categories.length + 1,
+                      })
+                      addToast('Categoría creada', 'success')
+                    }
+                    setEditingCategory(null)
+                    setCategoryForm({name:'',description:'',color:'#c9a84c'})
+                    await loadCategories()
+                  }}
+                  disabled={!categoryForm.name.trim()}
+                  style={{flex:2,padding:'10px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:800,cursor:'pointer',opacity:!categoryForm.name.trim()?0.6:1,fontFamily:'Outfit,sans-serif'}}
+                >
+                  {editingCategory ? 'GUARDAR CAMBIOS' : 'CREAR CATEGORÍA'}
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={()=>{ setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}
+              style={{width:'100%',padding:'13px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'10px',color:'#888',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+            >CERRAR</button>
           </div>
         </div>
       )}
