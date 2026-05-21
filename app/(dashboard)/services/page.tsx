@@ -129,19 +129,24 @@ function ServiceCard({ s, onEdit, onEditService, onToggle, onInsumos }: { s: any
           ))}
         </div>
       )}
-      <div style={{display:'flex',gap:8,marginTop:'auto',paddingTop:12,borderTop:'1px solid #2a2a30',flexWrap:'wrap'}}>
-        <span style={{padding:'6px 12px',borderRadius:20,fontSize:10,fontWeight:800,background:s.is_active!==false?'#22c55e20':'#ef444420',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444',display:'flex',alignItems:'center'}}>
-          {s.is_active!==false?'ACTIVO':'INACTIVO'}
-        </span>
-        <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 14px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
-          INSUMOS
-        </button>
-        <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 14px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
-          EDITAR
-        </button>
-        <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 14px',background:s.is_active!==false?'#ef444415':'#22c55e15',border:`1px solid ${s.is_active!==false?'#ef444435':'#22c55e35'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
-          {s.is_active!==false?'DESACTIVAR':'ACTIVAR'}
-        </button>
+      <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid #2a2a30'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <span style={{padding:'5px 12px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'0.5px',background:s.is_active!==false?'#22c55e15':'#ef444415',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444',whiteSpace:'nowrap',flexShrink:0}}>
+            {s.is_active!==false?'ACTIVO':'INACTIVO'}
+          </span>
+          <div style={{width:1,height:20,background:'#2a2a30',flexShrink:0}}/>
+          <div style={{display:'flex',gap:6,marginLeft:'auto'}}>
+            <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 12px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+              INSUMOS
+            </button>
+            <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 12px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+              EDITAR
+            </button>
+            <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 12px',background:s.is_active!==false?'#ef444410':'#22c55e10',border:`1px solid ${s.is_active!==false?'#ef444430':'#22c55e30'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+              {s.is_active!==false?'DESACTIVAR':'ACTIVAR'}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
