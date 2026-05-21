@@ -1204,6 +1204,20 @@ export default function ServicesPage() {
                         style={{padding:'8px 16px',background:serviceForm.category===cat.name?cat.color+'25':'#0d0d0f',border:`2px solid ${serviceForm.category===cat.name?cat.color:'#2a2a30'}`,borderRadius:8,color:serviceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                       >{cat.name}</button>
                     ))}
+                    <button type="button"
+                      onClick={async ()=>{
+                        const name = window.prompt('Nombre de la nueva categoría:')
+                        if (!name?.trim()) return
+                        const { error } = await createClient().from('service_categories').insert({
+                          name: name.trim(), color: '#c9a84c', sort_order: categories.length + 1
+                        })
+                        if (error) { addToast('Error: ' + error.message, 'error'); return }
+                        await loadCategories()
+                        setServiceForm(p=>({...p,category:name.trim()}))
+                        addToast(`Categoría "${name.trim()}" creada`, 'success')
+                      }}
+                      style={{padding:'8px 14px',background:'transparent',border:'2px dashed #2a2a30',borderRadius:8,color:'#555',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:6,fontFamily:'Outfit,sans-serif'}}
+                    >+ Nueva</button>
                   </div>
                 ) : (
                   <PillSelector options={CATS} value={serviceForm.category} onChange={v=>setServiceForm({...serviceForm,category:v})}/>
@@ -1219,25 +1233,6 @@ export default function ServicesPage() {
             <div>
               <MLabel>Nivel de Técnicos *</MLabel>
               <PillSelector options={LEVELS} value={serviceForm.technician_level} onChange={v=>setServiceForm({...serviceForm,technician_level:v})}/>
-            </div>
-            <div>
-              <MLabel sub="(para control de inventario)">Materiales e Insumos</MLabel>
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {matRows.map((row,idx)=>(
-                  <div key={idx} style={{display:'grid',gridTemplateColumns:'1fr 80px 80px 32px',gap:6,alignItems:'center'}}>
-                    <MInput placeholder="Nombre del material..." value={row.name} onChange={e=>{const r=[...matRows];r[idx]={...r[idx],name:e.target.value};setMatRows(r)}}/>
-                    <MInput placeholder="Cant." value={row.qty} onChange={e=>{const r=[...matRows];r[idx]={...r[idx],qty:e.target.value};setMatRows(r)}}/>
-                    <MSelect value={row.unit} onChange={e=>{const r=[...matRows];r[idx]={...r[idx],unit:e.target.value};setMatRows(r)}}>
-                      {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
-                    </MSelect>
-                    {idx===matRows.length-1
-                      ? <button type="button" onClick={()=>setMatRows([...matRows,{name:'',qty:'',unit:'unit'}])} style={{width:32,height:36,borderRadius:6,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:18,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Plus size={14}/></button>
-                      : <button type="button" onClick={()=>setMatRows(matRows.filter((_,i)=>i!==idx))} style={{width:32,height:36,borderRadius:6,border:'1px solid rgba(255,79,79,0.3)',background:'transparent',color:'#ff4f4f',fontSize:14,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Trash2 size={12}/></button>
-                    }
-                  </div>
-                ))}
-              </div>
-              <div style={{fontSize:11,color:'#888580',marginTop:8}}>Cada ejecución del servicio descontará estas cantidades del inventario.</div>
             </div>
           </div>
           <button onClick={saveService} disabled={saving||!serviceForm.name.trim()} style={{...SUBMIT_STYLE,opacity:serviceForm.name.trim()?1:0.5,cursor:serviceForm.name.trim()?'pointer':'not-allowed'}}>
