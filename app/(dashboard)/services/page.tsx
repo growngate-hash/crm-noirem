@@ -249,10 +249,6 @@ export default function ServicesPage() {
   // categories
   const [categories,       setCategories]       = useState<any[]>([])
   const [activeCategory,   setActiveCategory]   = useState('all')
-  const [showNewCategory,  setShowNewCategory]  = useState(false)
-  const [editingCategory,  setEditingCategory]  = useState<any|null>(null)
-  const [categoryForm,     setCategoryForm]     = useState({ name: '', description: '', color: '#c9a84c' })
-
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -273,13 +269,12 @@ export default function ServicesPage() {
       if(adjustItem)      { setAdjustItem(null); return }
       if(editMat)         { closeEditMat();   return }
       if(selectedSvc)     { closeMaterials(); return }
-      if(showNewCategory) { setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}); return }
       if(showService)     { closeService();   return }
       if(showInv)         { closeInv();       return }
     }
     document.addEventListener('keydown',onKey)
     return ()=>document.removeEventListener('keydown',onKey)
-  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem,showDespacho,showNewCategory])
+  },[showService,showInv,selectedSvc,editMat,adjustItem,editingItem,showDespacho])
 
   async function handleAdjustStock() {
     const amount = Number(adjustAmount)
@@ -710,8 +705,23 @@ export default function ServicesPage() {
             >
               <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:isActive?`linear-gradient(90deg, transparent, ${cat.color}, transparent)`:'transparent',transition:'background 0.2s'}}/>
               <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:cat.color,opacity:isActive?0.08:0.03,lineHeight:1,userSelect:'none',transition:'opacity 0.2s'}}>{count}</div>
+              {count===0 && (
+                <button
+                  onClick={async e=>{
+                    e.stopPropagation()
+                    if (!window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) return
+                    const { error } = await createClient().from('service_categories').delete().eq('id', cat.id)
+                    if (error) { addToast('Error al eliminar: ' + error.message, 'error'); return }
+                    addToast(`Categoría "${cat.name}" eliminada`, 'success')
+                    if (activeCategory===cat.name) setActiveCategory('all')
+                    await loadCategories()
+                  }}
+                  style={{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'1px solid #ef444430',borderRadius:'6px',color:'#ef444460',fontSize:'10px',fontWeight:700,padding:'2px 8px',cursor:'pointer',zIndex:2,lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
+                  title="Eliminar categoría"
+                >×</button>
+              )}
               <div style={{position:'relative'}}>
-                <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cat.name.toUpperCase()}</div>
+                <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:count===0?'24px':'0'}}>{cat.name.toUpperCase()}</div>
                 <div style={{color:isActive?cat.color:'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px',transition:'color 0.2s'}}>{count}</div>
                 <div style={{color:isActive?cat.color+'80':'#444',fontSize:'11px',fontWeight:600}}>{count===1?'servicio':'servicios'}</div>
                 {cat.description && (
@@ -721,16 +731,6 @@ export default function ServicesPage() {
             </div>
           )
         })}
-
-        {/* Nueva categoría */}
-        <div onClick={()=>setShowNewCategory(true)}
-          style={{background:'transparent',border:'1px dashed #2a2a30',borderRadius:'14px',padding:'20px 16px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',minHeight:'110px',transition:'all 0.2s'}}
-          onMouseEnter={e=>{ e.currentTarget.style.borderColor='#c9a84c50'; e.currentTarget.style.background='#c9a84c05' }}
-          onMouseLeave={e=>{ e.currentTarget.style.borderColor='#2a2a30'; e.currentTarget.style.background='transparent' }}
-        >
-          <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'#c9a84c10',border:'1px solid #c9a84c30',display:'flex',alignItems:'center',justifyContent:'center',color:'#c9a84c40',fontSize:'20px',fontWeight:300}}>+</div>
-          <div style={{color:'#444',fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textAlign:'center',fontFamily:'Outfit,sans-serif'}}>{'NUEVA\nCATEGORÍA'}</div>
-        </div>
 
       </div>
 
@@ -1731,116 +1731,6 @@ export default function ServicesPage() {
                 DESPACHAR AL MÓVIL
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Modal: Gestionar Categorías ── */}
-      {showNewCategory && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
-          onClick={()=>{ setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}>
-          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'16px',padding:'32px',width:'100%',maxWidth:'500px',maxHeight:'90vh',overflowY:'auto'}}
-            onClick={e=>e.stopPropagation()}>
-            <div style={{color:'#c9a84c',fontSize:'11px',fontWeight:700,letterSpacing:'2px',marginBottom:'6px'}}>SERVICIOS</div>
-            <div style={{color:'#fff',fontSize:'20px',fontWeight:800,marginBottom:'24px'}}>Gestionar Categorías</div>
-
-            {/* Lista de categorías existentes */}
-            <div style={{marginBottom:'24px'}}>
-              {categories.map((cat:any)=>(
-                <div key={cat.id} style={{display:'flex',alignItems:'center',gap:'12px',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',marginBottom:'8px'}}>
-                  <div style={{width:'12px',height:'12px',borderRadius:'50%',background:cat.color,flexShrink:0}}/>
-                  <div style={{flex:1}}>
-                    <div style={{color:'#fff',fontSize:'13px',fontWeight:600}}>{cat.name}</div>
-                    {cat.description && <div style={{color:'#555',fontSize:'11px'}}>{cat.description}</div>}
-                  </div>
-                  <span style={{color:'#666',fontSize:'11px'}}>{srcServices.filter((s:any)=>s.category===cat.name).length} servicios</span>
-                  <button
-                    onClick={()=>{ setEditingCategory(cat); setCategoryForm({name:cat.name,description:cat.description||'',color:cat.color||'#c9a84c'}) }}
-                    style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:'6px',color:'#888',fontSize:'11px',fontWeight:700,padding:'4px 10px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
-                  >EDITAR</button>
-                </div>
-              ))}
-            </div>
-
-            {/* Formulario nueva/editar categoría */}
-            <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'10px',padding:'16px',marginBottom:'20px'}}>
-              <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'12px'}}>
-                {editingCategory ? 'EDITAR CATEGORÍA' : 'NUEVA CATEGORÍA'}
-              </div>
-
-              <div style={{marginBottom:'12px'}}>
-                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>NOMBRE *</div>
-                <input
-                  value={categoryForm.name}
-                  onChange={e=>setCategoryForm(p=>({...p,name:e.target.value}))}
-                  placeholder="ej. Paint Protection"
-                  style={{width:'100%',padding:'10px 14px',background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
-                />
-              </div>
-
-              <div style={{marginBottom:'12px'}}>
-                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>DESCRIPCIÓN</div>
-                <input
-                  value={categoryForm.description}
-                  onChange={e=>setCategoryForm(p=>({...p,description:e.target.value}))}
-                  placeholder="Descripción breve"
-                  style={{width:'100%',padding:'10px 14px',background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
-                />
-              </div>
-
-              <div style={{marginBottom:'16px'}}>
-                <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>COLOR</div>
-                <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
-                  {['#c9a84c','#3b82f6','#22c55e','#8b5cf6','#ef4444','#f59e0b','#06b6d4','#ec4899'].map(color=>(
-                    <div key={color} onClick={()=>setCategoryForm(p=>({...p,color}))}
-                      style={{width:'28px',height:'28px',borderRadius:'50%',background:color,cursor:'pointer',border:categoryForm.color===color?'3px solid #fff':'3px solid transparent',transition:'border 0.2s'}}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <div style={{display:'flex',gap:'8px'}}>
-                {editingCategory && (
-                  <button
-                    onClick={()=>{ setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}
-                    style={{flex:1,padding:'10px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'8px',color:'#888',fontSize:'12px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
-                  >CANCELAR</button>
-                )}
-                <button
-                  onClick={async ()=>{
-                    if (!categoryForm.name.trim()) return
-                    if (editingCategory) {
-                      await createClient().from('service_categories').update({
-                        name: categoryForm.name.trim(),
-                        description: categoryForm.description.trim(),
-                        color: categoryForm.color,
-                      }).eq('id', editingCategory.id)
-                      addToast('Categoría actualizada', 'success')
-                    } else {
-                      await createClient().from('service_categories').insert({
-                        name: categoryForm.name.trim(),
-                        description: categoryForm.description.trim(),
-                        color: categoryForm.color,
-                        sort_order: categories.length + 1,
-                      })
-                      addToast('Categoría creada', 'success')
-                    }
-                    setEditingCategory(null)
-                    setCategoryForm({name:'',description:'',color:'#c9a84c'})
-                    await loadCategories()
-                  }}
-                  disabled={!categoryForm.name.trim()}
-                  style={{flex:2,padding:'10px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:'8px',fontSize:'12px',fontWeight:800,cursor:'pointer',opacity:!categoryForm.name.trim()?0.6:1,fontFamily:'Outfit,sans-serif'}}
-                >
-                  {editingCategory ? 'GUARDAR CAMBIOS' : 'CREAR CATEGORÍA'}
-                </button>
-              </div>
-            </div>
-
-            <button
-              onClick={()=>{ setShowNewCategory(false); setEditingCategory(null); setCategoryForm({name:'',description:'',color:'#c9a84c'}) }}
-              style={{width:'100%',padding:'13px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'10px',color:'#888',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
-            >CERRAR</button>
           </div>
         </div>
       )}
