@@ -690,49 +690,58 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* ── Category cards ── */}
-      <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2, 1fr)':'repeat(5, 1fr)',gap:'12px',marginBottom:'32px'}}>
-        {/* Tarjeta "Todos" */}
+      {/* ── Category cards — luxury ── */}
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2, 1fr)':'repeat(5, 1fr)',gap:'14px',marginBottom:'36px'}}>
+
+        {/* Todos */}
         <div onClick={()=>setActiveCategory('all')}
-          style={{background:activeCategory==='all'?'#c9a84c20':'#1a1a1f',border:`2px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',transition:'all 0.2s',position:'relative',overflow:'hidden'}}
+          style={{background:activeCategory==='all'?'linear-gradient(135deg, #1a1608 0%, #2a2010 100%)':'#1a1a1f',border:`1px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
         >
-          <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:activeCategory==='all'?'#c9a84c':'transparent',borderRadius:'12px 12px 0 0',transition:'background 0.2s'}}/>
-          <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'#c9a84c20',border:'2px solid #c9a84c40',margin:'0 auto 8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <span style={{color:'#c9a84c',fontSize:'14px',fontWeight:900}}>✦</span>
+          {activeCategory==='all' && (
+            <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:'linear-gradient(90deg, transparent, #c9a84c, transparent)'}}/>
+          )}
+          <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:'#c9a84c',opacity:activeCategory==='all'?0.08:0.04,lineHeight:1,userSelect:'none'}}>
+            {srcServices.length}
           </div>
-          <div style={{color:activeCategory==='all'?'#c9a84c':'#fff',fontSize:'11px',fontWeight:800,marginBottom:'6px',letterSpacing:'0.5px'}}>Todos</div>
-          <div style={{color:activeCategory==='all'?'#c9a84c':'#888',fontSize:'22px',fontWeight:900,lineHeight:1}}>{srcServices.length}</div>
-          <div style={{color:'#555',fontSize:'10px',marginTop:'2px'}}>{srcServices.length===1?'servicio':'servicios'}</div>
+          <div style={{position:'relative'}}>
+            <div style={{color:activeCategory==='all'?'#c9a84c80':'#555',fontSize:'10px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px'}}>TODOS</div>
+            <div style={{color:activeCategory==='all'?'#c9a84c':'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px'}}>{srcServices.length}</div>
+            <div style={{color:activeCategory==='all'?'#c9a84c80':'#444',fontSize:'11px',fontWeight:600}}>{srcServices.length===1?'servicio':'servicios'}</div>
+          </div>
         </div>
 
-        {/* Tarjetas por categoría */}
+        {/* Por categoría */}
         {categories.map((cat:any)=>{
           const count = srcServices.filter((s:any)=>s.category===cat.name).length
           const isActive = activeCategory===cat.name
           return (
             <div key={cat.id} onClick={()=>setActiveCategory(cat.name)}
-              style={{background:isActive?cat.color+'15':'#1a1a1f',border:`2px solid ${isActive?cat.color:'#2a2a30'}`,borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',transition:'all 0.2s',position:'relative',overflow:'hidden'}}
+              style={{background:isActive?`linear-gradient(135deg, ${cat.color}18 0%, ${cat.color}08 100%)`:'#1a1a1f',border:`1px solid ${isActive?cat.color+'80':'#2a2a30'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
             >
-              <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:isActive?cat.color:'transparent',borderRadius:'12px 12px 0 0',transition:'background 0.2s'}}/>
-              <div style={{width:'32px',height:'32px',borderRadius:'50%',background:cat.color+'25',border:`2px solid ${cat.color}50`,margin:'0 auto 8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <div style={{width:'10px',height:'10px',borderRadius:'50%',background:cat.color}}/>
+              <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:isActive?`linear-gradient(90deg, transparent, ${cat.color}, transparent)`:'transparent',transition:'background 0.2s'}}/>
+              <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:cat.color,opacity:isActive?0.08:0.03,lineHeight:1,userSelect:'none',transition:'opacity 0.2s'}}>{count}</div>
+              <div style={{position:'relative'}}>
+                <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cat.name.toUpperCase()}</div>
+                <div style={{color:isActive?cat.color:'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px',transition:'color 0.2s'}}>{count}</div>
+                <div style={{color:isActive?cat.color+'80':'#444',fontSize:'11px',fontWeight:600}}>{count===1?'servicio':'servicios'}</div>
+                {cat.description && (
+                  <div style={{color:'#333',fontSize:'10px',marginTop:'8px',lineHeight:'1.3',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{cat.description}</div>
+                )}
               </div>
-              <div style={{color:isActive?cat.color:'#fff',fontSize:'11px',fontWeight:800,marginBottom:'6px',letterSpacing:'0.5px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cat.name}</div>
-              <div style={{color:isActive?cat.color:'#888',fontSize:'22px',fontWeight:900,lineHeight:1}}>{count}</div>
-              <div style={{color:'#555',fontSize:'10px',marginTop:'2px'}}>{count===1?'servicio':'servicios'}</div>
             </div>
           )
         })}
 
-        {/* Tarjeta agregar categoría */}
+        {/* Nueva categoría */}
         <div onClick={()=>setShowNewCategory(true)}
-          style={{background:'transparent',border:'2px dashed #2a2a30',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',minHeight:'100px',transition:'border-color 0.2s'}}
-          onMouseEnter={e=>(e.currentTarget.style.borderColor='#c9a84c')}
-          onMouseLeave={e=>(e.currentTarget.style.borderColor='#2a2a30')}
+          style={{background:'transparent',border:'1px dashed #2a2a30',borderRadius:'14px',padding:'20px 16px',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'8px',minHeight:'110px',transition:'all 0.2s'}}
+          onMouseEnter={e=>{ e.currentTarget.style.borderColor='#c9a84c50'; e.currentTarget.style.background='#c9a84c05' }}
+          onMouseLeave={e=>{ e.currentTarget.style.borderColor='#2a2a30'; e.currentTarget.style.background='transparent' }}
         >
-          <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'#c9a84c15',border:'1px solid #c9a84c30',display:'flex',alignItems:'center',justifyContent:'center',color:'#c9a84c',fontSize:'18px'}}>+</div>
-          <div style={{color:'#555',fontSize:'10px',fontWeight:700,fontFamily:'Outfit,sans-serif'}}>NUEVA CATEGORÍA</div>
+          <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'#c9a84c10',border:'1px solid #c9a84c30',display:'flex',alignItems:'center',justifyContent:'center',color:'#c9a84c40',fontSize:'20px',fontWeight:300}}>+</div>
+          <div style={{color:'#444',fontSize:'10px',fontWeight:700,letterSpacing:'1.5px',textAlign:'center',fontFamily:'Outfit,sans-serif'}}>{'NUEVA\nCATEGORÍA'}</div>
         </div>
+
       </div>
 
       {/* ── Services grid ── */}
