@@ -249,6 +249,9 @@ export default function ServicesPage() {
   // categories
   const [categories,       setCategories]       = useState<any[]>([])
   const [activeCategory,   setActiveCategory]   = useState('all')
+  const [editingCatDesc,   setEditingCatDesc]   = useState<any|null>(null)
+  const [catDescForm,      setCatDescForm]      = useState('')
+
   const toastId = useRef(0)
   function addToast(msg: string, type: 'success'|'error') {
     const id = ++toastId.current
@@ -705,28 +708,33 @@ export default function ServicesPage() {
             >
               <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:isActive?`linear-gradient(90deg, transparent, ${cat.color}, transparent)`:'transparent',transition:'background 0.2s'}}/>
               <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:cat.color,opacity:isActive?0.08:0.03,lineHeight:1,userSelect:'none',transition:'opacity 0.2s'}}>{count}</div>
-              {count===0 && (
+              {/* Botones esquina superior derecha */}
+              <div style={{position:'absolute',top:'8px',right:'8px',display:'flex',gap:'4px',zIndex:2}}>
                 <button
-                  onClick={async e=>{
-                    e.stopPropagation()
-                    if (!window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) return
-                    const { error } = await createClient().from('service_categories').delete().eq('id', cat.id)
-                    if (error) { addToast('Error al eliminar: ' + error.message, 'error'); return }
-                    addToast(`Categoría "${cat.name}" eliminada`, 'success')
-                    if (activeCategory===cat.name) setActiveCategory('all')
-                    await loadCategories()
-                  }}
-                  style={{position:'absolute',top:'8px',right:'8px',background:'transparent',border:'1px solid #ef444430',borderRadius:'6px',color:'#ef444460',fontSize:'10px',fontWeight:700,padding:'2px 8px',cursor:'pointer',zIndex:2,lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
-                  title="Eliminar categoría"
-                >×</button>
-              )}
+                  onClick={e=>{ e.stopPropagation(); setEditingCatDesc({...cat}); setCatDescForm(cat.description||'') }}
+                  style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:'6px',color:'#555',fontSize:'11px',padding:'2px 7px',cursor:'pointer',lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
+                  title="Editar categoría"
+                >✎</button>
+                {count===0 && (
+                  <button
+                    onClick={async e=>{
+                      e.stopPropagation()
+                      if (!window.confirm(`¿Eliminar la categoría "${cat.name}"?`)) return
+                      const { error } = await createClient().from('service_categories').delete().eq('id', cat.id)
+                      if (error) { addToast('Error al eliminar: ' + error.message, 'error'); return }
+                      addToast(`Categoría "${cat.name}" eliminada`, 'success')
+                      if (activeCategory===cat.name) setActiveCategory('all')
+                      await loadCategories()
+                    }}
+                    style={{background:'transparent',border:'1px solid #ef444430',borderRadius:'6px',color:'#ef444460',fontSize:'11px',padding:'2px 7px',cursor:'pointer',lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
+                    title="Eliminar categoría"
+                  >×</button>
+                )}
+              </div>
               <div style={{position:'relative'}}>
-                <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:count===0?'24px':'0'}}>{cat.name.toUpperCase()}</div>
+                <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:'44px'}}>{cat.name.toUpperCase()}</div>
                 <div style={{color:isActive?cat.color:'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px',transition:'color 0.2s'}}>{count}</div>
                 <div style={{color:isActive?cat.color+'80':'#444',fontSize:'11px',fontWeight:600}}>{count===1?'servicio':'servicios'}</div>
-                {cat.description && (
-                  <div style={{color:'#333',fontSize:'10px',marginTop:'8px',lineHeight:'1.3',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{cat.description}</div>
-                )}
               </div>
             </div>
           )
@@ -1729,6 +1737,73 @@ export default function ServicesPage() {
               <button onClick={handleDespachar} disabled={!despachoForm.vehicle_id}
                 style={{flex:2,padding:13,background:'#3b82f6',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',opacity:!despachoForm.vehicle_id?0.5:1,fontFamily:'Outfit,sans-serif'}}>
                 DESPACHAR AL MÓVIL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Editar Categoría ── */}
+      {editingCatDesc && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
+          onClick={()=>setEditingCatDesc(null)}>
+          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'16px',padding:'32px',width:'100%',maxWidth:'420px'}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{color:'#c9a84c',fontSize:'11px',fontWeight:700,letterSpacing:'2px',marginBottom:'6px'}}>CATEGORÍA</div>
+            <div style={{color:'#fff',fontSize:'20px',fontWeight:800,marginBottom:'24px'}}>Editar — {editingCatDesc.name}</div>
+
+            <div style={{marginBottom:'16px'}}>
+              <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>NOMBRE</div>
+              <input
+                value={editingCatDesc.name}
+                onChange={e=>setEditingCatDesc((p:any)=>({...p,name:e.target.value}))}
+                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+              />
+            </div>
+
+            <div style={{marginBottom:'24px'}}>
+              <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'6px'}}>
+                DESCRIPCIÓN <span style={{color:'#555',fontWeight:400,textTransform:'none',letterSpacing:0}}>(opcional)</span>
+              </div>
+              <textarea
+                value={catDescForm}
+                onChange={e=>setCatDescForm(e.target.value)}
+                placeholder="ej. Servicios completos de detailing para vehículos premium"
+                rows={3}
+                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',resize:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+              />
+            </div>
+
+            <div style={{marginBottom:'24px'}}>
+              <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'8px'}}>COLOR</div>
+              <div style={{display:'flex',gap:'8px'}}>
+                {['#c9a84c','#3b82f6','#22c55e','#8b5cf6','#ef4444','#f59e0b','#06b6d4','#ec4899'].map(color=>(
+                  <div key={color} onClick={()=>setEditingCatDesc((p:any)=>({...p,color}))}
+                    style={{width:'28px',height:'28px',borderRadius:'50%',background:color,cursor:'pointer',border:editingCatDesc.color===color?'3px solid #fff':'3px solid transparent',transition:'border 0.2s'}}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div style={{display:'flex',gap:'10px'}}>
+              <button onClick={()=>setEditingCatDesc(null)}
+                style={{flex:1,padding:'13px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'10px',color:'#888',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                CANCELAR
+              </button>
+              <button
+                onClick={async ()=>{
+                  const { error } = await createClient().from('service_categories').update({
+                    name: editingCatDesc.name.trim(),
+                    description: catDescForm.trim(),
+                    color: editingCatDesc.color,
+                  }).eq('id', editingCatDesc.id)
+                  if (error) { addToast('Error: ' + error.message, 'error'); return }
+                  addToast('Categoría actualizada', 'success')
+                  setEditingCatDesc(null)
+                  await loadCategories()
+                }}
+                style={{flex:2,padding:'13px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:'10px',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                GUARDAR
               </button>
             </div>
           </div>
