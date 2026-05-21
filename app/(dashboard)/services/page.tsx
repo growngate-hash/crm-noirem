@@ -108,7 +108,7 @@ function ServiceCard({ s, onEdit, onEditService, onToggle, onInsumos }: { s: any
     : s.base_price != null ? `AED ${Number(s.base_price).toLocaleString('en-AE')}` : '—'
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{position:'relative',background:'#141416',border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s'}}
+      style={{position:'relative',background:'#141416',border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s',overflow:'hidden'}}
     >
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -123,18 +123,16 @@ function ServiceCard({ s, onEdit, onEditService, onToggle, onInsumos }: { s: any
       </div>
       {s.description && <div style={{fontSize:13,color:'#888580',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
       {pills.length > 0 && (
-        <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:4}}>
           {pills.map((p: string, i: number) => (
             <span key={i} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#888580'}}>{p}</span>
           ))}
         </div>
       )}
-      <div style={{display:'flex',gap:8,marginTop:12,paddingTop:12,borderTop:'1px solid #2a2a30'}}>
-        <div style={{flex:1,display:'flex',alignItems:'center'}}>
-          <span style={{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:700,background:s.is_active!==false?'#22c55e20':'#ef444420',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444'}}>
-            {s.is_active!==false?'ACTIVO':'INACTIVO'}
-          </span>
-        </div>
+      <div style={{display:'flex',gap:8,marginTop:'auto',paddingTop:12,borderTop:'1px solid #2a2a30',flexWrap:'wrap'}}>
+        <span style={{padding:'6px 12px',borderRadius:20,fontSize:10,fontWeight:800,background:s.is_active!==false?'#22c55e20':'#ef444420',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444',display:'flex',alignItems:'center'}}>
+          {s.is_active!==false?'ACTIVO':'INACTIVO'}
+        </span>
         <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 14px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
           INSUMOS
         </button>
@@ -692,32 +690,49 @@ export default function ServicesPage() {
         </div>
       </div>
 
-      {/* ── Category filter bar ── */}
-      <div style={{display:'flex',gap:'8px',marginBottom:'24px',flexWrap:'wrap',alignItems:'center'}}>
-        <button
-          onClick={()=>setActiveCategory('all')}
-          style={{padding:'8px 16px',background:activeCategory==='all'?'#c9a84c':'#1a1a1f',color:activeCategory==='all'?'#0d0d0f':'#888',border:`1px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'20px',fontSize:'12px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+      {/* ── Category cards ── */}
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2, 1fr)':'repeat(5, 1fr)',gap:'12px',marginBottom:'32px'}}>
+        {/* Tarjeta "Todos" */}
+        <div onClick={()=>setActiveCategory('all')}
+          style={{background:activeCategory==='all'?'#c9a84c20':'#1a1a1f',border:`2px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',transition:'all 0.2s',position:'relative',overflow:'hidden'}}
         >
-          Todos ({srcServices.length})
-        </button>
+          <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:activeCategory==='all'?'#c9a84c':'transparent',borderRadius:'12px 12px 0 0',transition:'background 0.2s'}}/>
+          <div style={{width:'32px',height:'32px',borderRadius:'50%',background:'#c9a84c20',border:'2px solid #c9a84c40',margin:'0 auto 8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <span style={{color:'#c9a84c',fontSize:'14px',fontWeight:900}}>✦</span>
+          </div>
+          <div style={{color:activeCategory==='all'?'#c9a84c':'#fff',fontSize:'11px',fontWeight:800,marginBottom:'6px',letterSpacing:'0.5px'}}>Todos</div>
+          <div style={{color:activeCategory==='all'?'#c9a84c':'#888',fontSize:'22px',fontWeight:900,lineHeight:1}}>{srcServices.length}</div>
+          <div style={{color:'#555',fontSize:'10px',marginTop:'2px'}}>{srcServices.length===1?'servicio':'servicios'}</div>
+        </div>
+
+        {/* Tarjetas por categoría */}
         {categories.map((cat:any)=>{
           const count = srcServices.filter((s:any)=>s.category===cat.name).length
           const isActive = activeCategory===cat.name
           return (
-            <button key={cat.id} onClick={()=>setActiveCategory(cat.name)}
-              style={{padding:'8px 16px',background:isActive?cat.color+'30':'#1a1a1f',color:isActive?cat.color:'#888',border:`1px solid ${isActive?cat.color:'#2a2a30'}`,borderRadius:'20px',fontSize:'12px',fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:'6px',fontFamily:'Outfit,sans-serif'}}
+            <div key={cat.id} onClick={()=>setActiveCategory(cat.name)}
+              style={{background:isActive?cat.color+'15':'#1a1a1f',border:`2px solid ${isActive?cat.color:'#2a2a30'}`,borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',transition:'all 0.2s',position:'relative',overflow:'hidden'}}
             >
-              {cat.name}
-              <span style={{background:isActive?cat.color+'30':'#2a2a30',color:isActive?cat.color:'#666',borderRadius:'10px',padding:'1px 7px',fontSize:'10px',fontWeight:800}}>{count}</span>
-            </button>
+              <div style={{position:'absolute',top:0,left:0,right:0,height:'3px',background:isActive?cat.color:'transparent',borderRadius:'12px 12px 0 0',transition:'background 0.2s'}}/>
+              <div style={{width:'32px',height:'32px',borderRadius:'50%',background:cat.color+'25',border:`2px solid ${cat.color}50`,margin:'0 auto 8px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <div style={{width:'10px',height:'10px',borderRadius:'50%',background:cat.color}}/>
+              </div>
+              <div style={{color:isActive?cat.color:'#fff',fontSize:'11px',fontWeight:800,marginBottom:'6px',letterSpacing:'0.5px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cat.name}</div>
+              <div style={{color:isActive?cat.color:'#888',fontSize:'22px',fontWeight:900,lineHeight:1}}>{count}</div>
+              <div style={{color:'#555',fontSize:'10px',marginTop:'2px'}}>{count===1?'servicio':'servicios'}</div>
+            </div>
           )
         })}
-        <button
-          onClick={()=>setShowNewCategory(true)}
-          style={{padding:'8px 14px',background:'transparent',border:'1px dashed #2a2a30',borderRadius:'20px',color:'#555',fontSize:'11px',fontWeight:700,cursor:'pointer',marginLeft:'auto',fontFamily:'Outfit,sans-serif'}}
+
+        {/* Tarjeta agregar categoría */}
+        <div onClick={()=>setShowNewCategory(true)}
+          style={{background:'transparent',border:'2px dashed #2a2a30',borderRadius:'12px',padding:'16px',cursor:'pointer',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:'6px',minHeight:'100px',transition:'border-color 0.2s'}}
+          onMouseEnter={e=>(e.currentTarget.style.borderColor='#c9a84c')}
+          onMouseLeave={e=>(e.currentTarget.style.borderColor='#2a2a30')}
         >
-          + Categoría
-        </button>
+          <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'#c9a84c15',border:'1px solid #c9a84c30',display:'flex',alignItems:'center',justifyContent:'center',color:'#c9a84c',fontSize:'18px'}}>+</div>
+          <div style={{color:'#555',fontSize:'10px',fontWeight:700,fontFamily:'Outfit,sans-serif'}}>NUEVA CATEGORÍA</div>
+        </div>
       </div>
 
       {/* ── Services grid ── */}
