@@ -100,7 +100,7 @@ function ABtn({ children, onClick, size=28 }: { children: React.ReactNode; onCli
 }
 
 // ─── service card ─────────────────────────────────────────────────────────────
-function ServiceCard({ s, onEdit, onEditService, onToggle, onInsumos }: { s: any; onEdit: () => void; onEditService: () => void; onToggle: () => void; onInsumos: () => void }) {
+function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEditService: () => void; onToggle: () => void; onInsumos: () => void }) {
   const [hov, setHov] = useState(false)
   const pills = (s.variants ?? '').split(',').map((v: string) => v.trim()).filter(Boolean)
   const priceStr = s.price_min != null && s.price_max != null
@@ -153,12 +153,6 @@ function ServiceCard({ s, onEdit, onEditService, onToggle, onInsumos }: { s: any
 }
 
 // ─── demo data ────────────────────────────────────────────────────────────────
-const DEMO_SERVICES = [
-  {id:'s1',name:'Ceramic Coating', code:'CC·PRO',  price_min:3500, price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     variants:'Silver Shield,Gold Armor,Platinum Crystal'},
-  {id:'s2',name:'PPF Full Wrap',   code:'PPF·FULL',price_min:12000,price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', variants:'Front Zones,Full Body,Full Body + Roof'},
-  {id:'s3',name:'Full Restoration',code:'REST·360',price_min:8000, price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    variants:'Stage 1,Stage 2,Stage 3 Concours'},
-  {id:'s4',name:'Interior Detail', code:'INT·LUX', price_min:1500, price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  variants:'Express,Signature,Black Diamond'},
-]
 const DEMO_INVENTORY = [
   {id:'i1',name:'Ceramic Pro 9H',              brand:'Ceramic Pro',stock_qty:340,min_stock:100,unit:'mL'},
   {id:'i2',name:'Gtechniq Crystal Serum Ultra',brand:'Gtechniq',  stock_qty:175,min_stock:100,unit:'mL'},
@@ -166,27 +160,7 @@ const DEMO_INVENTORY = [
   {id:'i4',name:'Koch Chemie',                 brand:'Koch',      stock_qty:520,min_stock:100,unit:'mL'},
   {id:'i5',name:'Carpro Cquartz',              brand:'Carpro',    stock_qty:210,min_stock:100,unit:'mL'},
 ]
-const DEMO_MATERIALS: Record<string, any[]> = {
-  s1: [
-    {id:'m1',service_id:'s1',material_name:'Ceramic Pro 9H',   quantity:150,unit:'mL',  unit_cost:45, category:'Químico'},
-    {id:'m2',service_id:'s1',material_name:'Applicator Pad',   quantity:2,  unit:'unit', unit_cost:8,  category:'Consumible'},
-    {id:'m3',service_id:'s1',material_name:'IR Curing Lamp',   quantity:1,  unit:'unit', unit_cost:0,  category:'Herramienta'},
-  ],
-  s2: [
-    {id:'m4',service_id:'s2',material_name:'PPF Film Roll',     quantity:3,  unit:'unit', unit_cost:280,category:'Consumible'},
-    {id:'m5',service_id:'s2',material_name:'Squeegee Set',      quantity:1,  unit:'unit', unit_cost:35, category:'Herramienta'},
-    {id:'m6',service_id:'s2',material_name:'Gyeon Q2 Mohs+',   quantity:50, unit:'mL',  unit_cost:22, category:'Químico'},
-  ],
-  s3: [
-    {id:'m7',service_id:'s3',material_name:'Carpro Cquartz',    quantity:100,unit:'mL',  unit_cost:38, category:'Químico'},
-    {id:'m8',service_id:'s3',material_name:'Polishing Pad Set', quantity:4,  unit:'unit', unit_cost:25, category:'Consumible'},
-    {id:'m9',service_id:'s3',material_name:'DA Polisher',       quantity:1,  unit:'unit', unit_cost:0,  category:'Herramienta'},
-  ],
-  s4: [
-    {id:'m10',service_id:'s4',material_name:'Leather Cleaner',  quantity:200,unit:'mL',  unit_cost:18, category:'Químico'},
-    {id:'m11',service_id:'s4',material_name:'Microfiber Towel', quantity:5,  unit:'unit', unit_cost:6,  category:'Consumible'},
-  ],
-}
+
 
 const CATS    = ['Lavado','Pulido','Protección','Detailing']
 const LEVELS  = ['Junior','Senior','Master']
@@ -781,7 +755,7 @@ export default function ServicesPage() {
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
                     {catServices.map((s:any)=>(
-                      <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+                      <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
                     ))}
                   </div>
                 </div>
@@ -800,7 +774,7 @@ export default function ServicesPage() {
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
                     {uncategorized.map((s:any)=>(
-                      <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+                      <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
                     ))}
                   </div>
                 </div>
@@ -811,7 +785,7 @@ export default function ServicesPage() {
           // Vista filtrada
           <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(300px, 1fr))',gap:'16px'}}>
             {filteredServices.map((s:any)=>(
-              <ServiceCard key={s.id} s={s} onEdit={()=>openMaterials(s)} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
+              <ServiceCard key={s.id} s={s} onEditService={()=>handleEditService(s)} onToggle={()=>setConfirmToggle(s)} onInsumos={()=>openInsumos(s)}/>
             ))}
           </div>
         )}
