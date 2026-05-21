@@ -99,6 +99,17 @@ function ABtn({ children, onClick, size=28 }: { children: React.ReactNode; onCli
   )
 }
 
+// ─── duration formatter ───────────────────────────────────────────────────────
+function formatDuration(d: any): string {
+  if (!d) return ''
+  const s = String(d).trim()
+  const lower = s.toLowerCase()
+  if (lower.includes('hora') || lower.includes('day') || lower.includes('hour') || lower.includes('min')) return s
+  const num = parseFloat(s)
+  if (!isNaN(num) && String(num) === s) return `${num} ${num === 1 ? 'hora' : 'horas'}`
+  return s
+}
+
 // ─── service card ─────────────────────────────────────────────────────────────
 function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEditService: () => void; onToggle: () => void; onInsumos: () => void }) {
   const [hov, setHov] = useState(false)
@@ -119,7 +130,7 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginLeft:26,marginBottom:14}}>
         <span style={{fontSize:11,color:'#888580'}}>{s.code ?? s.category ?? ''}</span>
-        {(s.duration || s.duration_hrs) && <span style={{fontSize:11,color:'#888580'}}>⏱ {s.duration || s.duration_hrs}</span>}
+        {(s.duration || s.duration_hrs) && <span style={{fontSize:11,color:'#888580'}}>⏱ {formatDuration(s.duration || s.duration_hrs)}</span>}
       </div>
       {s.description && <div style={{fontSize:13,color:'#888580',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
       {pills.length > 0 && (
