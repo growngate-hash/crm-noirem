@@ -214,18 +214,7 @@ function Skeleton({ h=140 }: { h?: number }) {
   )
 }
 
-function SummaryRow({ label, value, highlight=false }: {
-  label:string; value:string; highlight?:boolean
-}) {
-  return (
-    <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-      <span style={{ fontSize:13, color:TEXT2, minWidth:90, flexShrink:0 }}>{label}</span>
-      <span style={{ fontSize:13, color:highlight ? GOLD : TEXT, fontWeight:highlight ? 600 : 400 }}>
-        {value}
-      </span>
-    </div>
-  )
-}
+
 
 // ── Light input styles ────────────────────────────────────────────────────────
 const LIGHT_INP: React.CSSProperties = {
@@ -460,7 +449,9 @@ export default function BookingPage() {
       area:               cf.area           || null,
       community:          cf.community      || null,
       address_notes:      cf.address_notes  || null,
-      price:              selService.base_price ?? null,
+      price:              servicePrice || null,
+      vat:                servicePrice ? vatAmount  : null,
+      total_amount:       servicePrice ? totalAmount : null,
       payment_method:     paymentMethod,
       status:             'pending',
     })
@@ -479,6 +470,10 @@ export default function BookingPage() {
       ? `${formatHour(selTime)} — ${formatHour(selTime + durationHrs)}`
       : ''
   }
+
+  const servicePrice = selService?.base_price ?? 0
+  const vatAmount    = parseFloat((servicePrice * 0.05).toFixed(2))
+  const totalAmount  = parseFloat((servicePrice * 1.05).toFixed(2))
 
   function resetAll() {
     setDone(false); setStep(1); setWeekOffset(0); setPaymentMethod('cash')
@@ -869,21 +864,45 @@ export default function BookingPage() {
               background:'#fff', border:'1px solid #e5e5e5', borderRadius:16,
               boxShadow:'0 1px 3px rgba(0,0,0,0.06)', overflow:'hidden', marginBottom:20,
             }}>
-              {/* Service row */}
+              {/* Service + VAT breakdown */}
               <div style={{ padding:'16px 18px', borderBottom:'1px solid #f0f0f0' }}>
                 <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
                   letterSpacing:'0.06em', marginBottom:8 }}>Service</div>
-                <div style={{ fontSize:17, fontWeight:700, color:'#111' }}>{selService?.name}</div>
-                <div style={{ display:'flex', gap:16, marginTop:8, flexWrap:'wrap', alignItems:'flex-end' }}>
-                  {selService?.base_price != null && (
-                    <span style={{ fontSize:20, fontWeight:700, color:GOLD }}>
-                      AED {selService.base_price}
-                    </span>
-                  )}
-                  {selService?.duration && (
-                    <span style={{ fontSize:13, color:'#888' }}>{selService.duration}</span>
-                  )}
+                <div style={{ display:'flex', justifyContent:'space-between',
+                  alignItems:'flex-start', gap:8 }}>
+                  <div>
+                    <div style={{ fontSize:17, fontWeight:700, color:'#111' }}>{selService?.name}</div>
+                    {selService?.duration && (
+                      <div style={{ fontSize:12, color:'#888', marginTop:3 }}>{selService.duration}</div>
+                    )}
+                  </div>
                 </div>
+
+                {servicePrice > 0 && (
+                  <div style={{ marginTop:14 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between',
+                      padding:'9px 0', borderBottom:'1px solid #f0f0f0' }}>
+                      <span style={{ color:'#888', fontSize:13 }}>Subtotal</span>
+                      <span style={{ color:'#111', fontSize:13, fontWeight:600 }}>
+                        AED {servicePrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between',
+                      padding:'9px 0', borderBottom:'1px solid #f0f0f0' }}>
+                      <span style={{ color:'#888', fontSize:13 }}>VAT (5%)</span>
+                      <span style={{ color:'#888', fontSize:13 }}>
+                        AED {vatAmount.toFixed(2)}
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between',
+                      padding:'12px 0 0' }}>
+                      <span style={{ color:'#111', fontSize:16, fontWeight:800 }}>Total</span>
+                      <span style={{ color:GOLD, fontSize:20, fontWeight:900 }}>
+                        AED {totalAmount.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Date / Time row */}
@@ -1111,7 +1130,12 @@ function ServiceCard({ svc, onClick }: { svc: Service; onClick: () => void }) {
         </div>
         <div style={{ textAlign:'right', flexShrink:0 }}>
           {svc.base_price != null && (
-            <div style={{ fontSize:18, fontWeight:700, color:GOLD }}>AED {svc.base_price}</div>
+            <>
+              <div style={{ fontSize:18, fontWeight:700, color:GOLD }}>AED {svc.base_price}</div>
+              <div style={{ fontSize:11, color:TEXT2, marginTop:3 }}>
+                + VAT 5% = AED {(svc.base_price * 1.05).toFixed(2)}
+              </div>
+            </>
           )}
           {(svc.duration || svc.duration_hrs) && (
             <div style={{ fontSize:11, color:TEXT2, marginTop:4 }}>
