@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 
 // ── Brand tokens ───────────────────────────────────────────────────────────────
 const GOLD   = '#D4AF37'
-const BLUE   = '#3b4fd8'       // new date/time accent
+const BLUE   = '#3b4fd8'
 const BG2    = '#111111'
 const BG3    = '#1a1a1a'
 const BG4    = '#222222'
@@ -16,26 +16,18 @@ const RED    = '#ff4f4f'
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Category {
-  id: string
-  name: string
-  description: string
-  color: string
+  id: string; name: string; description: string; color: string
 }
-
 interface Service {
-  id: string
-  name: string
-  description: string
-  base_price: number
-  duration: string
-  duration_hrs: string
-  category: string
+  id: string; name: string; description: string
+  base_price: number; duration: string; duration_hrs: string; category: string
 }
-
 interface TimeSlot {
-  start: number
-  startLabel: string
-  endLabel: string
+  start: number; startLabel: string; endLabel: string
+}
+interface CustomerForm {
+  full_name: string; whatsapp: string; vehicle_model: string; plate_number: string
+  villa_flat: string; area: string; community: string; address_notes: string
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -50,7 +42,7 @@ function toYMD(d: Date): string {
 function formatHour(hour: number): string {
   const h = Math.floor(hour)
   const m = Math.round((hour % 1) * 60)
-  const period  = h >= 12 ? 'PM' : 'AM'
+  const period   = h >= 12 ? 'PM' : 'AM'
   const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h
   return `${displayH}:${m === 0 ? '00' : String(m).padStart(2,'0')} ${period}`
 }
@@ -77,7 +69,7 @@ function getServiceDurationHours(svc: Service | null): number {
 }
 
 function generateTimeSlots(svc: Service | null): TimeSlot[] {
-  const dur   = getServiceDurationHours(svc)
+  const dur = getServiceDurationHours(svc)
   const slots: TimeSlot[] = []
   let hour = 9
   while (hour + dur <= 19) {
@@ -89,8 +81,8 @@ function generateTimeSlots(svc: Service | null): TimeSlot[] {
 
 function slotToUTC(date: Date, hourStart: number): string {
   const ymd  = toYMD(date)
-  const hStr = String(Math.floor(hourStart)).padStart(2,'0')
-  const mStr = String(Math.round((hourStart % 1) * 60)).padStart(2,'0')
+  const hStr = String(Math.floor(hourStart)).padStart(2,'00')
+  const mStr = String(Math.round((hourStart % 1) * 60)).padStart(2,'00')
   return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
 }
 
@@ -99,31 +91,8 @@ function utcToHour(iso: string): number {
   return ((d.getUTCHours() + 4) % 24) + d.getUTCMinutes() / 60
 }
 
-// ── Shared input style ─────────────────────────────────────────────────────────
-const INP_BASE: React.CSSProperties = {
-  width:'100%', background:BG3, border:`1px solid ${BORDER}`,
-  borderRadius:8, padding:'11px 14px', color:TEXT,
-  fontSize:14, fontFamily:'Outfit,sans-serif', outline:'none',
-  boxSizing:'border-box', transition:'border-color 0.15s',
-}
-
-function Field({ label, value, onChange, placeholder, type='text' }: {
-  label:string; value:string; onChange:(v:string)=>void; placeholder?:string; type?:string
-}) {
-  const [focused, setFocused] = useState(false)
-  return (
-    <div>
-      <label style={{ display:'block', fontSize:11, fontWeight:600, color:TEXT2,
-        letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:6 }}>
-        {label}
-      </label>
-      <input type={type} value={value} placeholder={placeholder}
-        onChange={e => onChange(e.target.value)}
-        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ ...INP_BASE, borderColor: focused ? `${GOLD}80` : BORDER }}
-      />
-    </div>
-  )
+function buildAddress(f: CustomerForm): string {
+  return [f.villa_flat, f.area, f.community, f.address_notes].filter(Boolean).join(', ')
 }
 
 // ── Step indicator ─────────────────────────────────────────────────────────────
@@ -156,13 +125,11 @@ function Back({ onClick }: { onClick: () => void }) {
       background:'none', border:'none', cursor:'pointer',
       color:GOLD, fontSize:13, fontFamily:'Outfit,sans-serif',
       padding:0, marginBottom:20,
-    }}>
-      ← Back
-    </button>
+    }}>← Back</button>
   )
 }
 
-// ── Gold CTA (steps 4 & 5) ────────────────────────────────────────────────────
+// ── Gold CTA ──────────────────────────────────────────────────────────────────
 function GoldBtn({ children, onClick, disabled=false, loading=false }: {
   children:React.ReactNode; onClick?:()=>void; disabled?:boolean; loading?:boolean
 }) {
@@ -180,13 +147,13 @@ function GoldBtn({ children, onClick, disabled=false, loading=false }: {
   )
 }
 
-// ── Category card gradient ─────────────────────────────────────────────────────
+// ── Category card ─────────────────────────────────────────────────────────────
 function catBg(color: string) {
   return `radial-gradient(circle at 75% 25%, ${color}25 0%, transparent 55%),
           linear-gradient(160deg, #161616 0%, #0e0e0e 100%)`
 }
 
-// ── Skeleton ───────────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 function Skeleton({ h=140 }: { h?: number }) {
   return (
     <div style={{
@@ -211,6 +178,27 @@ function SummaryRow({ label, value, highlight=false }: {
   )
 }
 
+// ── Light input (for step 4) ───────────────────────────────────────────────────
+const LIGHT_INP: React.CSSProperties = {
+  width:'100%', padding:'14px 16px', background:'#fff',
+  border:'1px solid #e5e5e5', borderRadius:12, color:'#111',
+  fontSize:14, outline:'none', boxSizing:'border-box',
+  fontFamily:'Outfit,sans-serif',
+}
+
+function FieldLabel({ children, required, optional }: {
+  children: React.ReactNode; required?: boolean; optional?: boolean
+}) {
+  return (
+    <div style={{ color:'#111', fontSize:13, fontWeight:600, marginBottom:6,
+      display:'flex', gap:4, alignItems:'center' }}>
+      {children}
+      {required && <span style={{ color:'#ef4444' }}>*</span>}
+      {optional && <span style={{ color:'#aaa', fontWeight:400 }}>(Optional)</span>}
+    </div>
+  )
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 export default function BookingPage() {
   const [step,       setStep]       = useState(1)
@@ -229,7 +217,10 @@ export default function BookingPage() {
   const [selDate,     setSelDate]     = useState<Date | null>(null)
   const [selTime,     setSelTime]     = useState<number | null>(null)
 
-  const [form, setForm] = useState({ name:'', phone:'', vehicle:'', plate:'', address:'' })
+  const [customerForm, setCustomerForm] = useState<CustomerForm>({
+    full_name: '', whatsapp: '', vehicle_model: '', plate_number: '',
+    villa_flat: '', area: '', community: '', address_notes: '',
+  })
 
   // ── Load categories & services ─────────────────────────────────────────────
   useEffect(() => {
@@ -276,11 +267,18 @@ export default function BookingPage() {
       service_id:         selService.id,
       service_name:       selService.name,
       scheduled_at:       slotToUTC(selDate, selTime),
-      customer_name:      form.name,
-      customer_phone:     form.phone,
-      vehicle_make_model: form.vehicle || null,
-      plate:              form.plate   || null,
-      address:            form.address || null,
+      customer_name:      customerForm.full_name,
+      customer_phone:     customerForm.whatsapp,
+      vehicle_make_model: customerForm.vehicle_model  || null,
+      plate:              customerForm.plate_number   || null,
+      address:            buildAddress(customerForm)  || null,
+      // ── new detailed columns ──
+      vehicle_model:      customerForm.vehicle_model  || null,
+      plate_number:       customerForm.plate_number   || null,
+      villa_flat:         customerForm.villa_flat     || null,
+      area:               customerForm.area           || null,
+      community:          customerForm.community      || null,
+      address_notes:      customerForm.address_notes  || null,
       price:              selService.base_price ?? null,
       status:             'pending',
     })
@@ -304,8 +302,15 @@ export default function BookingPage() {
     setDone(false); setStep(1); setWeekOffset(0)
     setSelCategory(null); setSelService(null)
     setSelDate(null); setSelTime(null)
-    setForm({ name:'', phone:'', vehicle:'', plate:'', address:'' })
+    setCustomerForm({
+      full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
+      villa_flat:'', area:'', community:'', address_notes:'',
+    })
   }
+
+  const cf = customerForm
+  const setCf = (k: keyof CustomerForm, v: string) =>
+    setCustomerForm(p => ({ ...p, [k]: v }))
 
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (done) {
@@ -326,15 +331,14 @@ export default function BookingPage() {
               Booking Received!
             </h2>
             <p style={{ color:'#333', fontSize:15, marginBottom:10, lineHeight:1.6 }}>
-              Thank you, <strong>{form.name}</strong>. Your booking for{' '}
+              Thank you, <strong>{cf.full_name}</strong>. Your booking for{' '}
               <strong style={{ color:GOLD }}>{selService?.name}</strong> on{' '}
               <strong>{selDate ? toYMD(selDate) : ''}</strong> at{' '}
-              <strong style={{ color:GOLD }}>{timeLabel()}</strong>{' '}
-              has been received.
+              <strong style={{ color:GOLD }}>{timeLabel()}</strong> has been received.
             </p>
             <p style={{ color:'#666', fontSize:13 }}>
               We will contact you on{' '}
-              <strong style={{ color:'#111' }}>{form.phone}</strong>{' '}
+              <strong style={{ color:'#111' }}>{cf.whatsapp}</strong>{' '}
               to confirm your appointment.
             </p>
             <button onClick={resetAll} style={{
@@ -427,7 +431,7 @@ export default function BookingPage() {
           <section>
             <Back onClick={() => setStep(2)}/>
 
-            {/* Date selector ───────────────────────────────────────────── */}
+            {/* Date selector */}
             <div style={{
               background:'#fff', borderRadius:16, padding:20,
               marginBottom:16, boxShadow:'0 1px 3px rgba(0,0,0,0.08)',
@@ -436,8 +440,7 @@ export default function BookingPage() {
                 alignItems:'center', marginBottom:16 }}>
                 <div style={{ fontSize:18, fontWeight:700, color:'#111' }}>Select Date</div>
                 <div style={{ display:'flex', gap:8 }}>
-                  <button
-                    onClick={() => setWeekOffset(p => Math.max(0, p - 1))}
+                  <button onClick={() => setWeekOffset(p => Math.max(0, p-1))}
                     disabled={weekOffset === 0}
                     style={{
                       width:36, height:36, borderRadius:'50%',
@@ -447,8 +450,7 @@ export default function BookingPage() {
                       fontSize:18, color: weekOffset === 0 ? '#ccc' : '#333',
                       display:'flex', alignItems:'center', justifyContent:'center',
                     }}>‹</button>
-                  <button
-                    onClick={() => setWeekOffset(p => p + 1)}
+                  <button onClick={() => setWeekOffset(p => p+1)}
                     style={{
                       width:36, height:36, borderRadius:'50%',
                       background:'#fff', border:'1px solid #e5e5e5',
@@ -457,11 +459,9 @@ export default function BookingPage() {
                     }}>›</button>
                 </div>
               </div>
-
-              {/* 7-day grid */}
               <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
                 {days.map((date, idx) => {
-                  const today  = new Date()
+                  const today   = new Date()
                   const isToday = today.toDateString() === date.toDateString()
                   const isPast  = date < today && !isToday
                   const isSel   = selDate?.toDateString() === date.toDateString()
@@ -475,8 +475,7 @@ export default function BookingPage() {
                         cursor: isPast ? 'not-allowed' : 'pointer',
                         background: isSel ? BLUE : 'transparent',
                         opacity: isPast ? 0.3 : 1,
-                        transition:'all 0.15s',
-                        userSelect:'none',
+                        transition:'all 0.15s', userSelect:'none',
                       }}>
                       <div style={{ color: isSel ? '#fff' : '#888',
                         fontSize:10, fontWeight:500, marginBottom:3 }}>
@@ -495,7 +494,7 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* Time slots ──────────────────────────────────────────────── */}
+            {/* Time slots */}
             {selDate && (
               <div style={{
                 background:'#fff', borderRadius:16, padding:20,
@@ -529,7 +528,6 @@ export default function BookingPage() {
               </div>
             )}
 
-            {/* Continue button ─────────────────────────────────────────── */}
             <button
               onClick={() => { if (selDate && selTime !== null) setStep(4) }}
               disabled={!selDate || selTime === null}
@@ -546,38 +544,132 @@ export default function BookingPage() {
           </section>
         )}
 
-        {/* ── STEP 4: Customer details ─────────────────────────────────────── */}
+        {/* ── STEP 4: Customer Details ─────────────────────────────────────── */}
         {step === 4 && (
           <section>
             <Back onClick={() => setStep(3)}/>
-            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>Your Details</h1>
-            <p style={{ color:'#666', fontSize:14, marginBottom:24 }}>
+
+            <h2 style={{ fontSize:22, fontWeight:700, color:'#111', marginBottom:4 }}>
+              Your Details
+            </h2>
+            <p style={{ color:'#888', fontSize:14, marginBottom:24 }}>
               Fill in your information to complete the booking
             </p>
-            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <Field label="Full Name *" value={form.name}
-                onChange={v => setForm(p => ({ ...p, name:v }))} placeholder="Your full name"/>
-              <Field label="WhatsApp Number *" value={form.phone} type="tel"
-                onChange={v => setForm(p => ({ ...p, phone:v }))} placeholder="+971 XX XXX XXXX"/>
-              <Field label="Vehicle Make & Model" value={form.vehicle}
-                onChange={v => setForm(p => ({ ...p, vehicle:v }))}
-                placeholder="e.g. Toyota Land Cruiser 2023"/>
-              <Field label="Plate Number" value={form.plate}
-                onChange={v => setForm(p => ({ ...p, plate:v }))} placeholder="e.g. ABC 1234"/>
-              <Field label="Service Address" value={form.address}
-                onChange={v => setForm(p => ({ ...p, address:v }))}
-                placeholder="Where should we come to?"/>
+
+            {/* Selected service summary */}
+            <div style={{ marginBottom:20 }}>
+              <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
+                Selected Service
+              </div>
+              <div style={{
+                background:'#efefef', borderRadius:12, padding:'14px 16px',
+                display:'flex', justifyContent:'space-between', alignItems:'center',
+              }}>
+                <span style={{ color:'#555', fontSize:14 }}>{selService?.name}</span>
+                {selService?.base_price != null && (
+                  <span style={{ color:BLUE, fontSize:14, fontWeight:700 }}>
+                    AED {selService.base_price}
+                  </span>
+                )}
+              </div>
             </div>
-            {err && <p style={{ color:RED, fontSize:13, marginTop:12 }}>{err}</p>}
-            <GoldBtn onClick={() => {
-              if (!form.name.trim() || !form.phone.trim()) {
-                setErr('Full name and WhatsApp number are required.')
-                return
-              }
-              setErr(''); setStep(5)
+
+            {/* Selected date & time summary */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
+                Selected Date & Time
+              </div>
+              <div style={{
+                background:'#efefef', borderRadius:12, padding:'14px 16px',
+              }}>
+                <span style={{ color:'#555', fontSize:14 }}>
+                  {selDate?.toLocaleDateString('en-US', {
+                    weekday:'long', month:'long', day:'numeric',
+                  })}{selTime !== null ? ` — ${formatHour(selTime)}` : ''}
+                </span>
+              </div>
+            </div>
+
+            {/* Personal info */}
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>Full Name</FieldLabel>
+              <input value={cf.full_name} onChange={e => setCf('full_name', e.target.value)}
+                placeholder="Your full name" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>WhatsApp Number</FieldLabel>
+              <input type="tel" value={cf.whatsapp} onChange={e => setCf('whatsapp', e.target.value)}
+                placeholder="+971 XX XXX XXXX" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>Vehicle Plate Number</FieldLabel>
+              <input value={cf.plate_number} onChange={e => setCf('plate_number', e.target.value)}
+                placeholder="Enter plate number" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel>Vehicle Make & Model</FieldLabel>
+              <input value={cf.vehicle_model} onChange={e => setCf('vehicle_model', e.target.value)}
+                placeholder="e.g. Toyota Land Cruiser 2023" style={LIGHT_INP}/>
+            </div>
+
+            {/* Address divider */}
+            <div style={{
+              display:'flex', alignItems:'center', gap:10, margin:'20px 0 16px',
             }}>
-              Review Booking →
-            </GoldBtn>
+              <div style={{ flex:1, height:1, background:'#e5e5e5' }}/>
+              <span style={{ color:'#aaa', fontSize:12, fontWeight:600, whiteSpace:'nowrap' }}>
+                SERVICE ADDRESS
+              </span>
+              <div style={{ flex:1, height:1, background:'#e5e5e5' }}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>Villa / Flat Number</FieldLabel>
+              <input value={cf.villa_flat} onChange={e => setCf('villa_flat', e.target.value)}
+                placeholder="Enter villa/flat number" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>Area Name</FieldLabel>
+              <input value={cf.area} onChange={e => setCf('area', e.target.value)}
+                placeholder="Enter area name" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:16 }}>
+              <FieldLabel required>Community Name</FieldLabel>
+              <input value={cf.community} onChange={e => setCf('community', e.target.value)}
+                placeholder="Enter community name" style={LIGHT_INP}/>
+            </div>
+
+            <div style={{ marginBottom:24 }}>
+              <FieldLabel optional>Other Address Details</FieldLabel>
+              <textarea value={cf.address_notes} onChange={e => setCf('address_notes', e.target.value)}
+                placeholder="Additional details, parking spot, access code…"
+                rows={3} style={{ ...LIGHT_INP, resize:'none' }}/>
+            </div>
+
+            {err && <p style={{ color:RED, fontSize:13, marginBottom:12 }}>{err}</p>}
+
+            <button
+              onClick={() => {
+                if (!cf.full_name.trim() || !cf.whatsapp.trim() ||
+                    !cf.plate_number.trim() || !cf.villa_flat.trim() ||
+                    !cf.area.trim() || !cf.community.trim()) {
+                  setErr('Please fill in all required fields.')
+                  return
+                }
+                setErr(''); setStep(5)
+              }}
+              style={{
+                width:'100%', padding:'16px', background:BLUE, color:'#fff',
+                border:'none', borderRadius:12, fontSize:16, fontWeight:700,
+                cursor:'pointer', fontFamily:'Outfit,sans-serif', transition:'background 0.15s',
+              }}>
+              Continue
+            </button>
           </section>
         )}
 
@@ -633,14 +725,23 @@ export default function BookingPage() {
               </div>
 
               {/* Customer */}
+              <div style={{ padding:'14px 18px', borderBottom:`1px solid ${BORDER}` }}>
+                <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
+                  letterSpacing:'0.06em', marginBottom:12 }}>Customer</div>
+                <SummaryRow label="Name"     value={cf.full_name}/>
+                <SummaryRow label="WhatsApp" value={cf.whatsapp} highlight/>
+                {cf.vehicle_model  && <SummaryRow label="Vehicle"  value={cf.vehicle_model}/>}
+                {cf.plate_number   && <SummaryRow label="Plate"    value={cf.plate_number}/>}
+              </div>
+
+              {/* Address */}
               <div style={{ padding:'14px 18px' }}>
                 <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:12 }}>Customer Details</div>
-                <SummaryRow label="Name"     value={form.name}/>
-                <SummaryRow label="WhatsApp" value={form.phone} highlight/>
-                {form.vehicle && <SummaryRow label="Vehicle" value={form.vehicle}/>}
-                {form.plate   && <SummaryRow label="Plate"   value={form.plate}/>}
-                {form.address && <SummaryRow label="Address" value={form.address}/>}
+                  letterSpacing:'0.06em', marginBottom:12 }}>Service Address</div>
+                {cf.villa_flat  && <SummaryRow label="Villa/Flat" value={cf.villa_flat}/>}
+                {cf.area        && <SummaryRow label="Area"       value={cf.area}/>}
+                {cf.community   && <SummaryRow label="Community"  value={cf.community}/>}
+                {cf.address_notes && <SummaryRow label="Notes"    value={cf.address_notes}/>}
               </div>
             </div>
 
