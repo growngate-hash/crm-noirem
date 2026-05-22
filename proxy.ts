@@ -23,7 +23,7 @@ export async function proxy(req: NextRequest) {
 
   const { data: { session } } = await supabase.auth.getSession()
 
-  if (!session && !req.nextUrl.pathname.startsWith('/login')) {
+  if (!session && !req.nextUrl.pathname.startsWith('/login') && !req.nextUrl.pathname.startsWith('/booking')) {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
@@ -36,6 +36,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|login|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|login|auth|booking|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
