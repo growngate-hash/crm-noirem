@@ -130,7 +130,13 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginLeft:26,marginBottom:14}}>
         <span style={{fontSize:11,color:'#888580'}}>{s.code ?? s.category ?? ''}</span>
-        {(s.duration || s.duration_hrs) && <span style={{fontSize:11,color:'#888580',textTransform:'uppercase'}}>⏱ {formatDuration(s.duration || s.duration_hrs)}</span>}
+        {(s.duration_minutes || s.duration || s.duration_hrs) && (
+          <span style={{fontSize:11,color:'#888580',textTransform:'uppercase'}}>
+            ⏱ {s.duration_minutes
+                ? `${s.duration_minutes / 60} ${s.duration_minutes / 60 === 1 ? 'hora' : 'horas'}`
+                : formatDuration(s.duration || s.duration_hrs)}
+          </span>
+        )}
       </div>
       {s.description && <div style={{fontSize:13,color:'#888580',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
       {pills.length > 0 && (
