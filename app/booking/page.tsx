@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 // ── Brand tokens ───────────────────────────────────────────────────────────────
@@ -14,6 +14,58 @@ const TEXT2  = '#888888'
 const BORDER = 'rgba(255,255,255,0.08)'
 const RED    = '#ff4f4f'
 
+// ── Dubai areas fallback list ──────────────────────────────────────────────────
+const DUBAI_AREAS = [
+  'JVC - Jumeirah Village Circle',
+  'JVT - Jumeirah Village Triangle',
+  'Downtown Dubai',
+  'Dubai Marina',
+  'Palm Jumeirah',
+  'Business Bay',
+  'DIFC',
+  'Jumeirah',
+  'Al Barsha',
+  'Mirdif',
+  'Deira',
+  'Bur Dubai',
+  'Al Quoz',
+  'Dubai Hills Estate',
+  'Arabian Ranches',
+  'Motor City',
+  'Sports City',
+  'Discovery Gardens',
+  'International City',
+  'Silicon Oasis',
+  'Academic City',
+  'Al Furjan',
+  'Damac Hills',
+  'Town Square',
+  'Mudon',
+  'Reem',
+  'Nad Al Sheba',
+  'Al Warqa',
+  'Rashidiya',
+  'Muhaisnah',
+  'Al Nahda',
+  'Al Qusais',
+  'Karama',
+  'Satwa',
+  'Mankhool',
+  'Al Fahidi',
+  'Creek',
+  'Festival City',
+  'Ras Al Khor',
+  'Jebel Ali',
+  'Dubai South',
+  'Blue Waters',
+  'City Walk',
+  'La Mer',
+  'Umm Suqeim',
+  'Al Safa',
+  'Al Wasl',
+  'Al Manara',
+]
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Category {
   id: string; name: string; description: string; color: string
@@ -26,8 +78,10 @@ interface TimeSlot {
   start: number; startLabel: string; endLabel: string
 }
 interface CustomerForm {
-  full_name: string; whatsapp: string; vehicle_model: string; plate_number: string
-  villa_flat: string; area: string; community: string; address_notes: string
+  full_name: string; whatsapp: string
+  vehicle_model: string; plate_number: string
+  address: string
+  area: string; community: string; villa_flat: string; address_notes: string
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -81,7 +135,7 @@ function generateTimeSlots(svc: Service | null): TimeSlot[] {
 
 function slotToUTC(date: Date, hourStart: number): string {
   const ymd  = toYMD(date)
-  const hStr = String(Math.floor(hourStart)).padStart(2,'00')
+  const hStr = String(Math.floor(hourStart)).padStart(2,'0')
   const mStr = String(Math.round((hourStart % 1) * 60)).padStart(2,'00')
   return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
 }
@@ -92,10 +146,11 @@ function utcToHour(iso: string): number {
 }
 
 function buildAddress(f: CustomerForm): string {
-  return [f.villa_flat, f.area, f.community, f.address_notes].filter(Boolean).join(', ')
+  return [f.address, f.villa_flat, f.area, f.community, f.address_notes]
+    .filter(Boolean).join(', ')
 }
 
-// ── Step indicator ─────────────────────────────────────────────────────────────
+// ── Step bar ──────────────────────────────────────────────────────────────────
 function StepBar({ current }: { current: number }) {
   const labels = ['Category','Service','Date & Time','Details','Confirm']
   return (
@@ -117,19 +172,16 @@ function StepBar({ current }: { current: number }) {
   )
 }
 
-// ── Back button ────────────────────────────────────────────────────────────────
 function Back({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
       display:'inline-flex', alignItems:'center', gap:5,
       background:'none', border:'none', cursor:'pointer',
-      color:GOLD, fontSize:13, fontFamily:'Outfit,sans-serif',
-      padding:0, marginBottom:20,
+      color:GOLD, fontSize:13, fontFamily:'Outfit,sans-serif', padding:0, marginBottom:20,
     }}>← Back</button>
   )
 }
 
-// ── Gold CTA ──────────────────────────────────────────────────────────────────
 function GoldBtn({ children, onClick, disabled=false, loading=false }: {
   children:React.ReactNode; onClick?:()=>void; disabled?:boolean; loading?:boolean
 }) {
@@ -147,13 +199,11 @@ function GoldBtn({ children, onClick, disabled=false, loading=false }: {
   )
 }
 
-// ── Category card ─────────────────────────────────────────────────────────────
 function catBg(color: string) {
   return `radial-gradient(circle at 75% 25%, ${color}25 0%, transparent 55%),
           linear-gradient(160deg, #161616 0%, #0e0e0e 100%)`
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────────
 function Skeleton({ h=140 }: { h?: number }) {
   return (
     <div style={{
@@ -164,7 +214,6 @@ function Skeleton({ h=140 }: { h?: number }) {
   )
 }
 
-// ── Summary row ───────────────────────────────────────────────────────────────
 function SummaryRow({ label, value, highlight=false }: {
   label:string; value:string; highlight?:boolean
 }) {
@@ -178,23 +227,157 @@ function SummaryRow({ label, value, highlight=false }: {
   )
 }
 
-// ── Light input (for step 4) ───────────────────────────────────────────────────
+// ── Light input styles ────────────────────────────────────────────────────────
 const LIGHT_INP: React.CSSProperties = {
   width:'100%', padding:'14px 16px', background:'#fff',
   border:'1px solid #e5e5e5', borderRadius:12, color:'#111',
-  fontSize:14, outline:'none', boxSizing:'border-box',
-  fontFamily:'Outfit,sans-serif',
+  fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Outfit,sans-serif',
 }
 
-function FieldLabel({ children, required, optional }: {
+function FLabel({ children, required, optional }: {
   children: React.ReactNode; required?: boolean; optional?: boolean
 }) {
   return (
     <div style={{ color:'#111', fontSize:13, fontWeight:600, marginBottom:6,
-      display:'flex', gap:4, alignItems:'center' }}>
+      display:'flex', gap:4, alignItems:'center', flexWrap:'wrap' }}>
       {children}
       {required && <span style={{ color:'#ef4444' }}>*</span>}
-      {optional && <span style={{ color:'#aaa', fontWeight:400 }}>(Optional)</span>}
+      {optional && <span style={{ color:'#aaa', fontWeight:400, fontSize:12 }}>(Optional)</span>}
+    </div>
+  )
+}
+
+// ── Address search with Dubai areas fallback ───────────────────────────────────
+function AddressSearch({
+  value, onChange, onAreaChange, onCommunityChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onAreaChange: (v: string) => void
+  onCommunityChange: (v: string) => void
+}) {
+  const [suggestions, setSuggestions]   = useState<string[]>([])
+  const [showDrop, setShowDrop]         = useState(false)
+  const [googleReady, setGoogleReady]   = useState(false)
+  const inputRef  = useRef<HTMLInputElement>(null)
+  const dropRef   = useRef<HTMLDivElement>(null)
+
+  // ── Try to load Google Places (only if key is defined) ─────────────────────
+  useEffect(() => {
+    const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
+    if (!key) return
+    if ((window as any).google?.maps?.places) { setGoogleReady(true); return }
+
+    const existing = document.getElementById('gmap-script')
+    if (existing) { existing.addEventListener('load', () => setGoogleReady(true)); return }
+
+    const script = document.createElement('script')
+    script.id  = 'gmap-script'
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
+    script.async = true
+    script.onload = () => setGoogleReady(true)
+    document.head.appendChild(script)
+  }, [])
+
+  // ── Wire Google Autocomplete when ready ────────────────────────────────────
+  useEffect(() => {
+    if (!googleReady || !inputRef.current) return
+    const g = (window as any).google
+    if (!g?.maps?.places) return
+
+    const ac = new g.maps.places.Autocomplete(inputRef.current, {
+      componentRestrictions: { country: 'ae' },
+      fields: ['formatted_address', 'address_components'],
+      types: ['address'],
+    })
+    ac.addListener('place_changed', () => {
+      const place = ac.getPlace()
+      if (!place.formatted_address) return
+      const comps: Array<{ types: string[]; long_name: string }> = place.address_components || []
+      const get = (t: string) => comps.find(c => c.types.includes(t))?.long_name || ''
+      onChange(place.formatted_address)
+      onAreaChange(get('sublocality_level_1') || get('sublocality') || get('neighborhood'))
+      onCommunityChange(get('locality') || get('administrative_area_level_2'))
+    })
+  }, [googleReady, onChange, onAreaChange, onCommunityChange])
+
+  // ── Dubai areas fallback ───────────────────────────────────────────────────
+  function handleChange(v: string) {
+    onChange(v)
+    if (googleReady) return               // Google handles suggestions
+    if (v.length >= 2) {
+      const filtered = DUBAI_AREAS.filter(a => a.toLowerCase().includes(v.toLowerCase())).slice(0, 6)
+      setSuggestions(filtered)
+      setShowDrop(filtered.length > 0)
+    } else {
+      setShowDrop(false)
+    }
+  }
+
+  function pickSuggestion(s: string) {
+    onChange(s)
+    const parts = s.split(' - ')
+    onAreaChange(parts[0])
+    onCommunityChange(parts[1] ?? '')
+    setShowDrop(false)
+  }
+
+  // close on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
+          inputRef.current && !inputRef.current.contains(e.target as Node)) {
+        setShowDrop(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div style={{ position:'relative' }}>
+      <div style={{ position:'relative' }}>
+        <input
+          ref={inputRef}
+          id="address-autocomplete"
+          value={value}
+          onChange={e => handleChange(e.target.value)}
+          onFocus={() => !googleReady && suggestions.length > 0 && setShowDrop(true)}
+          placeholder="Search area, community or address…"
+          autoComplete="off"
+          style={{ ...LIGHT_INP, paddingLeft:44 }}
+        />
+        {/* magnifier icon */}
+        <span style={{
+          position:'absolute', left:14, top:'50%', transform:'translateY(-50%)',
+          color:'#aaa', fontSize:17, pointerEvents:'none', lineHeight:1,
+        }}>🔍</span>
+      </div>
+
+      {/* Dropdown */}
+      {showDrop && suggestions.length > 0 && (
+        <div ref={dropRef} style={{
+          position:'absolute', top:'calc(100% + 4px)', left:0, right:0,
+          background:'#fff', border:'1px solid #e5e5e5', borderRadius:12,
+          boxShadow:'0 4px 20px rgba(0,0,0,0.10)', zIndex:200, overflow:'hidden',
+        }}>
+          {suggestions.map((s, i) => (
+            <div key={i} onMouseDown={() => pickSuggestion(s)}
+              style={{
+                padding:'12px 16px', cursor:'pointer', fontSize:14, color:'#333',
+                borderBottom: i < suggestions.length-1 ? '1px solid #f5f5f5' : 'none',
+                display:'flex', alignItems:'center', gap:10,
+                transition:'background 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background='#f9f9f9')}
+              onMouseLeave={e => (e.currentTarget.style.background='#fff')}
+            >
+              <span style={{ fontSize:14 }}>📍</span>
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -217,22 +400,22 @@ export default function BookingPage() {
   const [selDate,     setSelDate]     = useState<Date | null>(null)
   const [selTime,     setSelTime]     = useState<number | null>(null)
 
-  const [customerForm, setCustomerForm] = useState<CustomerForm>({
-    full_name: '', whatsapp: '', vehicle_model: '', plate_number: '',
-    villa_flat: '', area: '', community: '', address_notes: '',
+  const [cf, setCf_] = useState<CustomerForm>({
+    full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
+    address:'', area:'', community:'', villa_flat:'', address_notes:'',
   })
-
-  // ── Load categories & services ─────────────────────────────────────────────
+  const setCf = useCallback((k: keyof CustomerForm, v: string) =>
+    setCf_(p => ({ ...p, [k]: v })), [])
+  // ── Load ───────────────────────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const sb = createClient()
-      const [{ data: cats, error: catErr }, { data: svcs, error: svcErr }] =
-        await Promise.all([
-          sb.from('service_categories').select('*').eq('is_active', true).order('sort_order'),
-          sb.from('services').select('*').eq('is_active', true).order('name'),
-        ])
-      if (catErr) console.error('[booking] categories:', catErr.message)
-      if (svcErr) console.error('[booking] services:', svcErr.message)
+      const [{ data: cats, error: ce }, { data: svcs, error: se }] = await Promise.all([
+        sb.from('service_categories').select('*').eq('is_active', true).order('sort_order'),
+        sb.from('services').select('*').eq('is_active', true).order('name'),
+      ])
+      if (ce) console.error('[booking] categories:', ce.message)
+      if (se) console.error('[booking] services:', se.message)
       setCategories(cats ?? [])
       setServices(svcs ?? [])
       setLoading(false)
@@ -240,45 +423,41 @@ export default function BookingPage() {
     load()
   }, [])
 
-  // ── Check taken hours when date changes ────────────────────────────────────
+  // ── Taken slots ────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!selDate) return
     setTakenHours([])
     const ymd = toYMD(selDate)
-    async function checkSlots() {
-      const sb = createClient()
-      const { data } = await sb
-        .from('booking_requests')
-        .select('scheduled_at')
-        .gte('scheduled_at', `${ymd}T00:00:00.000+04:00`)
-        .lte('scheduled_at', `${ymd}T23:59:59.999+04:00`)
-        .neq('status', 'cancelled')
-      setTakenHours((data ?? []).map((r: { scheduled_at: string }) => utcToHour(r.scheduled_at)))
-    }
-    checkSlots()
+    createClient()
+      .from('booking_requests')
+      .select('scheduled_at')
+      .gte('scheduled_at', `${ymd}T00:00:00.000+04:00`)
+      .lte('scheduled_at', `${ymd}T23:59:59.999+04:00`)
+      .neq('status', 'cancelled')
+      .then(({ data }) =>
+        setTakenHours((data ?? []).map((r: { scheduled_at: string }) => utcToHour(r.scheduled_at)))
+      )
   }, [selDate])
 
   // ── Submit ─────────────────────────────────────────────────────────────────
   async function submit() {
     if (!selService || !selDate || selTime === null) return
     setSaving(true); setErr('')
-    const sb = createClient()
-    const { error: dbErr } = await sb.from('booking_requests').insert({
+    const { error: dbErr } = await createClient().from('booking_requests').insert({
       service_id:         selService.id,
       service_name:       selService.name,
       scheduled_at:       slotToUTC(selDate, selTime),
-      customer_name:      customerForm.full_name,
-      customer_phone:     customerForm.whatsapp,
-      vehicle_make_model: customerForm.vehicle_model  || null,
-      plate:              customerForm.plate_number   || null,
-      address:            buildAddress(customerForm)  || null,
-      // ── new detailed columns ──
-      vehicle_model:      customerForm.vehicle_model  || null,
-      plate_number:       customerForm.plate_number   || null,
-      villa_flat:         customerForm.villa_flat     || null,
-      area:               customerForm.area           || null,
-      community:          customerForm.community      || null,
-      address_notes:      customerForm.address_notes  || null,
+      customer_name:      cf.full_name,
+      customer_phone:     cf.whatsapp,
+      vehicle_make_model: cf.vehicle_model  || null,
+      plate:              cf.plate_number   || null,
+      address:            buildAddress(cf)  || null,
+      vehicle_model:      cf.vehicle_model  || null,
+      plate_number:       cf.plate_number   || null,
+      villa_flat:         cf.villa_flat     || null,
+      area:               cf.area           || null,
+      community:          cf.community      || null,
+      address_notes:      cf.address_notes  || null,
       price:              selService.base_price ?? null,
       status:             'pending',
     })
@@ -300,17 +479,10 @@ export default function BookingPage() {
 
   function resetAll() {
     setDone(false); setStep(1); setWeekOffset(0)
-    setSelCategory(null); setSelService(null)
-    setSelDate(null); setSelTime(null)
-    setCustomerForm({
-      full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
-      villa_flat:'', area:'', community:'', address_notes:'',
-    })
+    setSelCategory(null); setSelService(null); setSelDate(null); setSelTime(null)
+    setCf_({ full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
+      address:'', area:'', community:'', villa_flat:'', address_notes:'' })
   }
-
-  const cf = customerForm
-  const setCf = (k: keyof CustomerForm, v: string) =>
-    setCustomerForm(p => ({ ...p, [k]: v }))
 
   // ── DONE ──────────────────────────────────────────────────────────────────
   if (done) {
@@ -346,9 +518,7 @@ export default function BookingPage() {
               background:'transparent', border:`1px solid ${GOLD}60`,
               color:GOLD, fontSize:13, fontWeight:600, cursor:'pointer',
               fontFamily:'Outfit,sans-serif',
-            }}>
-              Book Another Service
-            </button>
+            }}>Book Another Service</button>
           </div>
         </div>
       </div>
@@ -452,9 +622,8 @@ export default function BookingPage() {
                     }}>‹</button>
                   <button onClick={() => setWeekOffset(p => p+1)}
                     style={{
-                      width:36, height:36, borderRadius:'50%',
-                      background:'#fff', border:'1px solid #e5e5e5',
-                      cursor:'pointer', fontSize:18, color:'#333',
+                      width:36, height:36, borderRadius:'50%', background:'#fff',
+                      border:'1px solid #e5e5e5', cursor:'pointer', fontSize:18, color:'#333',
                       display:'flex', alignItems:'center', justifyContent:'center',
                     }}>›</button>
                 </div>
@@ -548,7 +717,6 @@ export default function BookingPage() {
         {step === 4 && (
           <section>
             <Back onClick={() => setStep(3)}/>
-
             <h2 style={{ fontSize:22, fontWeight:700, color:'#111', marginBottom:4 }}>
               Your Details
             </h2>
@@ -556,7 +724,7 @@ export default function BookingPage() {
               Fill in your information to complete the booking
             </p>
 
-            {/* Selected service summary */}
+            {/* Service summary */}
             <div style={{ marginBottom:20 }}>
               <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
                 Selected Service
@@ -574,14 +742,12 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* Selected date & time summary */}
+            {/* Date/time summary */}
             <div style={{ marginBottom:24 }}>
               <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
                 Selected Date & Time
               </div>
-              <div style={{
-                background:'#efefef', borderRadius:12, padding:'14px 16px',
-              }}>
+              <div style={{ background:'#efefef', borderRadius:12, padding:'14px 16px' }}>
                 <span style={{ color:'#555', fontSize:14 }}>
                   {selDate?.toLocaleDateString('en-US', {
                     weekday:'long', month:'long', day:'numeric',
@@ -592,30 +758,30 @@ export default function BookingPage() {
 
             {/* Personal info */}
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>Full Name</FieldLabel>
+              <FLabel required>Full Name</FLabel>
               <input value={cf.full_name} onChange={e => setCf('full_name', e.target.value)}
                 placeholder="Your full name" style={LIGHT_INP}/>
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>WhatsApp Number</FieldLabel>
+              <FLabel required>WhatsApp Number</FLabel>
               <input type="tel" value={cf.whatsapp} onChange={e => setCf('whatsapp', e.target.value)}
                 placeholder="+971 XX XXX XXXX" style={LIGHT_INP}/>
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>Vehicle Plate Number</FieldLabel>
+              <FLabel required>Vehicle Plate Number</FLabel>
               <input value={cf.plate_number} onChange={e => setCf('plate_number', e.target.value)}
                 placeholder="Enter plate number" style={LIGHT_INP}/>
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <FieldLabel>Vehicle Make & Model</FieldLabel>
+              <FLabel>Vehicle Make & Model</FLabel>
               <input value={cf.vehicle_model} onChange={e => setCf('vehicle_model', e.target.value)}
                 placeholder="e.g. Toyota Land Cruiser 2023" style={LIGHT_INP}/>
             </div>
 
-            {/* Address divider */}
+            {/* ── SERVICE ADDRESS ─────────────────────────────────────── */}
             <div style={{
               display:'flex', alignItems:'center', gap:10, margin:'20px 0 16px',
             }}>
@@ -626,28 +792,39 @@ export default function BookingPage() {
               <div style={{ flex:1, height:1, background:'#e5e5e5' }}/>
             </div>
 
+            {/* Search field with autocomplete */}
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>Villa / Flat Number</FieldLabel>
-              <input value={cf.villa_flat} onChange={e => setCf('villa_flat', e.target.value)}
-                placeholder="Enter villa/flat number" style={LIGHT_INP}/>
+              <FLabel required>Search Location</FLabel>
+              <AddressSearch
+                value={cf.address}
+                onChange={v => setCf('address', v)}
+                onAreaChange={v => setCf('area', v)}
+                onCommunityChange={v => setCf('community', v)}
+              />
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>Area Name</FieldLabel>
+              <FLabel required>Area Name</FLabel>
               <input value={cf.area} onChange={e => setCf('area', e.target.value)}
                 placeholder="Enter area name" style={LIGHT_INP}/>
             </div>
 
             <div style={{ marginBottom:16 }}>
-              <FieldLabel required>Community Name</FieldLabel>
+              <FLabel required>Community Name</FLabel>
               <input value={cf.community} onChange={e => setCf('community', e.target.value)}
                 placeholder="Enter community name" style={LIGHT_INP}/>
             </div>
 
+            <div style={{ marginBottom:16 }}>
+              <FLabel required>Villa / Flat Number</FLabel>
+              <input value={cf.villa_flat} onChange={e => setCf('villa_flat', e.target.value)}
+                placeholder="Enter villa/flat number" style={LIGHT_INP}/>
+            </div>
+
             <div style={{ marginBottom:24 }}>
-              <FieldLabel optional>Other Address Details</FieldLabel>
+              <FLabel optional>Other Address Details</FLabel>
               <textarea value={cf.address_notes} onChange={e => setCf('address_notes', e.target.value)}
-                placeholder="Additional details, parking spot, access code…"
+                placeholder="Additional details, parking spot, building access, etc."
                 rows={3} style={{ ...LIGHT_INP, resize:'none' }}/>
             </div>
 
@@ -656,8 +833,8 @@ export default function BookingPage() {
             <button
               onClick={() => {
                 if (!cf.full_name.trim() || !cf.whatsapp.trim() ||
-                    !cf.plate_number.trim() || !cf.villa_flat.trim() ||
-                    !cf.area.trim() || !cf.community.trim()) {
+                    !cf.plate_number.trim() || !cf.address.trim() ||
+                    !cf.area.trim() || !cf.community.trim() || !cf.villa_flat.trim()) {
                   setErr('Please fill in all required fields.')
                   return
                 }
@@ -666,7 +843,7 @@ export default function BookingPage() {
               style={{
                 width:'100%', padding:'16px', background:BLUE, color:'#fff',
                 border:'none', borderRadius:12, fontSize:16, fontWeight:700,
-                cursor:'pointer', fontFamily:'Outfit,sans-serif', transition:'background 0.15s',
+                cursor:'pointer', fontFamily:'Outfit,sans-serif',
               }}>
               Continue
             </button>
@@ -677,7 +854,9 @@ export default function BookingPage() {
         {step === 5 && (
           <section>
             <Back onClick={() => setStep(4)}/>
-            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>Confirm Booking</h1>
+            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>
+              Confirm Booking
+            </h1>
             <p style={{ color:'#666', fontSize:14, marginBottom:24 }}>
               Review your details before confirming
             </p>
@@ -730,18 +909,18 @@ export default function BookingPage() {
                   letterSpacing:'0.06em', marginBottom:12 }}>Customer</div>
                 <SummaryRow label="Name"     value={cf.full_name}/>
                 <SummaryRow label="WhatsApp" value={cf.whatsapp} highlight/>
-                {cf.vehicle_model  && <SummaryRow label="Vehicle"  value={cf.vehicle_model}/>}
-                {cf.plate_number   && <SummaryRow label="Plate"    value={cf.plate_number}/>}
+                {cf.vehicle_model && <SummaryRow label="Vehicle" value={cf.vehicle_model}/>}
+                {cf.plate_number  && <SummaryRow label="Plate"   value={cf.plate_number}/>}
               </div>
 
               {/* Address */}
               <div style={{ padding:'14px 18px' }}>
                 <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
                   letterSpacing:'0.06em', marginBottom:12 }}>Service Address</div>
-                {cf.villa_flat  && <SummaryRow label="Villa/Flat" value={cf.villa_flat}/>}
-                {cf.area        && <SummaryRow label="Area"       value={cf.area}/>}
-                {cf.community   && <SummaryRow label="Community"  value={cf.community}/>}
-                {cf.address_notes && <SummaryRow label="Notes"    value={cf.address_notes}/>}
+                {cf.area       && <SummaryRow label="Area"       value={cf.area}/>}
+                {cf.community  && <SummaryRow label="Community"  value={cf.community}/>}
+                {cf.villa_flat && <SummaryRow label="Villa/Flat" value={cf.villa_flat}/>}
+                {cf.address_notes && <SummaryRow label="Notes"   value={cf.address_notes}/>}
               </div>
             </div>
 
@@ -768,9 +947,9 @@ function PageHeader() {
       display:'flex', alignItems:'center', gap:16,
     }}>
       <div style={{
-        width:40, height:40, borderRadius:8,
-        background:`${GOLD}15`, border:`1px solid ${GOLD}40`,
-        display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0,
+        width:40, height:40, borderRadius:8, background:`${GOLD}15`,
+        border:`1px solid ${GOLD}40`, display:'flex', alignItems:'center',
+        justifyContent:'center', flexShrink:0,
       }}>
         <span style={{ fontSize:18, fontWeight:800, color:GOLD }}>S</span>
       </div>
@@ -786,20 +965,17 @@ function PageHeader() {
 }
 
 function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
-  const [hovered, setHovered] = useState(false)
+  const [hov, setHov] = useState(false)
   return (
-    <button onClick={onClick}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
         height:155, borderRadius:12,
-        border:`1px solid ${hovered ? cat.color+'55' : cat.color+'22'}`,
-        background:catBg(cat.color),
-        cursor:'pointer', padding:0, overflow:'hidden',
+        border:`1px solid ${hov ? cat.color+'55' : cat.color+'22'}`,
+        background:catBg(cat.color), cursor:'pointer', padding:0, overflow:'hidden',
         position:'relative', display:'flex', flexDirection:'column',
         justifyContent:'flex-end', textAlign:'left',
         transition:'border-color 0.2s, transform 0.15s',
-        transform: hovered ? 'translateY(-2px)' : 'none',
-        fontFamily:'Outfit,sans-serif',
+        transform: hov ? 'translateY(-2px)' : 'none', fontFamily:'Outfit,sans-serif',
       }}>
       <div style={{ position:'absolute', top:0, right:0, width:70, height:70,
         background:`radial-gradient(circle, ${cat.color}20 0%, transparent 70%)` }}/>
@@ -823,24 +999,20 @@ function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) 
 }
 
 function ServiceCard({ svc, onClick }: { svc: Service; onClick: () => void }) {
-  const [hovered, setHovered] = useState(false)
+  const [hov, setHov] = useState(false)
   return (
-    <button onClick={onClick}
-      onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
+    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{
-        background: hovered ? BG4 : BG3,
-        border:`1px solid ${hovered ? GOLD+'40' : BORDER}`,
-        borderRadius:12, padding:'16px 18px',
-        cursor:'pointer', textAlign:'left', width:'100%',
-        fontFamily:'Outfit,sans-serif', transition:'all 0.15s', display:'block',
+        background: hov ? BG4 : BG3, border:`1px solid ${hov ? GOLD+'40' : BORDER}`,
+        borderRadius:12, padding:'16px 18px', cursor:'pointer', textAlign:'left',
+        width:'100%', fontFamily:'Outfit,sans-serif', transition:'all 0.15s', display:'block',
       }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:15, fontWeight:700, color:TEXT, marginBottom:5 }}>{svc.name}</div>
           {svc.description && (
-            <div style={{ fontSize:13, color:TEXT2, lineHeight:1.55,
-              overflow:'hidden', display:'-webkit-box',
-              WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
+            <div style={{ fontSize:13, color:TEXT2, lineHeight:1.55, overflow:'hidden',
+              display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
               {svc.description}
             </div>
           )}
