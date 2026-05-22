@@ -232,6 +232,7 @@ export default function BookingsPage() {
 
     // Use Dubai midnight → UTC range so the server-side filter is correct
     const { start: startISO, end: endISO } = dubaiDayRange(day)
+    console.log('Buscando reservas entre:', startISO, 'y', endISO)
 
     const { data, error } = await sb
       .from('bookings')
