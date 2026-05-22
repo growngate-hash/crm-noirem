@@ -372,10 +372,7 @@ export default function BookingsPage() {
     // bookings already filtered by day server-side; just match vehicle
     return bookings.filter(b=>b.vehicle_id===vehicleId && b.scheduled_at)
   }
-  function getUnassignedBookings():any[] {
-    return bookings.filter(b=>!b.vehicle_id && b.scheduled_at)
-  }
-  function getDemoForVehicle(vName:string):any[] {
+function getDemoForVehicle(vName:string):any[] {
     if(bookings.length>0) return []
     return DEMO_BOOKINGS.filter(d=>vName.includes(d.vehicle_name))
   }
@@ -709,45 +706,6 @@ export default function BookingsPage() {
               )
             })}
 
-            {/* ── Unassigned bookings row (from public /booking page) ── */}
-            {getUnassignedBookings().length > 0 && (() => {
-              const uBookings = getUnassignedBookings()
-              return (
-                <div style={{display:'flex',height:ROW_H,
-                  borderBottom:'1px solid rgba(255,255,255,0.04)',
-                  background:'#0f0f11'}}>
-                  <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:2,
-                    background:'#0f0f11',
-                    borderRight:'1px solid rgba(255,255,255,0.06)',
-                    display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 14px',gap:2}}>
-                    <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:6,height:6,borderRadius:'50%',flexShrink:0,background:'#888580'}}/>
-                      <span style={{fontSize:12,fontWeight:600,color:'#888580',
-                        whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>Web / Sin vehículo</span>
-                    </div>
-                    <div style={{fontSize:10,color:'#555',paddingLeft:12}}>
-                      {uBookings.length} reserva{uBookings.length!==1?'s':''}
-                    </div>
-                  </div>
-                  <div style={{flex:1,position:'relative',overflow:'visible'}}>
-                    {HOURS.map((_,idx)=>(
-                      <div key={idx} style={{position:'absolute',left:`${(idx/TOTAL_HORAS)*100}%`,
-                        top:0,bottom:0,width:1,background:'rgba(255,255,255,0.035)',pointerEvents:'none'}}/>
-                    ))}
-                    {uBookings.map(b=>(
-                      <GanttBlock key={b.id}
-                        leftPct={calcLeft(b.scheduled_at)}
-                        widthPct={calcWidth(b.scheduled_at,b.end_at)}
-                        timeLabel={`${formatHora(b.scheduled_at)} — ${formatHora(b.end_at)}`}
-                        client={b.contacts?.name ?? 'Web Booking'}
-                        service={b.services?.name ?? ''}
-                        status={b.status ?? 'pending'}
-                        onClick={()=>setDetailBooking(b)}/>
-                    ))}
-                  </div>
-                </div>
-              )
-            })()}
           </>)}
           </div>
         </div>
