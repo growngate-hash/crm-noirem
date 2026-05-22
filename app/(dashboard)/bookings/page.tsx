@@ -228,8 +228,9 @@ export default function BookingsPage() {
   const [reassignConflict, setReassignConflict] = useState('')
   const [reassignSaving,   setReassignSaving]   = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
-  const toastId         = useRef(0)
-  const prevBookingCount = useRef(-1) // -1 = initial load, skip alert
+  const toastId          = useRef(0)
+  const prevBookingCount = useRef(0)
+  const isFirstLoad      = useRef(true)
 
   function playNotificationSound() {
     try {
@@ -282,20 +283,27 @@ export default function BookingsPage() {
       cliente: b.contacts?.name, servicio: b.services?.name,
     }))
 
-    // Detect new bookings arriving via realtime refresh (skip on first load)
-    if (prevBookingCount.current >= 0 && result.length > prevBookingCount.current) {
+    // First load: snapshot count, do not alert
+    if (isFirstLoad.current) {
+      prevBookingCount.current = result.length
+      isFirstLoad.current = false
+    } else if (result.length > prevBookingCount.current) {
+      // Subsequent refreshes: new bookings arrived
       const newCount = result.length - prevBookingCount.current
+      prevBookingCount.current = result.length
       playNotificationSound()
       createNotification({
         type: 'booking',
         title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
         message: result
           .slice(-newCount)
-          .map(b => b.contacts?.name ?? 'Web Booking')
+          .map((b: any) => b.contacts?.name ?? 'Web Booking')
           .join(', '),
       })
+    } else {
+      // Same or fewer (e.g. day navigation) — just update snapshot
+      prevBookingCount.current = result.length
     }
-    prevBookingCount.current = result.length
 
     setBookings(result)
     setLoadingB(false)
