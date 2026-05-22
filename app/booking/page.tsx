@@ -383,7 +383,7 @@ function ServiceCard({ svc, onClick }:{ svc:Service; onClick:()=>void }) {
         {svc.base_price!=null && (
           <div style={{ textAlign:'right', flexShrink:0 }}>
             <div style={{ fontSize:18, fontWeight:800, color:GOLD }}>AED {svc.base_price}</div>
-            <div style={{ fontSize:11, color:DIM, marginTop:3 }}>
+            <div style={{ fontSize:11, color:RED, marginTop:3 }}>
               +VAT = AED {(svc.base_price*1.05).toFixed(2)}
             </div>
           </div>
