@@ -527,8 +527,12 @@ export default function BookingPage() {
       ])
       if (ce) console.error('[booking] categories:', ce.message)
       if (se) console.error('[booking] services:', se.message)
-      setCategories(cats ?? [])
-      setServices(svcs ?? [])
+      const activeSvcs = svcs ?? []
+      const filteredCats = (cats ?? []).filter(cat =>
+        activeSvcs.some((s: Service) => s.category === cat.name)
+      )
+      setServices(activeSvcs)
+      setCategories(filteredCats)
       setLoading(false)
     }
     load()
