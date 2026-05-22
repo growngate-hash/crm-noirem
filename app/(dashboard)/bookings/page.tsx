@@ -108,9 +108,16 @@ function calcLeft(scheduled_at: string): string {
   const pct = ((h - HORA_INICIO) / TOTAL_HORAS) * 100
   return `${Math.max(0, pct).toFixed(3)}%`
 }
-function calcWidth(scheduled_at: string, end_at: string | null): string {
+function calcWidth(scheduled_at: string, end_at: string | null, duration_minutes?: number | null): string {
   const sh = getHoraDecimalDubai(scheduled_at)
-  const eh = end_at ? getHoraDecimalDubai(end_at) : sh + 2
+  let eh: number
+  if (end_at) {
+    eh = getHoraDecimalDubai(end_at)
+  } else if (duration_minutes && duration_minutes > 0) {
+    eh = sh + duration_minutes / 60
+  } else {
+    eh = sh + 1 // fallback: 1 hour minimum
+  }
   const pct = ((eh - sh) / TOTAL_HORAS) * 100
   return `${Math.max(0.5, pct).toFixed(3)}%`
 }
@@ -240,7 +247,7 @@ export default function BookingsPage() {
 
     const { data, error } = await sb
       .from('bookings')
-      .select('*, contacts(name), vehicles(name,license_plate), services(name)')
+      .select('*, contacts(name), vehicles(name,license_plate), services(name,duration_minutes)')
       .gte('scheduled_at', startISO)
       .lte('scheduled_at', endISO)
       .order('scheduled_at', {ascending:true})
@@ -683,7 +690,7 @@ function getDemoForVehicle(vName:string):any[] {
                     {vBookings.map(b=>(
                       <GanttBlock key={b.id}
                         leftPct={calcLeft(b.scheduled_at)}
-                        widthPct={calcWidth(b.scheduled_at,b.end_at)}
+                        widthPct={calcWidth(b.scheduled_at,b.end_at,b.services?.duration_minutes)}
                         timeLabel={`${formatHora(b.scheduled_at)} — ${formatHora(b.end_at)}`}
                         client={b.contacts?.name ?? 'Cliente'}
                         service={b.services?.name ?? ''}
