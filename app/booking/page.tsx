@@ -400,6 +400,8 @@ export default function BookingPage() {
   const [selDate,     setSelDate]     = useState<Date | null>(null)
   const [selTime,     setSelTime]     = useState<number | null>(null)
 
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cash'>('cash')
+
   const [cf, setCf_] = useState<CustomerForm>({
     full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
     address:'', area:'', community:'', villa_flat:'', address_notes:'',
@@ -459,6 +461,7 @@ export default function BookingPage() {
       community:          cf.community      || null,
       address_notes:      cf.address_notes  || null,
       price:              selService.base_price ?? null,
+      payment_method:     paymentMethod,
       status:             'pending',
     })
     setSaving(false)
@@ -478,7 +481,7 @@ export default function BookingPage() {
   }
 
   function resetAll() {
-    setDone(false); setStep(1); setWeekOffset(0)
+    setDone(false); setStep(1); setWeekOffset(0); setPaymentMethod('cash')
     setSelCategory(null); setSelService(null); setSelDate(null); setSelTime(null)
     setCf_({ full_name:'', whatsapp:'', vehicle_model:'', plate_number:'',
       address:'', area:'', community:'', villa_flat:'', address_notes:'' })
@@ -857,74 +860,149 @@ export default function BookingPage() {
             <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>
               Confirm Booking
             </h1>
-            <p style={{ color:'#666', fontSize:14, marginBottom:24 }}>
+            <p style={{ color:'#888', fontSize:14, marginBottom:20 }}>
               Review your details before confirming
             </p>
 
+            {/* ── Summary card (light) ─────────────────────────────────── */}
             <div style={{
-              background:BG3, borderRadius:12, border:`1px solid ${BORDER}`,
-              overflow:'hidden', marginBottom:16,
+              background:'#fff', border:'1px solid #e5e5e5', borderRadius:16,
+              boxShadow:'0 1px 3px rgba(0,0,0,0.06)', overflow:'hidden', marginBottom:20,
             }}>
-              {/* Service */}
-              <div style={{ padding:'16px 18px', borderBottom:`1px solid ${BORDER}` }}>
-                <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
+              {/* Service row */}
+              <div style={{ padding:'16px 18px', borderBottom:'1px solid #f0f0f0' }}>
+                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
                   letterSpacing:'0.06em', marginBottom:8 }}>Service</div>
-                <div style={{ fontSize:18, fontWeight:700, color:TEXT }}>{selService?.name}</div>
-                <div style={{ display:'flex', gap:16, marginTop:8, flexWrap:'wrap' }}>
+                <div style={{ fontSize:17, fontWeight:700, color:'#111' }}>{selService?.name}</div>
+                <div style={{ display:'flex', gap:16, marginTop:8, flexWrap:'wrap', alignItems:'flex-end' }}>
                   {selService?.base_price != null && (
                     <span style={{ fontSize:20, fontWeight:700, color:GOLD }}>
                       AED {selService.base_price}
                     </span>
                   )}
                   {selService?.duration && (
-                    <span style={{ fontSize:13, color:TEXT2, alignSelf:'flex-end', paddingBottom:2 }}>
-                      {selService.duration}
-                    </span>
+                    <span style={{ fontSize:13, color:'#888' }}>{selService.duration}</span>
                   )}
                 </div>
               </div>
 
-              {/* Date / Time */}
+              {/* Date / Time row */}
               <div style={{
-                padding:'14px 18px', borderBottom:`1px solid ${BORDER}`,
+                padding:'14px 18px', borderBottom:'1px solid #f0f0f0',
                 display:'grid', gridTemplateColumns:'1fr 1fr', gap:12,
               }}>
                 <div>
-                  <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
+                  <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
                     letterSpacing:'0.06em', marginBottom:6 }}>Date</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:TEXT }}>
+                  <div style={{ fontSize:14, fontWeight:600, color:'#111' }}>
                     {selDate ? toYMD(selDate) : '—'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
+                  <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
                     letterSpacing:'0.06em', marginBottom:6 }}>Time</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:GOLD }}>{timeLabel()}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:BLUE }}>{timeLabel()}</div>
                 </div>
               </div>
 
-              {/* Customer */}
-              <div style={{ padding:'14px 18px', borderBottom:`1px solid ${BORDER}` }}>
-                <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:12 }}>Customer</div>
-                <SummaryRow label="Name"     value={cf.full_name}/>
-                <SummaryRow label="WhatsApp" value={cf.whatsapp} highlight/>
-                {cf.vehicle_model && <SummaryRow label="Vehicle" value={cf.vehicle_model}/>}
-                {cf.plate_number  && <SummaryRow label="Plate"   value={cf.plate_number}/>}
+              {/* Customer row */}
+              <div style={{ padding:'14px 18px', borderBottom:'1px solid #f0f0f0' }}>
+                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
+                  letterSpacing:'0.06em', marginBottom:10 }}>Customer</div>
+                <ConfirmRow label="Name"     value={cf.full_name}/>
+                <ConfirmRow label="WhatsApp" value={cf.whatsapp} accent/>
+                {cf.vehicle_model && <ConfirmRow label="Vehicle" value={cf.vehicle_model}/>}
+                {cf.plate_number  && <ConfirmRow label="Plate"   value={cf.plate_number}/>}
               </div>
 
-              {/* Address */}
+              {/* Address row */}
               <div style={{ padding:'14px 18px' }}>
-                <div style={{ fontSize:10, color:TEXT2, textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:12 }}>Service Address</div>
-                {cf.area       && <SummaryRow label="Area"       value={cf.area}/>}
-                {cf.community  && <SummaryRow label="Community"  value={cf.community}/>}
-                {cf.villa_flat && <SummaryRow label="Villa/Flat" value={cf.villa_flat}/>}
-                {cf.address_notes && <SummaryRow label="Notes"   value={cf.address_notes}/>}
+                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
+                  letterSpacing:'0.06em', marginBottom:10 }}>Service Address</div>
+                {cf.area        && <ConfirmRow label="Area"       value={cf.area}/>}
+                {cf.community   && <ConfirmRow label="Community"  value={cf.community}/>}
+                {cf.villa_flat  && <ConfirmRow label="Villa/Flat" value={cf.villa_flat}/>}
+                {cf.address_notes && <ConfirmRow label="Notes"    value={cf.address_notes}/>}
               </div>
             </div>
 
-            <p style={{ fontSize:12, color:'#666', marginBottom:4, lineHeight:1.6 }}>
+            {/* ── Payment Method ───────────────────────────────────────── */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:16, fontWeight:700, color:'#111', marginBottom:12 }}>
+                Payment Method
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                {/* Online */}
+                <div onClick={() => setPaymentMethod('online')} style={{
+                  display:'flex', alignItems:'center', gap:12,
+                  padding:'14px 16px',
+                  background: paymentMethod === 'online' ? '#eef0fb' : '#fff',
+                  border: `2px solid ${paymentMethod === 'online' ? BLUE : '#e5e5e5'}`,
+                  borderRadius:14, cursor:'pointer', transition:'all 0.2s',
+                }}>
+                  <div style={{
+                    width:38, height:38, borderRadius:'50%', flexShrink:0,
+                    background: paymentMethod === 'online' ? BLUE : '#f0f0f0',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke={paymentMethod === 'online' ? '#fff' : '#aaa'}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                      <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                  </div>
+                  <span style={{ color:'#111', fontSize:15, fontWeight:600 }}>Online</span>
+                  {paymentMethod === 'online' && (
+                    <div style={{
+                      marginLeft:'auto', width:22, height:22, borderRadius:'50%',
+                      background:BLUE, display:'flex', alignItems:'center', justifyContent:'center',
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+
+                {/* Cash */}
+                <div onClick={() => setPaymentMethod('cash')} style={{
+                  display:'flex', alignItems:'center', gap:12,
+                  padding:'14px 16px',
+                  background: paymentMethod === 'cash' ? '#eef0fb' : '#fff',
+                  border: `2px solid ${paymentMethod === 'cash' ? BLUE : '#e5e5e5'}`,
+                  borderRadius:14, cursor:'pointer', transition:'all 0.2s',
+                }}>
+                  <div style={{
+                    width:38, height:38, borderRadius:'50%', flexShrink:0,
+                    background: paymentMethod === 'cash' ? BLUE : '#f0f0f0',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke={paymentMethod === 'cash' ? '#fff' : '#aaa'}
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23"/>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                  </div>
+                  <span style={{ color:'#111', fontSize:15, fontWeight:600 }}>Cash</span>
+                  {paymentMethod === 'cash' && (
+                    <div style={{
+                      marginLeft:'auto', width:22, height:22, borderRadius:'50%',
+                      background:BLUE, display:'flex', alignItems:'center', justifyContent:'center',
+                    }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                        stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <p style={{ fontSize:12, color:'#888', marginBottom:4, lineHeight:1.6 }}>
               By confirming you agree to our terms. Our team will contact you via WhatsApp to
               confirm your appointment.
             </p>
@@ -934,6 +1012,20 @@ export default function BookingPage() {
         )}
 
       </main>
+    </div>
+  )
+}
+
+// ── ConfirmRow — light-theme summary row for step 5 ──────────────────────────
+function ConfirmRow({ label, value, accent=false }: {
+  label:string; value:string; accent?:boolean
+}) {
+  return (
+    <div style={{ display:'flex', gap:8, marginBottom:7 }}>
+      <span style={{ fontSize:13, color:'#888', minWidth:90, flexShrink:0 }}>{label}</span>
+      <span style={{ fontSize:13, color: accent ? BLUE : '#111', fontWeight: accent ? 600 : 400 }}>
+        {value}
+      </span>
     </div>
   )
 }
