@@ -215,8 +215,9 @@ export default function BookingsPage() {
     date:'',start_time:'09:00',end_time:'11:00',
     address:'',price:'',discount:'',notes:'',
   })
-  const [newTechs, setNewTechs] = useState<string[]>([])
-  const [toasts,   setToasts]   = useState<Toast[]>([])
+  const [newTechs,      setNewTechs]      = useState<string[]>([])
+  const [conflictWarn,  setConflictWarn]  = useState('')
+  const [toasts,        setToasts]        = useState<Toast[]>([])
   const toastId = useRef(0)
 
   function addToast(msg:string,type:'success'|'error'|'warn'='success'){
@@ -290,6 +291,21 @@ export default function BookingsPage() {
     return ()=>{ sb.removeChannel(channel) }
   },[selectedDay, fetchBookings])
 
+  // ── availability conflict check for new-booking modal ────────────────────
+  useEffect(()=>{
+    setConflictWarn('')
+    const { date, start_time, service_id } = newForm
+    if (!showNew || !date || !start_time) return
+    const slotKey = start_time.slice(0,5) // "HH:MM"
+    fetch(`/api/availability?date=${date}${service_id?`&service_id=${service_id}`:''}`)
+      .then(r=>r.json())
+      .then(({blocked})=>{
+        const hit = (blocked??[]).find((b:{slot:string;reason:string})=>b.slot===slotKey)
+        setConflictWarn(hit ? `⚠️ Conflicto: ${hit.reason}` : '')
+      })
+      .catch(()=>setConflictWarn(''))
+  },[showNew, newForm.date, newForm.start_time, newForm.service_id]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── clock ─────────────────────────────────────────────────────────────────
   useEffect(()=>{const t=setInterval(()=>setNowDate(getDubaiToday()),60000);return()=>clearInterval(t)},[])
 
@@ -319,7 +335,7 @@ export default function BookingsPage() {
   // ── save / update booking ──────────────────────────────────────────────────
   function resetForm(){
     setNewForm({contact_id:'',vehicle_id:'',service_id:'',date:'',start_time:'09:00',end_time:'11:00',address:'',price:'',discount:'',notes:''})
-    setNewTechs([]);setEditId(null)
+    setNewTechs([]);setEditId(null);setConflictWarn('')
   }
 
   async function saveBooking(){
@@ -729,6 +745,12 @@ export default function BookingsPage() {
                 <div><MLabel>{t('endTime')} *</MLabel>
                   <MInput type="time" value={newForm.end_time} onChange={e=>setNewForm(f=>({...f,end_time:e.target.value}))}/></div>
               </div>
+              {conflictWarn&&(
+                <div style={{padding:'10px 12px',borderRadius:8,background:'rgba(239,68,68,0.08)',
+                  border:'1px solid rgba(239,68,68,0.3)',color:'#ef4444',fontSize:12,fontWeight:500,lineHeight:1.5}}>
+                  {conflictWarn}
+                </div>
+              )}
               <div><MLabel>{t('technicians')}</MLabel>
                 <TechPicker selected={newTechs} onChange={setNewTechs} pool={contacts.map(c=>c.name)}/>
               </div>

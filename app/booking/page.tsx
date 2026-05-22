@@ -402,9 +402,11 @@ export default function BookingPage() {
   const [err,setErr]               = useState('')
   const [weekOffset,setWeekOffset] = useState(0)
 
-  const [categories,setCategories] = useState<Category[]>([])
-  const [services,setServices]     = useState<Service[]>([])
-  const [takenHours,setTakenHours] = useState<number[]>([])
+  const [categories,setCategories]   = useState<Category[]>([])
+  const [services,setServices]       = useState<Service[]>([])
+  const [availSlots,setAvailSlots]   = useState<string[]>([])
+  const [blockedMap,setBlockedMap]   = useState<Record<string,string>>({})
+  const [loadingSlots,setLoadingSlots] = useState(false)
 
   const [selCategory,setSelCategory] = useState<Category|null>(null)
   const [selService, setSelService]  = useState<Service|null>(null)
@@ -436,17 +438,21 @@ export default function BookingPage() {
     load()
   },[])
 
-  // ── Taken slots ────────────────────────────────────────────────────────────
+  // ── Availability from API (replaces simple takenHours) ───────────────────
   useEffect(()=>{
-    if(!selDate)return
-    setTakenHours([])
-    const ymd=toYMD(selDate)
-    createClient().from('booking_requests').select('scheduled_at')
-      .gte('scheduled_at',`${ymd}T00:00:00.000+04:00`)
-      .lte('scheduled_at',`${ymd}T23:59:59.999+04:00`)
-      .neq('status','cancelled')
-      .then(({data})=>setTakenHours((data??[]).map((r:{scheduled_at:string})=>utcToHour(r.scheduled_at))))
-  },[selDate])
+    if(!selDate||!selService)return
+    setAvailSlots([]);setBlockedMap({});setLoadingSlots(true)
+    fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`)
+      .then(r=>r.json())
+      .then(({available,blocked})=>{
+        setAvailSlots(available??[])
+        const m:Record<string,string>={}
+        for(const b of (blocked??[])) m[b.slot]=b.reason
+        setBlockedMap(m)
+      })
+      .catch(e=>console.error('[availability]',e))
+      .finally(()=>setLoadingSlots(false))
+  },[selDate,selService])
 
   // ── Price ──────────────────────────────────────────────────────────────────
   const servicePrice = selService?.base_price ?? 0
@@ -667,27 +673,35 @@ export default function BookingPage() {
               background:CARD, border:`1px solid ${BORDER}`, borderRadius:12,
               padding:20, marginBottom:12,
             }}>
-              <div style={{ fontSize:14, fontWeight:700, color:TEXT, letterSpacing:'0.04em', marginBottom:16 }}>
-                SELECT TIME
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:TEXT, letterSpacing:'0.04em' }}>SELECT TIME</div>
+                {loadingSlots&&(
+                  <div style={{ fontSize:11, color:MUTED }}>Checking availability…</div>
+                )}
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8 }}>
                 {timeSlots.map((slot,idx)=>{
-                  const isTaken=takenHours.includes(slot.start)
+                  const slotKey=`${String(Math.floor(slot.start)).padStart(2,'0')}:00`
+                  const isBlocked=slotKey in blockedMap
                   const isSel=selTime===slot.start
+                  const blockReason=blockedMap[slotKey]
                   return (
                     <button key={idx}
-                      onClick={()=>!isTaken&&setSelTime(slot.start)}
-                      disabled={isTaken}
+                      onClick={()=>!isBlocked&&!loadingSlots&&setSelTime(slot.start)}
+                      disabled={isBlocked||loadingSlots}
+                      title={isBlocked?blockReason:undefined}
                       style={{
                         padding:'13px 10px', borderRadius:6, textAlign:'center',
-                        border: isSel ? `1px solid ${GOLD}` : isTaken ? `1px solid ${BORDER}` : `1px solid ${GOLD}40`,
-                        background: isSel ? GOLD : isTaken ? '#0f0f0f' : 'transparent',
-                        color: isSel ? '#000' : isTaken ? DIM : GOLD,
+                        border: isSel ? `1px solid ${GOLD}` : isBlocked ? `1px solid ${BORDER}` : `1px solid ${GOLD}40`,
+                        background: isSel ? GOLD : isBlocked ? '#0f0f0f' : 'transparent',
+                        color: isSel ? '#000' : isBlocked ? DIM : GOLD,
                         fontSize:13, fontWeight: isSel?700:500, lineHeight:1.4,
-                        cursor: isTaken?'not-allowed':'pointer',
+                        cursor: isBlocked||loadingSlots?'not-allowed':'pointer',
                         fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
+                        opacity: loadingSlots&&!isSel ? 0.5 : 1,
                       }}>
                       {slot.startLabel} — {slot.endLabel}
+                      {isBlocked&&<div style={{fontSize:9,color:DIM,marginTop:2}}>no disponible</div>}
                     </button>
                   )
                 })}
