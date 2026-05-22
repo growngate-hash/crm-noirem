@@ -32,6 +32,7 @@ type ServiceShape = { duration_minutes?: number; duration?: string; duration_hrs
 type Block = { startMin: number; endMin: number }
 
 function bookingToBlock(scheduled_at: string, end_at: string | null, svc: ServiceShape | null): Block {
+  // dubaiMinutes converts UTC ISO → Dubai local minutes-from-midnight (UTC+4)
   const startMin = dubaiMinutes(scheduled_at)
   let durMin = 60
   if (end_at) {
@@ -40,7 +41,10 @@ function bookingToBlock(scheduled_at: string, end_at: string | null, svc: Servic
   } else if (svc) {
     durMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
   }
-  return { startMin: startMin - BUFFER_MIN, endMin: startMin + durMin + BUFFER_MIN }
+  const serviceEnd = startMin + durMin
+  // No post-buffer if the service ends at or after closing time — the day is over
+  const blockEnd = serviceEnd >= CLOSE_MIN ? serviceEnd : serviceEnd + BUFFER_MIN
+  return { startMin: startMin - BUFFER_MIN, endMin: blockEnd }
 }
 
 function overlaps(block: Block, slotStart: number, slotEnd: number): boolean {
@@ -116,11 +120,9 @@ export async function GET(req: NextRequest) {
 
   for (const slot of BASE_SLOTS) {
     const slotStart    = toMinutes(slot)
-    const slotEnd      = slotStart + 60 // 1-hour overlap window
-    // Service must finish + 1h buffer before hard close
-    const serviceFinish = slotStart + requestedDurMin + BUFFER_MIN
-
-    if (serviceFinish > CLOSE_MIN) {
+    const slotEnd      = slotStart + 60 // 1-hour overlap window for existing bookings
+    // New service must finish by closing time (no self-buffer — buffer only applies to existing bookings)
+    if (slotStart + requestedDurMin > CLOSE_MIN) {
       blocked.push({ slot, reason: 'Fuera de horario (cierre 18:00)' })
       continue
     }
