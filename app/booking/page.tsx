@@ -3,18 +3,24 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-// ── Brand tokens ───────────────────────────────────────────────────────────────
-const GOLD   = '#D4AF37'
-const BLUE   = '#3b4fd8'
-const BG2    = '#111111'
-const BG3    = '#1a1a1a'
-const BG4    = '#222222'
-const TEXT   = '#f5f5f5'
-const TEXT2  = '#888888'
-const BORDER = 'rgba(255,255,255,0.08)'
-const RED    = '#ff4f4f'
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const C = {
+  bg:          '#f5f5f7',
+  card:        '#ffffff',
+  border:      '#e5e5e5',
+  borderActive:'#3b4fd8',
+  text:        '#111111',
+  textMuted:   '#888888',
+  textLight:   '#aaaaaa',
+  accent:      '#c9a84c',
+  accentBlue:  '#3b4fd8',
+  accentBlueBg:'#eef0fb',
+  accentGoldBg:'#fdf8ee',
+  success:     '#22c55e',
+  error:       '#ef4444',
+}
 
-// ── Dubai areas fallback list ──────────────────────────────────────────────────
+// ── Dubai areas fallback ───────────────────────────────────────────────────────
 const DUBAI_AREAS = [
   'JVC - Jumeirah Village Circle',
   'JVT - Jumeirah Village Triangle',
@@ -85,7 +91,7 @@ interface CustomerForm {
 }
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const DAY_NAMES   = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+const DAY_NAMES   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -94,9 +100,9 @@ function toYMD(d: Date): string {
 }
 
 function formatHour(hour: number): string {
-  const h = Math.floor(hour)
-  const m = Math.round((hour % 1) * 60)
-  const period   = h >= 12 ? 'PM' : 'AM'
+  const h       = Math.floor(hour)
+  const m       = Math.round((hour % 1) * 60)
+  const period  = h >= 12 ? 'PM' : 'AM'
   const displayH = h > 12 ? h - 12 : h === 0 ? 12 : h
   return `${displayH}:${m === 0 ? '00' : String(m).padStart(2,'0')} ${period}`
 }
@@ -136,7 +142,7 @@ function generateTimeSlots(svc: Service | null): TimeSlot[] {
 function slotToUTC(date: Date, hourStart: number): string {
   const ymd  = toYMD(date)
   const hStr = String(Math.floor(hourStart)).padStart(2,'0')
-  const mStr = String(Math.round((hourStart % 1) * 60)).padStart(2,'00')
+  const mStr = String(Math.round((hourStart % 1) * 60)).padStart(2,'0')
   return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
 }
 
@@ -150,24 +156,50 @@ function buildAddress(f: CustomerForm): string {
     .filter(Boolean).join(', ')
 }
 
-// ── Step bar ──────────────────────────────────────────────────────────────────
-function StepBar({ current }: { current: number }) {
-  const labels = ['Category','Service','Date & Time','Details','Confirm']
+// ── Shared input style ─────────────────────────────────────────────────────────
+const INP: React.CSSProperties = {
+  width:'100%', padding:'14px 16px', background:'#fff',
+  border:'1px solid #e5e5e5', borderRadius:10, color:'#111',
+  fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Outfit,sans-serif',
+}
+
+// ── Small components ───────────────────────────────────────────────────────────
+
+function PageHeader() {
   return (
-    <div style={{ padding:'14px 20px', background:BG2, borderBottom:`1px solid ${BORDER}` }}>
-      <div style={{ display:'flex', gap:6, marginBottom:8 }}>
-        {[1,2,3,4,5].map(n => (
-          <div key={n} style={{
-            flex:1, height:3, borderRadius:2,
-            background: n <= current ? GOLD : 'rgba(255,255,255,0.10)',
-            transition:'background 0.3s',
-          }}/>
-        ))}
+    <div style={{ textAlign:'center', marginBottom:28 }}>
+      <div style={{ display:'inline-flex', alignItems:'center', gap:10, marginBottom:4 }}>
+        <div style={{
+          width:32, height:32, background:C.accent, borderRadius:8,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          fontSize:16, fontWeight:900, color:'#0d0d0f',
+        }}>N</div>
+        <span style={{ color:C.text, fontSize:18, fontWeight:800, letterSpacing:'1px' }}>
+          NOIREM
+        </span>
       </div>
-      <div style={{ fontSize:11, color:TEXT2, fontWeight:600 }}>
-        Step {current} of 5 —{' '}
-        <span style={{ color:TEXT }}>{labels[current-1]}</span>
+      <div style={{ color:C.textLight, fontSize:11, letterSpacing:'2px' }}>
+        LUXURY DETAILING
       </div>
+    </div>
+  )
+}
+
+function ProgressBar({ step }: { step: number }) {
+  return (
+    <div style={{
+      display:'flex', alignItems:'center', justifyContent:'center',
+      gap:6, marginBottom:28,
+    }}>
+      {[1,2,3,4,5].map(s => (
+        <div key={s} style={{
+          height:3,
+          width: s === step ? 24 : 8,
+          borderRadius:2,
+          background: s <= step ? C.accent : C.border,
+          transition:'all 0.3s',
+        }}/>
+      ))}
     </div>
   )
 }
@@ -175,63 +207,71 @@ function StepBar({ current }: { current: number }) {
 function Back({ onClick }: { onClick: () => void }) {
   return (
     <button onClick={onClick} style={{
-      display:'inline-flex', alignItems:'center', gap:5,
       background:'none', border:'none', cursor:'pointer',
-      color:GOLD, fontSize:13, fontFamily:'Outfit,sans-serif', padding:0, marginBottom:20,
+      color:C.accentBlue, fontSize:14, fontWeight:600,
+      padding:0, marginBottom:20, fontFamily:'Outfit,sans-serif',
     }}>← Back</button>
   )
 }
 
-function GoldBtn({ children, onClick, disabled=false, loading=false }: {
-  children:React.ReactNode; onClick?:()=>void; disabled?:boolean; loading?:boolean
+function PrimaryBtn({ children, onClick, disabled=false, loading=false }: {
+  children: React.ReactNode; onClick?: () => void; disabled?: boolean; loading?: boolean
 }) {
+  const inactive = disabled || loading
   return (
-    <button onClick={onClick} disabled={disabled||loading} style={{
-      width:'100%', padding:'15px', borderRadius:10, border:'none',
-      background: (disabled||loading) ? `${GOLD}60` : GOLD,
-      color:'#000', fontSize:15, fontWeight:700,
-      cursor: (disabled||loading) ? 'not-allowed' : 'pointer',
-      fontFamily:'Outfit,sans-serif', letterSpacing:'0.02em',
-      marginTop:24, transition:'background 0.15s',
+    <button onClick={onClick} disabled={inactive} style={{
+      width:'100%', padding:'16px', background: inactive ? `${C.accent}70` : C.accent,
+      color:'#0d0d0f', border:'none', borderRadius:12, fontSize:16, fontWeight:800,
+      cursor: inactive ? 'not-allowed' : 'pointer', fontFamily:'Outfit,sans-serif',
+      letterSpacing:'0.3px', marginTop:8, transition:'background 0.15s',
     }}>
       {loading ? 'Please wait…' : children}
     </button>
   )
 }
 
-function catBg(color: string) {
-  return `radial-gradient(circle at 75% 25%, ${color}25 0%, transparent 55%),
-          linear-gradient(160deg, #161616 0%, #0e0e0e 100%)`
-}
-
 function Skeleton({ h=140 }: { h?: number }) {
   return (
     <div style={{
-      height:h, borderRadius:12, background:BG3,
-      backgroundImage:'linear-gradient(90deg,#1a1a1a 25%,#252525 50%,#1a1a1a 75%)',
+      height:h, borderRadius:12,
+      background:'linear-gradient(90deg,#ebebeb 25%,#f5f5f5 50%,#ebebeb 75%)',
       backgroundSize:'600px 100%', animation:'shimmer 1.4s infinite',
     }}/>
   )
-}
-
-
-
-// ── Light input styles ────────────────────────────────────────────────────────
-const LIGHT_INP: React.CSSProperties = {
-  width:'100%', padding:'14px 16px', background:'#fff',
-  border:'1px solid #e5e5e5', borderRadius:12, color:'#111',
-  fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Outfit,sans-serif',
 }
 
 function FLabel({ children, required, optional }: {
   children: React.ReactNode; required?: boolean; optional?: boolean
 }) {
   return (
-    <div style={{ color:'#111', fontSize:13, fontWeight:600, marginBottom:6,
+    <div style={{ color:C.text, fontSize:13, fontWeight:600, marginBottom:6,
       display:'flex', gap:4, alignItems:'center', flexWrap:'wrap' }}>
       {children}
-      {required && <span style={{ color:'#ef4444' }}>*</span>}
-      {optional && <span style={{ color:'#aaa', fontWeight:400, fontSize:12 }}>(Optional)</span>}
+      {required && <span style={{ color:C.error }}>*</span>}
+      {optional && <span style={{ color:C.textLight, fontWeight:400, fontSize:12 }}>(Optional)</span>}
+    </div>
+  )
+}
+
+function SectionDivider({ label }: { label: string }) {
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:10, margin:'20px 0 16px' }}>
+      <div style={{ flex:1, height:1, background:C.border }}/>
+      <span style={{ color:C.textLight, fontSize:11, fontWeight:600, whiteSpace:'nowrap',
+        letterSpacing:'0.08em' }}>{label}</span>
+      <div style={{ flex:1, height:1, background:C.border }}/>
+    </div>
+  )
+}
+
+function ConfirmRow({ label, value, accent=false }: {
+  label: string; value: string; accent?: boolean
+}) {
+  return (
+    <div style={{ display:'flex', gap:8, marginBottom:7 }}>
+      <span style={{ fontSize:13, color:C.textMuted, minWidth:90, flexShrink:0 }}>{label}</span>
+      <span style={{ fontSize:13, color: accent ? C.accentBlue : C.text,
+        fontWeight: accent ? 600 : 400 }}>{value}</span>
     </div>
   )
 }
@@ -245,35 +285,30 @@ function AddressSearch({
   onAreaChange: (v: string) => void
   onCommunityChange: (v: string) => void
 }) {
-  const [suggestions, setSuggestions]   = useState<string[]>([])
-  const [showDrop, setShowDrop]         = useState(false)
-  const [googleReady, setGoogleReady]   = useState(false)
-  const inputRef  = useRef<HTMLInputElement>(null)
-  const dropRef   = useRef<HTMLDivElement>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [showDrop, setShowDrop]       = useState(false)
+  const [googleReady, setGoogleReady] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const dropRef  = useRef<HTMLDivElement>(null)
 
-  // ── Try to load Google Places (only if key is defined) ─────────────────────
   useEffect(() => {
     const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY
     if (!key) return
     if ((window as any).google?.maps?.places) { setGoogleReady(true); return }
-
     const existing = document.getElementById('gmap-script')
     if (existing) { existing.addEventListener('load', () => setGoogleReady(true)); return }
-
     const script = document.createElement('script')
-    script.id  = 'gmap-script'
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
+    script.id    = 'gmap-script'
+    script.src   = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
     script.async = true
     script.onload = () => setGoogleReady(true)
     document.head.appendChild(script)
   }, [])
 
-  // ── Wire Google Autocomplete when ready ────────────────────────────────────
   useEffect(() => {
     if (!googleReady || !inputRef.current) return
     const g = (window as any).google
     if (!g?.maps?.places) return
-
     const ac = new g.maps.places.Autocomplete(inputRef.current, {
       componentRestrictions: { country: 'ae' },
       fields: ['formatted_address', 'address_components'],
@@ -290,10 +325,9 @@ function AddressSearch({
     })
   }, [googleReady, onChange, onAreaChange, onCommunityChange])
 
-  // ── Dubai areas fallback ───────────────────────────────────────────────────
   function handleChange(v: string) {
     onChange(v)
-    if (googleReady) return               // Google handles suggestions
+    if (googleReady) return
     if (v.length >= 2) {
       const filtered = DUBAI_AREAS.filter(a => a.toLowerCase().includes(v.toLowerCase())).slice(0, 6)
       setSuggestions(filtered)
@@ -311,7 +345,6 @@ function AddressSearch({
     setShowDrop(false)
   }
 
-  // close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node) &&
@@ -334,16 +367,13 @@ function AddressSearch({
           onFocus={() => !googleReady && suggestions.length > 0 && setShowDrop(true)}
           placeholder="Search area, community or address…"
           autoComplete="off"
-          style={{ ...LIGHT_INP, paddingLeft:44 }}
+          style={{ ...INP, paddingLeft:44 }}
         />
-        {/* magnifier icon */}
         <span style={{
           position:'absolute', left:14, top:'50%', transform:'translateY(-50%)',
-          color:'#aaa', fontSize:17, pointerEvents:'none', lineHeight:1,
+          color:C.textLight, fontSize:16, pointerEvents:'none', lineHeight:1,
         }}>🔍</span>
       </div>
-
-      {/* Dropdown */}
       {showDrop && suggestions.length > 0 && (
         <div ref={dropRef} style={{
           position:'absolute', top:'calc(100% + 4px)', left:0, right:0,
@@ -356,18 +386,107 @@ function AddressSearch({
                 padding:'12px 16px', cursor:'pointer', fontSize:14, color:'#333',
                 borderBottom: i < suggestions.length-1 ? '1px solid #f5f5f5' : 'none',
                 display:'flex', alignItems:'center', gap:10,
-                transition:'background 0.1s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background='#f9f9f9')}
               onMouseLeave={e => (e.currentTarget.style.background='#fff')}
             >
-              <span style={{ fontSize:14 }}>📍</span>
-              {s}
+              <span style={{ fontSize:14 }}>📍</span>{s}
             </div>
           ))}
         </div>
       )}
     </div>
+  )
+}
+
+// ── Category card ──────────────────────────────────────────────────────────────
+function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        minHeight:130, borderRadius:14,
+        background: hov ? C.accentBlueBg : C.card,
+        border:`2px solid ${hov ? C.borderActive : C.border}`,
+        cursor:'pointer', padding:'18px 14px', textAlign:'left',
+        fontFamily:'Outfit,sans-serif', transition:'all 0.18s',
+        display:'flex', flexDirection:'column', justifyContent:'space-between',
+        boxShadow: hov ? '0 4px 16px rgba(59,79,216,0.08)' : '0 1px 3px rgba(0,0,0,0.06)',
+      }}>
+      <div>
+        <div style={{
+          width:8, height:8, borderRadius:'50%',
+          background: hov ? C.borderActive : cat.color || C.accent,
+          marginBottom:10,
+        }}/>
+        <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>
+          {cat.name}
+        </div>
+        {cat.description && (
+          <div style={{ fontSize:12, color:C.textMuted, lineHeight:1.5,
+            overflow:'hidden', display:'-webkit-box',
+            WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
+            {cat.description}
+          </div>
+        )}
+      </div>
+      <div style={{
+        marginTop:12, fontSize:11, fontWeight:700, letterSpacing:'0.04em',
+        color: hov ? C.borderActive : C.textLight,
+      }}>
+        View →
+      </div>
+    </button>
+  )
+}
+
+// ── Service card ───────────────────────────────────────────────────────────────
+function ServiceCard({ svc, onClick }: { svc: Service; onClick: () => void }) {
+  const [hov, setHov] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        background: hov ? C.accentGoldBg : C.card,
+        border:`2px solid ${hov ? C.accent : C.border}`,
+        borderRadius:14, padding:'16px 18px', cursor:'pointer', textAlign:'left',
+        width:'100%', fontFamily:'Outfit,sans-serif', transition:'all 0.15s', display:'block',
+        boxShadow: hov ? '0 4px 16px rgba(201,168,76,0.10)' : '0 1px 3px rgba(0,0,0,0.06)',
+      }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:5 }}>
+            {svc.name}
+          </div>
+          {svc.description && (
+            <div style={{ fontSize:13, color:C.textMuted, lineHeight:1.55, overflow:'hidden',
+              display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
+              {svc.description}
+            </div>
+          )}
+          {(svc.duration || svc.duration_hrs) && (
+            <div style={{ fontSize:12, color:C.textMuted, marginTop:6 }}>
+              {svc.duration || svc.duration_hrs}
+            </div>
+          )}
+        </div>
+        {svc.base_price != null && (
+          <div style={{ textAlign:'right', flexShrink:0 }}>
+            <div style={{ fontSize:18, fontWeight:800, color:C.accent }}>
+              AED {svc.base_price}
+            </div>
+            <div style={{ fontSize:11, color:C.textMuted, marginTop:3 }}>
+              + VAT 5% = AED {(svc.base_price * 1.05).toFixed(2)}
+            </div>
+          </div>
+        )}
+      </div>
+    </button>
   )
 }
 
@@ -397,7 +516,8 @@ export default function BookingPage() {
   })
   const setCf = useCallback((k: keyof CustomerForm, v: string) =>
     setCf_(p => ({ ...p, [k]: v })), [])
-  // ── Load ───────────────────────────────────────────────────────────────────
+
+  // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
     async function load() {
       const sb = createClient()
@@ -430,6 +550,11 @@ export default function BookingPage() {
       )
   }, [selDate])
 
+  // ── Computed price ─────────────────────────────────────────────────────────
+  const servicePrice = selService?.base_price ?? 0
+  const vatAmount    = parseFloat((servicePrice * 0.05).toFixed(2))
+  const totalAmount  = parseFloat((servicePrice * 1.05).toFixed(2))
+
   // ── Submit ─────────────────────────────────────────────────────────────────
   async function submit() {
     if (!selService || !selDate || selTime === null) return
@@ -450,7 +575,7 @@ export default function BookingPage() {
       community:          cf.community      || null,
       address_notes:      cf.address_notes  || null,
       price:              servicePrice || null,
-      vat:                servicePrice ? vatAmount  : null,
+      vat:                servicePrice ? vatAmount   : null,
       total_amount:       servicePrice ? totalAmount : null,
       payment_method:     paymentMethod,
       status:             'pending',
@@ -471,10 +596,6 @@ export default function BookingPage() {
       : ''
   }
 
-  const servicePrice = selService?.base_price ?? 0
-  const vatAmount    = parseFloat((servicePrice * 0.05).toFixed(2))
-  const totalAmount  = parseFloat((servicePrice * 1.05).toFixed(2))
-
   function resetAll() {
     setDone(false); setStep(1); setWeekOffset(0); setPaymentMethod('cash')
     setSelCategory(null); setSelService(null); setSelDate(null); setSelTime(null)
@@ -482,668 +603,517 @@ export default function BookingPage() {
       address:'', area:'', community:'', villa_flat:'', address_notes:'' })
   }
 
-  // ── DONE ──────────────────────────────────────────────────────────────────
-  if (done) {
-    return (
-      <div style={{ minHeight:'100vh', background:'#f5f5f7', fontFamily:'Outfit,sans-serif',
-        display:'flex', flexDirection:'column' }}>
-        <style>{`@keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}`}</style>
+  // ── Wrapper ────────────────────────────────────────────────────────────────
+  const wrap = (children: React.ReactNode) => (
+    <div style={{ minHeight:'100vh', background:C.bg, fontFamily:'Outfit,sans-serif', color:C.text }}>
+      <style>{`
+        @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+        * { box-sizing: border-box; }
+        input::placeholder, textarea::placeholder { color: #aaa; }
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-thumb { background:rgba(201,168,76,0.25); border-radius:2px; }
+      `}</style>
+      <main style={{ maxWidth:480, margin:'0 auto', padding:'40px 16px 64px' }}>
         <PageHeader />
-        <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', padding:24 }}>
-          <div style={{ textAlign:'center', maxWidth:440 }}>
-            <div style={{
-              width:80, height:80, borderRadius:'50%',
-              background:`${GOLD}18`, border:`2px solid ${GOLD}`,
-              display:'flex', alignItems:'center', justifyContent:'center',
-              margin:'0 auto 24px', fontSize:36,
-            }}>✓</div>
-            <h2 style={{ color:'#111', fontSize:26, fontWeight:700, marginBottom:12 }}>
-              Booking Received!
-            </h2>
-            <p style={{ color:'#333', fontSize:15, marginBottom:10, lineHeight:1.6 }}>
-              Thank you, <strong>{cf.full_name}</strong>. Your booking for{' '}
-              <strong style={{ color:GOLD }}>{selService?.name}</strong> on{' '}
-              <strong>{selDate ? toYMD(selDate) : ''}</strong> at{' '}
-              <strong style={{ color:GOLD }}>{timeLabel()}</strong> has been received.
-            </p>
-            <p style={{ color:'#666', fontSize:13 }}>
-              We will contact you on{' '}
-              <strong style={{ color:'#111' }}>{cf.whatsapp}</strong>{' '}
-              to confirm your appointment.
-            </p>
-            <button onClick={resetAll} style={{
-              marginTop:32, padding:'12px 28px', borderRadius:8,
-              background:'transparent', border:`1px solid ${GOLD}60`,
-              color:GOLD, fontSize:13, fontWeight:600, cursor:'pointer',
-              fontFamily:'Outfit,sans-serif',
-            }}>Book Another Service</button>
-          </div>
-        </div>
+        {children}
+      </main>
+    </div>
+  )
+
+  // ── DONE screen ────────────────────────────────────────────────────────────
+  if (done) {
+    return wrap(
+      <div style={{ textAlign:'center', paddingTop:24 }}>
+        <div style={{
+          width:72, height:72, borderRadius:'50%',
+          background:`${C.accent}18`, border:`2px solid ${C.accent}`,
+          display:'flex', alignItems:'center', justifyContent:'center',
+          margin:'0 auto 24px', fontSize:32,
+        }}>✓</div>
+        <h2 style={{ color:C.text, fontSize:26, fontWeight:800, marginBottom:12 }}>
+          Booking Received!
+        </h2>
+        <p style={{ color:C.textMuted, fontSize:15, marginBottom:10, lineHeight:1.6 }}>
+          Thank you, <strong style={{ color:C.text }}>{cf.full_name}</strong>. Your booking for{' '}
+          <strong style={{ color:C.accent }}>{selService?.name}</strong> on{' '}
+          <strong style={{ color:C.text }}>{selDate ? toYMD(selDate) : ''}</strong> at{' '}
+          <strong style={{ color:C.accent }}>{timeLabel()}</strong> has been received.
+        </p>
+        <p style={{ color:C.textMuted, fontSize:13, marginBottom:32 }}>
+          We will contact you on{' '}
+          <strong style={{ color:C.text }}>{cf.whatsapp}</strong>{' '}
+          to confirm your appointment.
+        </p>
+        <button onClick={resetAll} style={{
+          padding:'12px 28px', borderRadius:10,
+          background:'transparent', border:`1.5px solid ${C.accent}`,
+          color:C.accent, fontSize:14, fontWeight:700, cursor:'pointer',
+          fontFamily:'Outfit,sans-serif',
+        }}>Book Another Service</button>
       </div>
     )
   }
 
   // ── MAIN ──────────────────────────────────────────────────────────────────
-  return (
-    <div style={{ minHeight:'100vh', background:'#f5f5f7', fontFamily:'Outfit,sans-serif', color:'#111' }}>
-      <style>{`
-        @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width:4px; height:4px; }
-        ::-webkit-scrollbar-thumb { background:rgba(212,175,55,0.2); border-radius:2px; }
-      `}</style>
+  return wrap(
+    <>
+      <ProgressBar step={step} />
 
-      <PageHeader />
-      <StepBar current={step} />
-
-      <main style={{ maxWidth:480, margin:'0 auto', padding:'24px 16px 48px' }}>
-
-        {/* ── STEP 1: Categories ──────────────────────────────────────────── */}
-        {step === 1 && (
-          <section>
-            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>
-              Select a Category
-            </h1>
-            <p style={{ color:'#666', fontSize:14, marginBottom:24 }}>
-              What type of service are you looking for?
+      {/* ── STEP 1: Categories ────────────────────────────────────────────── */}
+      {step === 1 && (
+        <section>
+          <h1 style={{ fontSize:22, fontWeight:800, marginBottom:4, color:C.text }}>
+            Select a Category
+          </h1>
+          <p style={{ color:C.textMuted, fontSize:14, marginBottom:24 }}>
+            What type of service are you looking for?
+          </p>
+          {loading ? (
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              {[1,2,3,4].map(i => <Skeleton key={i} h={130}/>)}
+            </div>
+          ) : categories.length === 0 ? (
+            <p style={{ color:C.textMuted, textAlign:'center', padding:40 }}>
+              No services available at the moment.
             </p>
-            {loading ? (
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                {[1,2,3,4].map(i => <Skeleton key={i} h={150}/>)}
-              </div>
-            ) : categories.length === 0 ? (
-              <p style={{ color:'#666', textAlign:'center', padding:40 }}>
-                No services available at the moment.
+          ) : (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
+              {categories.map(cat => (
+                <CategoryCard key={cat.id} cat={cat}
+                  onClick={() => { setSelCategory(cat); setStep(2) }}/>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── STEP 2: Services ──────────────────────────────────────────────── */}
+      {step === 2 && selCategory && (
+        <section>
+          <Back onClick={() => setStep(1)}/>
+          <h1 style={{ fontSize:22, fontWeight:800, marginBottom:4, color:C.text }}>
+            {selCategory.name}
+          </h1>
+          <p style={{ color:C.textMuted, fontSize:14, marginBottom:24 }}>
+            Select a service to continue
+          </p>
+          {filteredServices.length === 0 ? (
+            <div style={{ textAlign:'center', padding:48 }}>
+              <p style={{ color:C.textMuted, marginBottom:16 }}>
+                No services in this category yet.
               </p>
-            ) : (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12 }}>
-                {categories.map(cat => (
-                  <CategoryCard key={cat.id} cat={cat}
-                    onClick={() => { setSelCategory(cat); setStep(2) }}/>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+              <button onClick={() => setStep(1)} style={{
+                background:'none', border:`1px solid ${C.border}`, color:C.textMuted,
+                padding:'9px 18px', borderRadius:8, cursor:'pointer',
+                fontFamily:'Outfit,sans-serif', fontSize:13,
+              }}>← Choose another category</button>
+            </div>
+          ) : (
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              {filteredServices.map(svc => (
+                <ServiceCard key={svc.id} svc={svc}
+                  onClick={() => { setSelService(svc); setStep(3) }}/>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
 
-        {/* ── STEP 2: Services ────────────────────────────────────────────── */}
-        {step === 2 && selCategory && (
-          <section>
-            <Back onClick={() => setStep(1)}/>
-            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>
-              {selCategory.name}
-            </h1>
-            <p style={{ color:'#666', fontSize:14, marginBottom:24 }}>Select a service to continue</p>
-            {filteredServices.length === 0 ? (
-              <div style={{ textAlign:'center', padding:48 }}>
-                <p style={{ color:'#666', marginBottom:16 }}>No services in this category yet.</p>
-                <button onClick={() => setStep(1)} style={{
-                  background:'none', border:'1px solid #ddd', color:'#666',
-                  padding:'9px 18px', borderRadius:8, cursor:'pointer',
-                  fontFamily:'Outfit,sans-serif', fontSize:13,
-                }}>← Choose another category</button>
-              </div>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                {filteredServices.map(svc => (
-                  <ServiceCard key={svc.id} svc={svc}
-                    onClick={() => { setSelService(svc); setStep(3) }}/>
-                ))}
-              </div>
-            )}
-          </section>
-        )}
+      {/* ── STEP 3: Date & Time ───────────────────────────────────────────── */}
+      {step === 3 && (
+        <section>
+          <Back onClick={() => setStep(2)}/>
+          <h1 style={{ fontSize:22, fontWeight:800, marginBottom:20, color:C.text }}>
+            Date &amp; Time
+          </h1>
 
-        {/* ── STEP 3: Date & Time ─────────────────────────────────────────── */}
-        {step === 3 && (
-          <section>
-            <Back onClick={() => setStep(2)}/>
-
-            {/* Date selector */}
-            <div style={{
-              background:'#fff', borderRadius:16, padding:20,
-              marginBottom:16, boxShadow:'0 1px 3px rgba(0,0,0,0.08)',
-            }}>
-              <div style={{ display:'flex', justifyContent:'space-between',
-                alignItems:'center', marginBottom:16 }}>
-                <div style={{ fontSize:18, fontWeight:700, color:'#111' }}>Select Date</div>
-                <div style={{ display:'flex', gap:8 }}>
-                  <button onClick={() => setWeekOffset(p => Math.max(0, p-1))}
-                    disabled={weekOffset === 0}
+          {/* Date picker */}
+          <div style={{
+            background:C.card, border:`1px solid ${C.border}`, borderRadius:16,
+            padding:20, marginBottom:16, boxShadow:'0 1px 3px rgba(0,0,0,0.06)',
+          }}>
+            <div style={{ display:'flex', justifyContent:'space-between',
+              alignItems:'center', marginBottom:16 }}>
+              <div style={{ fontSize:15, fontWeight:700, color:C.text }}>Select Date</div>
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setWeekOffset(p => Math.max(0, p-1))}
+                  disabled={weekOffset === 0}
+                  style={{
+                    width:34, height:34, borderRadius:'50%',
+                    background: weekOffset === 0 ? '#f5f5f5' : C.card,
+                    border:`1px solid ${C.border}`,
+                    cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
+                    fontSize:17, color: weekOffset === 0 ? C.textLight : C.text,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>‹</button>
+                <button onClick={() => setWeekOffset(p => p+1)}
+                  style={{
+                    width:34, height:34, borderRadius:'50%', background:C.card,
+                    border:`1px solid ${C.border}`, cursor:'pointer', fontSize:17, color:C.text,
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>›</button>
+              </div>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+              {days.map((date, idx) => {
+                const today   = new Date()
+                const isToday = today.toDateString() === date.toDateString()
+                const isPast  = date < today && !isToday
+                const isSel   = selDate?.toDateString() === date.toDateString()
+                return (
+                  <div key={idx}
+                    onClick={() => { if (!isPast) { setSelDate(date); setSelTime(null) } }}
                     style={{
-                      width:36, height:36, borderRadius:'50%',
-                      background: weekOffset === 0 ? '#f5f5f5' : '#fff',
-                      border:'1px solid #e5e5e5',
-                      cursor: weekOffset === 0 ? 'not-allowed' : 'pointer',
-                      fontSize:18, color: weekOffset === 0 ? '#ccc' : '#333',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>‹</button>
-                  <button onClick={() => setWeekOffset(p => p+1)}
-                    style={{
-                      width:36, height:36, borderRadius:'50%', background:'#fff',
-                      border:'1px solid #e5e5e5', cursor:'pointer', fontSize:18, color:'#333',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>›</button>
-                </div>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
-                {days.map((date, idx) => {
-                  const today   = new Date()
-                  const isToday = today.toDateString() === date.toDateString()
-                  const isPast  = date < today && !isToday
-                  const isSel   = selDate?.toDateString() === date.toDateString()
-                  return (
-                    <div key={idx}
-                      onClick={() => { if (!isPast) { setSelDate(date); setSelTime(null) } }}
-                      style={{
-                        display:'flex', flexDirection:'column',
-                        alignItems:'center', justifyContent:'center',
-                        padding:'10px 2px', borderRadius:12,
-                        cursor: isPast ? 'not-allowed' : 'pointer',
-                        background: isSel ? BLUE : 'transparent',
-                        opacity: isPast ? 0.3 : 1,
-                        transition:'all 0.15s', userSelect:'none',
-                      }}>
-                      <div style={{ color: isSel ? '#fff' : '#888',
-                        fontSize:10, fontWeight:500, marginBottom:3 }}>
-                        {DAY_NAMES[date.getDay()]}
-                      </div>
-                      <div style={{ color: isSel ? '#fff' : '#111',
-                        fontSize:16, fontWeight:700, marginBottom:2 }}>
-                        {date.getDate()}
-                      </div>
-                      <div style={{ color: isSel ? 'rgba(255,255,255,0.7)' : '#aaa', fontSize:9 }}>
-                        {MONTH_NAMES[date.getMonth()]}
-                      </div>
+                      display:'flex', flexDirection:'column',
+                      alignItems:'center', justifyContent:'center',
+                      padding:'10px 2px', borderRadius:12,
+                      cursor: isPast ? 'not-allowed' : 'pointer',
+                      background: isSel ? C.accentBlue : 'transparent',
+                      opacity: isPast ? 0.3 : 1,
+                      transition:'all 0.15s', userSelect:'none',
+                    }}>
+                    <div style={{ color: isSel ? '#fff' : C.textMuted, fontSize:10, fontWeight:500, marginBottom:3 }}>
+                      {DAY_NAMES[date.getDay()]}
                     </div>
+                    <div style={{ color: isSel ? '#fff' : C.text, fontSize:16, fontWeight:700, marginBottom:2 }}>
+                      {date.getDate()}
+                    </div>
+                    <div style={{ color: isSel ? 'rgba(255,255,255,0.7)' : C.textLight, fontSize:9 }}>
+                      {MONTH_NAMES[date.getMonth()]}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Time slots */}
+          {selDate && (
+            <div style={{
+              background:C.card, border:`1px solid ${C.border}`, borderRadius:16,
+              padding:20, marginBottom:16, boxShadow:'0 1px 3px rgba(0,0,0,0.06)',
+            }}>
+              <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:16 }}>
+                Select Time
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10 }}>
+                {timeSlots.map((slot, idx) => {
+                  const isTaken = takenHours.includes(slot.start)
+                  const isSel   = selTime === slot.start
+                  return (
+                    <button key={idx}
+                      onClick={() => !isTaken && setSelTime(slot.start)}
+                      disabled={isTaken}
+                      style={{
+                        padding:'14px 10px', borderRadius:10, textAlign:'center',
+                        border: isSel ? `2px solid ${C.accentBlue}` : `1px solid ${C.border}`,
+                        background: isSel ? C.accentBlueBg : isTaken ? '#f5f5f5' : C.card,
+                        color: isSel ? C.accentBlue : isTaken ? C.textLight : C.text,
+                        fontSize:13, fontWeight: isSel ? 700 : 500, lineHeight:1.4,
+                        cursor: isTaken ? 'not-allowed' : 'pointer',
+                        fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
+                      }}>
+                      {slot.startLabel} — {slot.endLabel}
+                    </button>
                   )
                 })}
               </div>
             </div>
+          )}
 
-            {/* Time slots */}
-            {selDate && (
-              <div style={{
-                background:'#fff', borderRadius:16, padding:20,
-                marginBottom:16, boxShadow:'0 1px 3px rgba(0,0,0,0.08)',
-              }}>
-                <div style={{ fontSize:18, fontWeight:700, color:'#111', marginBottom:16 }}>
-                  Select Time
+          <PrimaryBtn
+            onClick={() => { if (selDate && selTime !== null) setStep(4) }}
+            disabled={!selDate || selTime === null}>
+            Continue
+          </PrimaryBtn>
+        </section>
+      )}
+
+      {/* ── STEP 4: Customer Details ───────────────────────────────────────── */}
+      {step === 4 && (
+        <section>
+          <Back onClick={() => setStep(3)}/>
+          <h1 style={{ fontSize:22, fontWeight:800, color:C.text, marginBottom:4 }}>
+            Your Details
+          </h1>
+          <p style={{ color:C.textMuted, fontSize:14, marginBottom:24 }}>
+            Fill in your information to complete the booking
+          </p>
+
+          {/* Service + date summary */}
+          <div style={{
+            background:C.bg, border:`1px solid ${C.border}`, borderRadius:12,
+            padding:'14px 16px', marginBottom:24,
+            display:'grid', gridTemplateColumns:'1fr 1fr', gap:12,
+          }}>
+            <div>
+              <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                letterSpacing:'0.06em', marginBottom:4 }}>Service</div>
+              <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{selService?.name}</div>
+              {selService?.base_price != null && (
+                <div style={{ fontSize:13, color:C.accent, fontWeight:700, marginTop:2 }}>
+                  AED {selService.base_price}
                 </div>
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:10 }}>
-                  {timeSlots.map((slot, idx) => {
-                    const isTaken = takenHours.includes(slot.start)
-                    const isSel   = selTime === slot.start
-                    return (
-                      <button key={idx}
-                        onClick={() => !isTaken && setSelTime(slot.start)}
-                        disabled={isTaken}
-                        style={{
-                          padding:'14px 10px', borderRadius:12, textAlign:'center',
-                          border: isSel ? `2px solid ${BLUE}` : '1px solid #e5e5e5',
-                          background: isSel ? BLUE : isTaken ? '#f5f5f5' : '#fff',
-                          color: isSel ? '#fff' : isTaken ? '#ccc' : '#111',
-                          fontSize:13, fontWeight:500, lineHeight:1.4,
-                          cursor: isTaken ? 'not-allowed' : 'pointer',
-                          fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
-                        }}>
-                        {slot.startLabel} — {slot.endLabel}
-                      </button>
-                    )
-                  })}
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                letterSpacing:'0.06em', marginBottom:4 }}>Date &amp; Time</div>
+              <div style={{ fontSize:13, fontWeight:600, color:C.text }}>
+                {selDate?.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' })}
+              </div>
+              {selTime !== null && (
+                <div style={{ fontSize:12, color:C.accentBlue, marginTop:2 }}>
+                  {formatHour(selTime)}
                 </div>
-              </div>
-            )}
-
-            <button
-              onClick={() => { if (selDate && selTime !== null) setStep(4) }}
-              disabled={!selDate || selTime === null}
-              style={{
-                width:'100%', padding:'16px', borderRadius:12, border:'none',
-                background: selDate && selTime !== null ? BLUE : '#e5e5e5',
-                color: selDate && selTime !== null ? '#fff' : '#aaa',
-                fontSize:16, fontWeight:700, fontFamily:'Outfit,sans-serif',
-                cursor: selDate && selTime !== null ? 'pointer' : 'not-allowed',
-                transition:'all 0.2s',
-              }}>
-              Continue
-            </button>
-          </section>
-        )}
-
-        {/* ── STEP 4: Customer Details ─────────────────────────────────────── */}
-        {step === 4 && (
-          <section>
-            <Back onClick={() => setStep(3)}/>
-            <h2 style={{ fontSize:22, fontWeight:700, color:'#111', marginBottom:4 }}>
-              Your Details
-            </h2>
-            <p style={{ color:'#888', fontSize:14, marginBottom:24 }}>
-              Fill in your information to complete the booking
-            </p>
-
-            {/* Service summary */}
-            <div style={{ marginBottom:20 }}>
-              <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
-                Selected Service
-              </div>
-              <div style={{
-                background:'#efefef', borderRadius:12, padding:'14px 16px',
-                display:'flex', justifyContent:'space-between', alignItems:'center',
-              }}>
-                <span style={{ color:'#555', fontSize:14 }}>{selService?.name}</span>
-                {selService?.base_price != null && (
-                  <span style={{ color:BLUE, fontSize:14, fontWeight:700 }}>
-                    AED {selService.base_price}
-                  </span>
-                )}
-              </div>
+              )}
             </div>
-
-            {/* Date/time summary */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ color:'#111', fontSize:13, fontWeight:700, marginBottom:8 }}>
-                Selected Date & Time
-              </div>
-              <div style={{ background:'#efefef', borderRadius:12, padding:'14px 16px' }}>
-                <span style={{ color:'#555', fontSize:14 }}>
-                  {selDate?.toLocaleDateString('en-US', {
-                    weekday:'long', month:'long', day:'numeric',
-                  })}{selTime !== null ? ` — ${formatHour(selTime)}` : ''}
-                </span>
-              </div>
-            </div>
-
-            {/* Personal info */}
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Full Name</FLabel>
-              <input value={cf.full_name} onChange={e => setCf('full_name', e.target.value)}
-                placeholder="Your full name" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>WhatsApp Number</FLabel>
-              <input type="tel" value={cf.whatsapp} onChange={e => setCf('whatsapp', e.target.value)}
-                placeholder="+971 XX XXX XXXX" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Vehicle Plate Number</FLabel>
-              <input value={cf.plate_number} onChange={e => setCf('plate_number', e.target.value)}
-                placeholder="Enter plate number" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel>Vehicle Make & Model</FLabel>
-              <input value={cf.vehicle_model} onChange={e => setCf('vehicle_model', e.target.value)}
-                placeholder="e.g. Toyota Land Cruiser 2023" style={LIGHT_INP}/>
-            </div>
-
-            {/* ── SERVICE ADDRESS ─────────────────────────────────────── */}
-            <div style={{
-              display:'flex', alignItems:'center', gap:10, margin:'20px 0 16px',
-            }}>
-              <div style={{ flex:1, height:1, background:'#e5e5e5' }}/>
-              <span style={{ color:'#aaa', fontSize:12, fontWeight:600, whiteSpace:'nowrap' }}>
-                SERVICE ADDRESS
-              </span>
-              <div style={{ flex:1, height:1, background:'#e5e5e5' }}/>
-            </div>
-
-            {/* Search field with autocomplete */}
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Search Location</FLabel>
-              <AddressSearch
-                value={cf.address}
-                onChange={v => setCf('address', v)}
-                onAreaChange={v => setCf('area', v)}
-                onCommunityChange={v => setCf('community', v)}
-              />
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Area Name</FLabel>
-              <input value={cf.area} onChange={e => setCf('area', e.target.value)}
-                placeholder="Enter area name" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Community Name</FLabel>
-              <input value={cf.community} onChange={e => setCf('community', e.target.value)}
-                placeholder="Enter community name" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:16 }}>
-              <FLabel required>Villa / Flat Number</FLabel>
-              <input value={cf.villa_flat} onChange={e => setCf('villa_flat', e.target.value)}
-                placeholder="Enter villa/flat number" style={LIGHT_INP}/>
-            </div>
-
-            <div style={{ marginBottom:24 }}>
-              <FLabel optional>Other Address Details</FLabel>
-              <textarea value={cf.address_notes} onChange={e => setCf('address_notes', e.target.value)}
-                placeholder="Additional details, parking spot, building access, etc."
-                rows={3} style={{ ...LIGHT_INP, resize:'none' }}/>
-            </div>
-
-            {err && <p style={{ color:RED, fontSize:13, marginBottom:12 }}>{err}</p>}
-
-            <button
-              onClick={() => {
-                if (!cf.full_name.trim() || !cf.whatsapp.trim() ||
-                    !cf.plate_number.trim() || !cf.address.trim() ||
-                    !cf.area.trim() || !cf.community.trim() || !cf.villa_flat.trim()) {
-                  setErr('Please fill in all required fields.')
-                  return
-                }
-                setErr(''); setStep(5)
-              }}
-              style={{
-                width:'100%', padding:'16px', background:BLUE, color:'#fff',
-                border:'none', borderRadius:12, fontSize:16, fontWeight:700,
-                cursor:'pointer', fontFamily:'Outfit,sans-serif',
-              }}>
-              Continue
-            </button>
-          </section>
-        )}
-
-        {/* ── STEP 5: Summary & Confirm ────────────────────────────────────── */}
-        {step === 5 && (
-          <section>
-            <Back onClick={() => setStep(4)}/>
-            <h1 style={{ fontSize:22, fontWeight:700, marginBottom:4, color:'#111' }}>
-              Confirm Booking
-            </h1>
-            <p style={{ color:'#888', fontSize:14, marginBottom:20 }}>
-              Review your details before confirming
-            </p>
-
-            {/* ── Summary card (light) ─────────────────────────────────── */}
-            <div style={{
-              background:'#fff', border:'1px solid #e5e5e5', borderRadius:16,
-              boxShadow:'0 1px 3px rgba(0,0,0,0.06)', overflow:'hidden', marginBottom:20,
-            }}>
-              {/* Service + VAT breakdown */}
-              <div style={{ padding:'16px 18px', borderBottom:'1px solid #f0f0f0' }}>
-                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:8 }}>Service</div>
-                <div style={{ display:'flex', justifyContent:'space-between',
-                  alignItems:'flex-start', gap:8 }}>
-                  <div>
-                    <div style={{ fontSize:17, fontWeight:700, color:'#111' }}>{selService?.name}</div>
-                    {selService?.duration && (
-                      <div style={{ fontSize:12, color:'#888', marginTop:3 }}>{selService.duration}</div>
-                    )}
-                  </div>
-                </div>
-
-                {servicePrice > 0 && (
-                  <div style={{ marginTop:14 }}>
-                    <div style={{ display:'flex', justifyContent:'space-between',
-                      padding:'9px 0', borderBottom:'1px solid #f0f0f0' }}>
-                      <span style={{ color:'#888', fontSize:13 }}>Subtotal</span>
-                      <span style={{ color:'#111', fontSize:13, fontWeight:600 }}>
-                        AED {servicePrice.toFixed(2)}
-                      </span>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between',
-                      padding:'9px 0', borderBottom:'1px solid #f0f0f0' }}>
-                      <span style={{ color:'#888', fontSize:13 }}>VAT (5%)</span>
-                      <span style={{ color:'#888', fontSize:13 }}>
-                        AED {vatAmount.toFixed(2)}
-                      </span>
-                    </div>
-                    <div style={{ display:'flex', justifyContent:'space-between',
-                      padding:'12px 0 0' }}>
-                      <span style={{ color:'#111', fontSize:16, fontWeight:800 }}>Total</span>
-                      <span style={{ color:GOLD, fontSize:20, fontWeight:900 }}>
-                        AED {totalAmount.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Date / Time row */}
-              <div style={{
-                padding:'14px 18px', borderBottom:'1px solid #f0f0f0',
-                display:'grid', gridTemplateColumns:'1fr 1fr', gap:12,
-              }}>
-                <div>
-                  <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
-                    letterSpacing:'0.06em', marginBottom:6 }}>Date</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:'#111' }}>
-                    {selDate ? toYMD(selDate) : '—'}
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
-                    letterSpacing:'0.06em', marginBottom:6 }}>Time</div>
-                  <div style={{ fontSize:14, fontWeight:600, color:BLUE }}>{timeLabel()}</div>
-                </div>
-              </div>
-
-              {/* Customer row */}
-              <div style={{ padding:'14px 18px', borderBottom:'1px solid #f0f0f0' }}>
-                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:10 }}>Customer</div>
-                <ConfirmRow label="Name"     value={cf.full_name}/>
-                <ConfirmRow label="WhatsApp" value={cf.whatsapp} accent/>
-                {cf.vehicle_model && <ConfirmRow label="Vehicle" value={cf.vehicle_model}/>}
-                {cf.plate_number  && <ConfirmRow label="Plate"   value={cf.plate_number}/>}
-              </div>
-
-              {/* Address row */}
-              <div style={{ padding:'14px 18px' }}>
-                <div style={{ fontSize:10, color:'#888', textTransform:'uppercase',
-                  letterSpacing:'0.06em', marginBottom:10 }}>Service Address</div>
-                {cf.area        && <ConfirmRow label="Area"       value={cf.area}/>}
-                {cf.community   && <ConfirmRow label="Community"  value={cf.community}/>}
-                {cf.villa_flat  && <ConfirmRow label="Villa/Flat" value={cf.villa_flat}/>}
-                {cf.address_notes && <ConfirmRow label="Notes"    value={cf.address_notes}/>}
-              </div>
-            </div>
-
-            {/* ── Payment Method ───────────────────────────────────────── */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:16, fontWeight:700, color:'#111', marginBottom:12 }}>
-                Payment Method
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                {/* Online */}
-                <div onClick={() => setPaymentMethod('online')} style={{
-                  display:'flex', alignItems:'center', gap:12,
-                  padding:'14px 16px',
-                  background: paymentMethod === 'online' ? '#eef0fb' : '#fff',
-                  border: `2px solid ${paymentMethod === 'online' ? BLUE : '#e5e5e5'}`,
-                  borderRadius:14, cursor:'pointer', transition:'all 0.2s',
-                }}>
-                  <div style={{
-                    width:38, height:38, borderRadius:'50%', flexShrink:0,
-                    background: paymentMethod === 'online' ? BLUE : '#f0f0f0',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                  }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                      stroke={paymentMethod === 'online' ? '#fff' : '#aaa'}
-                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                      <line x1="1" y1="10" x2="23" y2="10"/>
-                    </svg>
-                  </div>
-                  <span style={{ color:'#111', fontSize:15, fontWeight:600 }}>Online</span>
-                  {paymentMethod === 'online' && (
-                    <div style={{
-                      marginLeft:'auto', width:22, height:22, borderRadius:'50%',
-                      background:BLUE, display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-
-                {/* Cash */}
-                <div onClick={() => setPaymentMethod('cash')} style={{
-                  display:'flex', alignItems:'center', gap:12,
-                  padding:'14px 16px',
-                  background: paymentMethod === 'cash' ? '#eef0fb' : '#fff',
-                  border: `2px solid ${paymentMethod === 'cash' ? BLUE : '#e5e5e5'}`,
-                  borderRadius:14, cursor:'pointer', transition:'all 0.2s',
-                }}>
-                  <div style={{
-                    width:38, height:38, borderRadius:'50%', flexShrink:0,
-                    background: paymentMethod === 'cash' ? BLUE : '#f0f0f0',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                  }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-                      stroke={paymentMethod === 'cash' ? '#fff' : '#aaa'}
-                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="1" x2="12" y2="23"/>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                    </svg>
-                  </div>
-                  <span style={{ color:'#111', fontSize:15, fontWeight:600 }}>Cash</span>
-                  {paymentMethod === 'cash' && (
-                    <div style={{
-                      marginLeft:'auto', width:22, height:22, borderRadius:'50%',
-                      background:BLUE, display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
-                        stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <p style={{ fontSize:12, color:'#888', marginBottom:4, lineHeight:1.6 }}>
-              By confirming you agree to our terms. Our team will contact you via WhatsApp to
-              confirm your appointment.
-            </p>
-            {err && <p style={{ color:RED, fontSize:13, marginTop:8 }}>{err}</p>}
-            <GoldBtn onClick={submit} loading={saving}>Confirm Booking ✓</GoldBtn>
-          </section>
-        )}
-
-      </main>
-    </div>
-  )
-}
-
-// ── ConfirmRow — light-theme summary row for step 5 ──────────────────────────
-function ConfirmRow({ label, value, accent=false }: {
-  label:string; value:string; accent?:boolean
-}) {
-  return (
-    <div style={{ display:'flex', gap:8, marginBottom:7 }}>
-      <span style={{ fontSize:13, color:'#888', minWidth:90, flexShrink:0 }}>{label}</span>
-      <span style={{ fontSize:13, color: accent ? BLUE : '#111', fontWeight: accent ? 600 : 400 }}>
-        {value}
-      </span>
-    </div>
-  )
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function PageHeader() {
-  return (
-    <header style={{
-      padding:'18px 24px', background:BG2, borderBottom:`1px solid ${BORDER}`,
-      display:'flex', alignItems:'center', gap:16,
-    }}>
-      <div style={{
-        width:40, height:40, borderRadius:8, background:`${GOLD}15`,
-        border:`1px solid ${GOLD}40`, display:'flex', alignItems:'center',
-        justifyContent:'center', flexShrink:0,
-      }}>
-        <span style={{ fontSize:18, fontWeight:800, color:GOLD }}>S</span>
-      </div>
-      <div>
-        <div style={{ fontSize:18, fontWeight:800, color:GOLD, letterSpacing:'0.06em',
-          lineHeight:1, textTransform:'uppercase' }}>Saffi</div>
-        <div style={{ fontSize:10, color:TEXT2, letterSpacing:'0.14em',
-          textTransform:'uppercase', marginTop:2 }}>Luxury Car Care · Dubai</div>
-      </div>
-      <div style={{ marginLeft:'auto', fontSize:12, color:TEXT2 }}>Book a Service</div>
-    </header>
-  )
-}
-
-function CategoryCard({ cat, onClick }: { cat: Category; onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        height:155, borderRadius:12,
-        border:`1px solid ${hov ? cat.color+'55' : cat.color+'22'}`,
-        background:catBg(cat.color), cursor:'pointer', padding:0, overflow:'hidden',
-        position:'relative', display:'flex', flexDirection:'column',
-        justifyContent:'flex-end', textAlign:'left',
-        transition:'border-color 0.2s, transform 0.15s',
-        transform: hov ? 'translateY(-2px)' : 'none', fontFamily:'Outfit,sans-serif',
-      }}>
-      <div style={{ position:'absolute', top:0, right:0, width:70, height:70,
-        background:`radial-gradient(circle, ${cat.color}20 0%, transparent 70%)` }}/>
-      <div style={{ position:'absolute', top:14, right:14, width:8, height:8,
-        borderRadius:'50%', background:cat.color, opacity:0.7 }}/>
-      <div style={{ padding:'12px 14px', position:'relative' }}>
-        <div style={{ fontSize:14, fontWeight:700, color:TEXT }}>{cat.name}</div>
-        {cat.description && (
-          <div style={{ fontSize:11, color:TEXT2, marginTop:3, lineHeight:1.4,
-            overflow:'hidden', display:'-webkit-box',
-            WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
-            {cat.description}
           </div>
-        )}
-        <div style={{ marginTop:8, fontSize:11, color:cat.color, fontWeight:600, letterSpacing:'0.04em' }}>
-          View services →
-        </div>
-      </div>
-    </button>
-  )
-}
 
-function ServiceCard({ svc, onClick }: { svc: Service; onClick: () => void }) {
-  const [hov, setHov] = useState(false)
-  return (
-    <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{
-        background: hov ? BG4 : BG3, border:`1px solid ${hov ? GOLD+'40' : BORDER}`,
-        borderRadius:12, padding:'16px 18px', cursor:'pointer', textAlign:'left',
-        width:'100%', fontFamily:'Outfit,sans-serif', transition:'all 0.15s', display:'block',
-      }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', gap:12 }}>
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ fontSize:15, fontWeight:700, color:TEXT, marginBottom:5 }}>{svc.name}</div>
-          {svc.description && (
-            <div style={{ fontSize:13, color:TEXT2, lineHeight:1.55, overflow:'hidden',
-              display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical' as const }}>
-              {svc.description}
+          {/* Personal info */}
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Full Name</FLabel>
+            <input value={cf.full_name} onChange={e => setCf('full_name', e.target.value)}
+              placeholder="Your full name" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>WhatsApp Number</FLabel>
+            <input type="tel" value={cf.whatsapp} onChange={e => setCf('whatsapp', e.target.value)}
+              placeholder="+971 XX XXX XXXX" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Vehicle Plate Number</FLabel>
+            <input value={cf.plate_number} onChange={e => setCf('plate_number', e.target.value)}
+              placeholder="Enter plate number" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel optional>Vehicle Make &amp; Model</FLabel>
+            <input value={cf.vehicle_model} onChange={e => setCf('vehicle_model', e.target.value)}
+              placeholder="e.g. Toyota Land Cruiser 2023" style={INP}/>
+          </div>
+
+          <SectionDivider label="SERVICE ADDRESS" />
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Search Location</FLabel>
+            <AddressSearch
+              value={cf.address}
+              onChange={v => setCf('address', v)}
+              onAreaChange={v => setCf('area', v)}
+              onCommunityChange={v => setCf('community', v)}
+            />
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Area Name</FLabel>
+            <input value={cf.area} onChange={e => setCf('area', e.target.value)}
+              placeholder="Enter area name" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Community Name</FLabel>
+            <input value={cf.community} onChange={e => setCf('community', e.target.value)}
+              placeholder="Enter community name" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
+            <FLabel required>Villa / Flat Number</FLabel>
+            <input value={cf.villa_flat} onChange={e => setCf('villa_flat', e.target.value)}
+              placeholder="Enter villa/flat number" style={INP}/>
+          </div>
+
+          <div style={{ marginBottom:24 }}>
+            <FLabel optional>Other Address Details</FLabel>
+            <textarea value={cf.address_notes} onChange={e => setCf('address_notes', e.target.value)}
+              placeholder="Parking spot, building access, etc."
+              rows={3} style={{ ...INP, resize:'none' }}/>
+          </div>
+
+          {err && <p style={{ color:C.error, fontSize:13, marginBottom:12 }}>{err}</p>}
+
+          <PrimaryBtn onClick={() => {
+            if (!cf.full_name.trim() || !cf.whatsapp.trim() ||
+                !cf.plate_number.trim() || !cf.address.trim() ||
+                !cf.area.trim() || !cf.community.trim() || !cf.villa_flat.trim()) {
+              setErr('Please fill in all required fields.')
+              return
+            }
+            setErr(''); setStep(5)
+          }}>
+            Continue
+          </PrimaryBtn>
+        </section>
+      )}
+
+      {/* ── STEP 5: Confirm ───────────────────────────────────────────────── */}
+      {step === 5 && (
+        <section>
+          <Back onClick={() => setStep(4)}/>
+          <h1 style={{ fontSize:22, fontWeight:800, marginBottom:4, color:C.text }}>
+            Confirm Booking
+          </h1>
+          <p style={{ color:C.textMuted, fontSize:14, marginBottom:20 }}>
+            Review your details before confirming
+          </p>
+
+          {/* Summary card */}
+          <div style={{
+            background:C.card, border:`1px solid ${C.border}`, borderRadius:16,
+            boxShadow:'0 1px 3px rgba(0,0,0,0.06)', overflow:'hidden', marginBottom:20,
+          }}>
+            {/* Service + price */}
+            <div style={{ padding:'16px 18px', borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                letterSpacing:'0.06em', marginBottom:8 }}>Service</div>
+              <div style={{ fontSize:17, fontWeight:700, color:C.text }}>{selService?.name}</div>
+              {selService?.duration && (
+                <div style={{ fontSize:12, color:C.textMuted, marginTop:3 }}>{selService.duration}</div>
+              )}
+              {selService?.base_price != null && (
+                <div style={{ marginTop:14 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between',
+                    padding:'9px 0', borderBottom:`1px solid ${C.border}` }}>
+                    <span style={{ color:C.textMuted, fontSize:13 }}>Subtotal</span>
+                    <span style={{ color:C.text, fontSize:13, fontWeight:600 }}>
+                      AED {servicePrice.toFixed(2)}
+                    </span>
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between',
+                    padding:'9px 0', borderBottom:`1px solid ${C.border}` }}>
+                    <span style={{ color:C.textMuted, fontSize:13 }}>VAT (5%)</span>
+                    <span style={{ color:C.textMuted, fontSize:13 }}>
+                      AED {vatAmount.toFixed(2)}
+                    </span>
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between', padding:'12px 0 0' }}>
+                    <span style={{ color:C.text, fontSize:16, fontWeight:800 }}>Total</span>
+                    <span style={{ color:C.accent, fontSize:20, fontWeight:900 }}>
+                      AED {totalAmount.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div style={{ textAlign:'right', flexShrink:0 }}>
-          {svc.base_price != null && (
-            <>
-              <div style={{ fontSize:18, fontWeight:700, color:GOLD }}>AED {svc.base_price}</div>
-              <div style={{ fontSize:11, color:TEXT2, marginTop:3 }}>
-                + VAT 5% = AED {(svc.base_price * 1.05).toFixed(2)}
+
+            {/* Date / Time */}
+            <div style={{ padding:'14px 18px', borderBottom:`1px solid ${C.border}`,
+              display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              <div>
+                <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                  letterSpacing:'0.06em', marginBottom:6 }}>Date</div>
+                <div style={{ fontSize:14, fontWeight:600, color:C.text }}>
+                  {selDate ? toYMD(selDate) : '—'}
+                </div>
               </div>
-            </>
-          )}
-          {(svc.duration || svc.duration_hrs) && (
-            <div style={{ fontSize:11, color:TEXT2, marginTop:4 }}>
-              {svc.duration || svc.duration_hrs}
+              <div>
+                <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                  letterSpacing:'0.06em', marginBottom:6 }}>Time</div>
+                <div style={{ fontSize:14, fontWeight:600, color:C.accentBlue }}>{timeLabel()}</div>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-    </button>
+
+            {/* Customer */}
+            <div style={{ padding:'14px 18px', borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                letterSpacing:'0.06em', marginBottom:10 }}>Customer</div>
+              <ConfirmRow label="Name"     value={cf.full_name}/>
+              <ConfirmRow label="WhatsApp" value={cf.whatsapp} accent/>
+              {cf.vehicle_model && <ConfirmRow label="Vehicle" value={cf.vehicle_model}/>}
+              {cf.plate_number  && <ConfirmRow label="Plate"   value={cf.plate_number}/>}
+            </div>
+
+            {/* Address */}
+            <div style={{ padding:'14px 18px' }}>
+              <div style={{ fontSize:10, color:C.textMuted, textTransform:'uppercase',
+                letterSpacing:'0.06em', marginBottom:10 }}>Service Address</div>
+              {cf.area        && <ConfirmRow label="Area"       value={cf.area}/>}
+              {cf.community   && <ConfirmRow label="Community"  value={cf.community}/>}
+              {cf.villa_flat  && <ConfirmRow label="Villa/Flat" value={cf.villa_flat}/>}
+              {cf.address_notes && <ConfirmRow label="Notes"    value={cf.address_notes}/>}
+            </div>
+          </div>
+
+          {/* Payment Method */}
+          <div style={{ marginBottom:24 }}>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:12 }}>
+              Payment Method
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+              {/* Online */}
+              <div onClick={() => setPaymentMethod('online')} style={{
+                display:'flex', alignItems:'center', gap:10, padding:'14px 16px',
+                background: paymentMethod === 'online' ? C.accentBlueBg : C.card,
+                border:`2px solid ${paymentMethod === 'online' ? C.borderActive : C.border}`,
+                borderRadius:14, cursor:'pointer', transition:'all 0.2s',
+              }}>
+                <div style={{
+                  width:36, height:36, borderRadius:'50%', flexShrink:0,
+                  background: paymentMethod === 'online' ? C.accentBlue : '#f0f0f0',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke={paymentMethod === 'online' ? '#fff' : C.textLight}
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                </div>
+                <span style={{ color:C.text, fontSize:14, fontWeight:600 }}>Online</span>
+                {paymentMethod === 'online' && (
+                  <div style={{ marginLeft:'auto', width:20, height:20, borderRadius:'50%',
+                    background:C.accentBlue, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                      stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Cash */}
+              <div onClick={() => setPaymentMethod('cash')} style={{
+                display:'flex', alignItems:'center', gap:10, padding:'14px 16px',
+                background: paymentMethod === 'cash' ? C.accentBlueBg : C.card,
+                border:`2px solid ${paymentMethod === 'cash' ? C.borderActive : C.border}`,
+                borderRadius:14, cursor:'pointer', transition:'all 0.2s',
+              }}>
+                <div style={{
+                  width:36, height:36, borderRadius:'50%', flexShrink:0,
+                  background: paymentMethod === 'cash' ? C.accentBlue : '#f0f0f0',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke={paymentMethod === 'cash' ? '#fff' : C.textLight}
+                    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="12" y1="1" x2="12" y2="23"/>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                  </svg>
+                </div>
+                <span style={{ color:C.text, fontSize:14, fontWeight:600 }}>Cash</span>
+                {paymentMethod === 'cash' && (
+                  <div style={{ marginLeft:'auto', width:20, height:20, borderRadius:'50%',
+                    background:C.accentBlue, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                      stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <p style={{ fontSize:12, color:C.textMuted, marginBottom:12, lineHeight:1.6 }}>
+            By confirming you agree to our terms. Our team will contact you via WhatsApp to
+            confirm your appointment.
+          </p>
+          {err && <p style={{ color:C.error, fontSize:13, marginBottom:8 }}>{err}</p>}
+          <PrimaryBtn onClick={submit} loading={saving}>Confirm Booking ✓</PrimaryBtn>
+        </section>
+      )}
+    </>
   )
 }
