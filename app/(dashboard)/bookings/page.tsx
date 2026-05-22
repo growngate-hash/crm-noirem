@@ -215,9 +215,12 @@ export default function BookingsPage() {
     date:'',start_time:'09:00',end_time:'11:00',
     address:'',price:'',discount:'',notes:'',
   })
-  const [newTechs,      setNewTechs]      = useState<string[]>([])
-  const [conflictWarn,  setConflictWarn]  = useState('')
-  const [toasts,        setToasts]        = useState<Toast[]>([])
+  const [newTechs,         setNewTechs]         = useState<string[]>([])
+  const [conflictWarn,     setConflictWarn]     = useState('')
+  const [reassignVehicleId,setReassignVehicleId]= useState('')
+  const [reassignConflict, setReassignConflict] = useState('')
+  const [reassignSaving,   setReassignSaving]   = useState(false)
+  const [toasts,           setToasts]           = useState<Toast[]>([])
   const toastId = useRef(0)
 
   function addToast(msg:string,type:'success'|'error'|'warn'='success'){
@@ -290,6 +293,56 @@ export default function BookingsPage() {
       .subscribe()
     return ()=>{ sb.removeChannel(channel) }
   },[selectedDay, fetchBookings])
+
+  // ── reset reassign state when detail panel opens/closes ──────────────────
+  useEffect(()=>{
+    setReassignVehicleId(detailBooking?.vehicle_id ?? '')
+    setReassignConflict('')
+  },[detailBooking?.id])
+
+  // ── conflict check when reassign vehicle changes ──────────────────────────
+  useEffect(()=>{
+    const vid = reassignVehicleId
+    const db  = detailBooking
+    if (!db?.scheduled_at || !vid || vid === (db.vehicle_id ?? '')) {
+      setReassignConflict(''); return
+    }
+    const bufStart = new Date(new Date(db.scheduled_at).getTime() - 60*60*1000).toISOString()
+    const bufEnd   = db.end_at
+      ? new Date(new Date(db.end_at).getTime() + 60*60*1000).toISOString()
+      : new Date(new Date(db.scheduled_at).getTime() + 3*60*60*1000).toISOString()
+    createClient()
+      .from('bookings')
+      .select('id, scheduled_at, end_at')
+      .eq('vehicle_id', vid)
+      .neq('status', 'cancelled')
+      .neq('id', db.id)
+      .gte('scheduled_at', bufStart)
+      .lte('scheduled_at', bufEnd)
+      .then(({ data }) => {
+        setReassignConflict(
+          data && data.length > 0
+            ? `⚠️ Este vehículo tiene ${data.length} reserva(s) en ese horario`
+            : ''
+        )
+      })
+  },[reassignVehicleId, detailBooking?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── save vehicle reassignment ─────────────────────────────────────────────
+  async function saveReassignment() {
+    if (!detailBooking) return
+    setReassignSaving(true)
+    const { error } = await createClient()
+      .from('bookings')
+      .update({ vehicle_id: reassignVehicleId || null })
+      .eq('id', detailBooking.id)
+    setReassignSaving(false)
+    if (error) { addToast(error.message, 'error'); return }
+    const veh = vehicles.find(v => v.id === reassignVehicleId) ?? null
+    setDetailBooking((p: any) => p ? { ...p, vehicle_id: reassignVehicleId || null, vehicles: veh } : null)
+    addToast('Vehículo reasignado', 'success')
+    fetchBookings(selectedDay)
+  }
 
   // ── availability conflict check for new-booking modal ────────────────────
   useEffect(()=>{
@@ -806,6 +859,38 @@ export default function BookingsPage() {
                   ?<span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#c9a84c'}}>{detailBooking.vehicles.license_plate}</span></span>
                   :'—'}
               </DetailRow>
+
+              {/* ── Vehicle reassignment ── */}
+              <div>
+                <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',
+                  letterSpacing:'0.07em',color:'#888580',marginBottom:6}}>
+                  Reasignar vehículo
+                </div>
+                <MSelect value={reassignVehicleId}
+                  onChange={e=>setReassignVehicleId(e.target.value)}>
+                  <option value="">— Sin vehículo —</option>
+                  {vehicles.map(v=>(
+                    <option key={v.id} value={v.id}>{v.name} · {v.license_plate}</option>
+                  ))}
+                </MSelect>
+                {reassignConflict&&(
+                  <div style={{marginTop:6,padding:'7px 10px',borderRadius:6,
+                    background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.25)',
+                    color:'#ef4444',fontSize:11,lineHeight:1.4}}>
+                    {reassignConflict}
+                  </div>
+                )}
+                {reassignVehicleId !== (detailBooking.vehicle_id ?? '') && (
+                  <button onClick={saveReassignment} disabled={reassignSaving}
+                    style={{marginTop:8,width:'100%',padding:'8px 12px',borderRadius:6,
+                      border:'1px solid rgba(201,168,76,0.5)',background:'rgba(201,168,76,0.1)',
+                      color:'#c9a84c',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',
+                      cursor:reassignSaving?'not-allowed':'pointer',opacity:reassignSaving?0.6:1}}>
+                    {reassignSaving ? 'Guardando…' : '↺ Guardar reasignación'}
+                  </button>
+                )}
+              </div>
+
               <DetailRow label={t('serviceLabel')}>{detailBooking.services?.name??'—'}</DetailRow>
               {detailBooking.scheduled_at&&(
                 <DetailRow label={t('schedule')}>
