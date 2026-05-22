@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BASE_SLOTS = ['09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00']
-const BUFFER_MIN = 60
+const BASE_SLOTS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00']
+const BUFFER_MIN  = 60
+const CLOSE_MIN   = 18 * 60 // hard close: no service may end after 18:00
 
 function toMinutes(slot: string): number {
   const [h, m] = slot.split(':').map(Number)
@@ -114,11 +115,13 @@ export async function GET(req: NextRequest) {
   const effectiveIds = vehicleIds.length > 0 ? vehicleIds : null
 
   for (const slot of BASE_SLOTS) {
-    const slotStart = toMinutes(slot)
-    const slotEnd   = slotStart + 60 // each slot is a fixed 1-hour window
+    const slotStart    = toMinutes(slot)
+    const slotEnd      = slotStart + 60 // 1-hour overlap window
+    // Service must finish + 1h buffer before hard close
+    const serviceFinish = slotStart + requestedDurMin + BUFFER_MIN
 
-    if (slotEnd > 19 * 60) {
-      blocked.push({ slot, reason: 'Outside working hours' })
+    if (serviceFinish > CLOSE_MIN) {
+      blocked.push({ slot, reason: 'Fuera de horario (cierre 18:00)' })
       continue
     }
 

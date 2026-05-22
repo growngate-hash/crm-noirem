@@ -78,7 +78,7 @@ function getServiceDurationHours(svc:Service|null):number {
 }
 function generateTimeSlots(_svc:Service|null):TimeSlot[] {
   const slots:TimeSlot[]=[]
-  for(let hour=9;hour<=18;hour++){
+  for(let hour=8;hour<=17;hour++){
     slots.push({start:hour,startLabel:formatHour(hour),endLabel:formatHour(hour+1)})
   }
   return slots
@@ -88,9 +88,6 @@ function slotToUTC(date:Date,hourStart:number):string {
   const hStr=String(Math.floor(hourStart)).padStart(2,'0')
   const mStr=String(Math.round((hourStart%1)*60)).padStart(2,'0')
   return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
-}
-function utcToHour(iso:string):number {
-  const d=new Date(iso); return ((d.getUTCHours()+4)%24)+d.getUTCMinutes()/60
 }
 function buildAddress(f:CustomerForm):string {
   return [f.address,f.villa_flat,f.area,f.community,f.address_notes].filter(Boolean).join(', ')
@@ -406,7 +403,6 @@ export default function BookingPage() {
 
   const [categories,setCategories]   = useState<Category[]>([])
   const [services,setServices]       = useState<Service[]>([])
-  const [availSlots,setAvailSlots]   = useState<string[]>([])
   const [blockedMap,setBlockedMap]   = useState<Record<string,string>>({})
   const [loadingSlots,setLoadingSlots] = useState(false)
 
@@ -443,11 +439,10 @@ export default function BookingPage() {
   // ── Availability from API (replaces simple takenHours) ───────────────────
   useEffect(()=>{
     if(!selDate||!selService)return
-    setAvailSlots([]);setBlockedMap({});setLoadingSlots(true)
+    setBlockedMap({});setLoadingSlots(true)
     fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`)
       .then(r=>r.json())
-      .then(({available,blocked})=>{
-        setAvailSlots(available??[])
+      .then(({blocked})=>{
         const m:Record<string,string>={}
         for(const b of (blocked??[])) m[b.slot]=b.reason
         setBlockedMap(m)
