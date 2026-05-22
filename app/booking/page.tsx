@@ -76,9 +76,11 @@ function getServiceDurationHours(svc:Service|null):number {
   if(!isNaN(num))return num
   const m=raw.match(/(\d+(\.\d+)?)/); return m?parseFloat(m[1]):1
 }
-function generateTimeSlots(svc:Service|null):TimeSlot[] {
-  const dur=getServiceDurationHours(svc); const slots:TimeSlot[]=[]; let hour=9
-  while(hour+dur<=19){slots.push({start:hour,startLabel:formatHour(hour),endLabel:formatHour(hour+dur)});hour+=1}
+function generateTimeSlots(_svc:Service|null):TimeSlot[] {
+  const slots:TimeSlot[]=[]
+  for(let hour=9;hour<=18;hour++){
+    slots.push({start:hour,startLabel:formatHour(hour),endLabel:formatHour(hour+1)})
+  }
   return slots
 }
 function slotToUTC(date:Date,hourStart:number):string {
@@ -700,7 +702,7 @@ export default function BookingPage() {
                         fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
                         opacity: loadingSlots&&!isSel ? 0.5 : 1,
                       }}>
-                      {slot.startLabel} — {slot.endLabel}
+                      {slot.startLabel}
                       {isBlocked&&<div style={{fontSize:9,color:DIM,marginTop:2}}>no disponible</div>}
                     </button>
                   )

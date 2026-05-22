@@ -115,9 +115,9 @@ export async function GET(req: NextRequest) {
 
   for (const slot of BASE_SLOTS) {
     const slotStart = toMinutes(slot)
-    const slotEnd   = slotStart + requestedDurMin
+    const slotEnd   = slotStart + 60 // each slot is a fixed 1-hour window
 
-    if (slotEnd > 20 * 60) {
+    if (slotEnd > 19 * 60) {
       blocked.push({ slot, reason: 'Outside working hours' })
       continue
     }
