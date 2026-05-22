@@ -436,6 +436,18 @@ export default function BookingPage() {
     load()
   },[])
 
+  // ── Auto-skip Sunday when entering step 3 ─────────────────────────────────
+  useEffect(()=>{
+    if(step!==3)return
+    // If no date selected yet (or selected date is Sunday), pre-select next Monday
+    const ref=selDate??new Date()
+    if(ref.getDay()===0){
+      const monday=new Date(ref)
+      monday.setDate(ref.getDate()+1)
+      setSelDate(monday)
+    }
+  },[step]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Availability from API (replaces simple takenHours) ───────────────────
   useEffect(()=>{
     if(!selDate||!selService)return
@@ -635,28 +647,30 @@ export default function BookingPage() {
                 const today=new Date()
                 const isToday=today.toDateString()===date.toDateString()
                 const isPast=date<today&&!isToday
+                const isSunday=date.getDay()===0
+                const isDisabled=isPast||isSunday
                 const isSel=selDate?.toDateString()===date.toDateString()
                 return (
                   <div key={idx}
-                    onClick={()=>{if(!isPast){setSelDate(date);setSelTime(null)}}}
+                    onClick={()=>{if(!isDisabled){setSelDate(date);setSelTime(null)}}}
                     style={{
                       display:'flex', flexDirection:'column',
                       alignItems:'center', justifyContent:'center',
                       padding:'10px 2px', borderRadius:8,
-                      cursor: isPast?'not-allowed':'pointer',
-                      background: isSel ? GOLD : 'transparent',
-                      border: isSel ? `1px solid ${GOLD}` : '1px solid transparent',
+                      cursor: isDisabled?'not-allowed':'pointer',
+                      background: isSel ? GOLD : isSunday ? '#111' : 'transparent',
+                      border: isSel ? `1px solid ${GOLD}` : isSunday ? `1px solid ${BORDER}` : '1px solid transparent',
                       opacity: isPast?0.25:1,
                       transition:'all 0.15s', userSelect:'none',
                     }}>
-                    <div style={{ color:isSel?'#000':MUTED, fontSize:9, fontWeight:600, marginBottom:3, letterSpacing:'0.04em' }}>
+                    <div style={{ color:isSel?'#000':isSunday?DIM:MUTED, fontSize:9, fontWeight:600, marginBottom:3, letterSpacing:'0.04em' }}>
                       {DAY_NAMES[date.getDay()]}
                     </div>
-                    <div style={{ color:isSel?'#000':TEXT, fontSize:16, fontWeight:700, marginBottom:2 }}>
+                    <div style={{ color:isSel?'#000':isSunday?DIM:TEXT, fontSize:16, fontWeight:700, marginBottom:2 }}>
                       {date.getDate()}
                     </div>
-                    <div style={{ color:isSel?'#000':DIM, fontSize:9 }}>
-                      {MONTH_NAMES[date.getMonth()]}
+                    <div style={{ color:isSel?'#000':DIM, fontSize:isSunday?8:9 }}>
+                      {isSunday ? 'Closed' : MONTH_NAMES[date.getMonth()]}
                     </div>
                   </div>
                 )

@@ -60,6 +60,11 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
   }
 
+  // Sundays are closed — date is parsed as UTC so getUTCDay() is reliable
+  if (new Date(date).getUTCDay() === 0) {
+    return NextResponse.json({ available: [], blocked: [], reason: 'closed' })
+  }
+
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   if (!serviceKey) return NextResponse.json({ error: 'Server config error' }, { status: 500 })
 
