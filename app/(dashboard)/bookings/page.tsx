@@ -228,7 +228,24 @@ export default function BookingsPage() {
   const [reassignConflict, setReassignConflict] = useState('')
   const [reassignSaving,   setReassignSaving]   = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
-  const toastId = useRef(0)
+  const toastId         = useRef(0)
+  const prevBookingCount = useRef(-1) // -1 = initial load, skip alert
+
+  function playNotificationSound() {
+    try {
+      const ctx = new AudioContext()
+      const osc  = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.setValueAtTime(800, ctx.currentTime)
+      osc.frequency.setValueAtTime(600, ctx.currentTime + 0.1)
+      gain.gain.setValueAtTime(0.3, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+      osc.start(ctx.currentTime)
+      osc.stop(ctx.currentTime + 0.5)
+    } catch { /* AudioContext blocked by browser policy — silent fail */ }
+  }
 
   function addToast(msg:string,type:'success'|'error'|'warn'='success'){
     const id=++toastId.current
@@ -265,9 +282,24 @@ export default function BookingsPage() {
       cliente: b.contacts?.name, servicio: b.services?.name,
     }))
 
+    // Detect new bookings arriving via realtime refresh (skip on first load)
+    if (prevBookingCount.current >= 0 && result.length > prevBookingCount.current) {
+      const newCount = result.length - prevBookingCount.current
+      playNotificationSound()
+      createNotification({
+        type: 'booking',
+        title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
+        message: result
+          .slice(-newCount)
+          .map(b => b.contacts?.name ?? 'Web Booking')
+          .join(', '),
+      })
+    }
+    prevBookingCount.current = result.length
+
     setBookings(result)
     setLoadingB(false)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── fetch static refs (contacts, vehicles, services) ──────────────────────
   async function fetchRefs() {
