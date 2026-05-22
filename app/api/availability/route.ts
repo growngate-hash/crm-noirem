@@ -81,7 +81,7 @@ export async function GET(req: NextRequest) {
       const diff = dubaiMinutes(b.end_at) - startMin
       durMin = diff > 0 ? diff : 60
     } else {
-      const svc = b.services as Record<string, unknown> | null
+      const svc = b.services as { duration_minutes?: number; duration?: string; duration_hrs?: string } | null
       if (svc) {
         durMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
       }
