@@ -16,7 +16,6 @@ BEGIN
   SELECT id INTO v_contact_id
   FROM contacts
   WHERE phone = NEW.customer_phone
-    AND deleted_at IS NULL
   LIMIT 1;
 
   -- 2. If not found, create a new contact
