@@ -1,7 +1,8 @@
 -- ── Trigger: booking_requests → bookings ──────────────────────────────────────
--- When a public booking request is inserted, automatically:
---   1. Find or create a contact by phone number
---   2. Insert a row in bookings linked to that contact
+-- Flow:
+--   1. Find or create contact by customer_phone
+--   2. Find or create vehicle by plate_number, linked to contact
+--   3. Insert into bookings with contact_id + vehicle_id
 
 DROP TRIGGER IF EXISTS trg_booking_request_to_bookings ON booking_requests;
 DROP FUNCTION IF EXISTS sync_booking_request_to_bookings();
@@ -9,32 +10,60 @@ DROP FUNCTION IF EXISTS sync_booking_request_to_bookings();
 CREATE OR REPLACE FUNCTION sync_booking_request_to_bookings()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-SECURITY DEFINER  -- runs as the function owner, bypasses RLS
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
   v_contact_id uuid;
+  v_vehicle_id  uuid;
+  v_plate       text;
+  v_vehicle_name text;
+  v_notes       text;
 BEGIN
-  -- 1. Find existing contact by phone
+  -- ── 1. Find or create contact ──────────────────────────────────────────────
   SELECT id INTO v_contact_id
   FROM contacts
   WHERE phone = NEW.customer_phone
   LIMIT 1;
 
-  -- 2. If not found, create a new contact
   IF v_contact_id IS NULL THEN
     INSERT INTO contacts (name, phone, tipo)
-    VALUES (
-      COALESCE(NEW.customer_name, 'Web Booking'),
-      NEW.customer_phone,
-      'cliente'
-    )
+    VALUES (COALESCE(NULLIF(NEW.customer_name,''), 'Web Booking'), NEW.customer_phone, 'cliente')
     RETURNING id INTO v_contact_id;
   END IF;
 
-  -- 3. Insert into bookings
+  -- ── 2. Find or create vehicle ──────────────────────────────────────────────
+  v_plate := COALESCE(NULLIF(NEW.plate_number,''), NULLIF(NEW.plate,''));
+
+  IF v_plate IS NOT NULL THEN
+    SELECT id INTO v_vehicle_id
+    FROM vehicles
+    WHERE license_plate = v_plate
+    LIMIT 1;
+
+    IF v_vehicle_id IS NULL THEN
+      v_vehicle_name := COALESCE(NULLIF(NEW.vehicle_make_model,''), v_plate);
+      INSERT INTO vehicles (name, license_plate, status, contact_id)
+      VALUES (v_vehicle_name, v_plate, 'libre', v_contact_id)
+      RETURNING id INTO v_vehicle_id;
+    END IF;
+  END IF;
+
+  -- ── 3. Build notes from booking details ───────────────────────────────────
+  v_notes := NULLIF(CONCAT_WS(' | ',
+    NULLIF('Vehicle: ' || NEW.vehicle_make_model, 'Vehicle: '),
+    NULLIF('Plate: '   || v_plate,                'Plate: '),
+    NULLIF('Payment: ' || NEW.payment_method,      'Payment: '),
+    NULLIF('Area: '    || NEW.area,                'Area: '),
+    NULLIF('Community: '|| NEW.community,          'Community: '),
+    NULLIF('Villa/Flat: '|| NEW.villa_flat,        'Villa/Flat: '),
+    NEW.notes
+  ), '');
+
+  -- ── 4. Insert into bookings ────────────────────────────────────────────────
   INSERT INTO bookings (
     contact_id,
+    vehicle_id,
     service_id,
     scheduled_at,
     address,
@@ -43,15 +72,11 @@ BEGIN
     status
   ) VALUES (
     v_contact_id,
+    v_vehicle_id,
     NEW.service_id,
     NEW.scheduled_at,
     NULLIF(COALESCE(NEW.address, ''), ''),
-    NULLIF(CONCAT_WS(' | ',
-      NULLIF('Vehicle: ' || NEW.vehicle_make_model, 'Vehicle: '),
-      NULLIF('Plate: '   || NEW.plate,              'Plate: '),
-      NULLIF('Payment: ' || NEW.payment_method,     'Payment: '),
-      NEW.notes
-    ), ''),
+    v_notes,
     NEW.price,
     'pending'
   );
@@ -59,8 +84,7 @@ BEGIN
   RETURN NEW;
 
 EXCEPTION WHEN OTHERS THEN
-  -- Log error but don't block the booking_request insert
-  RAISE WARNING 'sync_booking_request_to_bookings failed: % %', SQLERRM, SQLSTATE;
+  RAISE WARNING 'sync_booking_request_to_bookings failed: % (SQLSTATE: %)', SQLERRM, SQLSTATE;
   RETURN NEW;
 END;
 $$;
