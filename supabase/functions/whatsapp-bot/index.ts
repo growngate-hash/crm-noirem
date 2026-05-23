@@ -6,6 +6,11 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 )
 
+const WHATSAPP_TOKEN = Deno.env.get('WHATSAPP_TOKEN')!
+const WHATSAPP_PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!
+const WHATSAPP_VERIFY_TOKEN = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
+const BUSINESS_NAME = Deno.env.get('BUSINESS_NAME') ?? 'Saffi Car Care'
+
 
 const i18n: Record<string, Record<string, string>> = {
   es: {
@@ -156,7 +161,7 @@ serve(async (req) => {
     const token = url.searchParams.get('hub.verify_token')
     const challenge = url.searchParams.get('hub.challenge')
 
-    if (mode === 'subscribe' && token === 'saffi_webhook_token') {
+    if (mode === 'subscribe' && token === WHATSAPP_VERIFY_TOKEN) {
       return new Response(challenge!, {
         status: 200,
         headers: { 'Content-Type': 'text/plain' }
@@ -177,19 +182,12 @@ serve(async (req) => {
   const listId = message.interactive?.list_reply?.id ?? ''
   const input = buttonId || listId || text
 
-  const { data: config } = await supabase
-    .from('whatsapp_configs')
-    .select('*')
-    .eq('is_active', true)
-    .single()
-  if (!config) return new Response('No config', { status: 400 })
-
   const conv = await getOrCreateConversation(phone)
   const lang = conv.language ?? 'en'
 
   // PASO 0: Selección de idioma
   if (conv.step === 'inicio') {
-    await sendButtons(phone, config.api_key, config.phone_number_id,
+    await sendButtons(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
       '🌐 Please choose your language / Elige tu idioma / اختر لغتك',
       [
         { id: 'lang_en', title: '🇬🇧 English' },
@@ -203,7 +201,7 @@ serve(async (req) => {
   // PASO 0b: Idioma elegido → mostrar servicios
   else if (conv.step === 'eligiendo_idioma') {
     if (!input.startsWith('lang_')) {
-      await sendButtons(phone, config.api_key, config.phone_number_id,
+      await sendButtons(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
         '🌐 Please choose your language / Elige tu idioma / اختر لغتك',
         [
           { id: 'lang_en', title: '🇬🇧 English' },
@@ -215,8 +213,8 @@ serve(async (req) => {
       const selectedLang = input.replace('lang_', '')
       const { data: services } = await supabase.from('services').select('id, name').limit(8)
       const rows = (services ?? []).map((s: any) => ({ id: `service_${s.id}`, title: s.name.substring(0, 24) }))
-      await sendList(phone, config.api_key, config.phone_number_id,
-        tr(selectedLang, 'welcome', { business: config.business_name }),
+      await sendList(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
+        tr(selectedLang, 'welcome', { business: BUSINESS_NAME }),
         tr(selectedLang, 'view_services'),
         [{ title: tr(selectedLang, 'our_services'), rows }]
       )
@@ -227,13 +225,13 @@ serve(async (req) => {
   // PASO 1: Servicio seleccionado → pedir nombre
   else if (conv.step === 'esperando_servicio') {
     if (!input.startsWith('service_')) {
-      await sendText(phone, config.api_key, config.phone_number_id,
+      await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
         tr(lang, 'select_service_prompt'))
     } else {
       const serviceId = input.replace('service_', '')
       const { data: service } = await supabase.from('services').select('name').eq('id', serviceId).single()
       await updateConversation(phone, { step: 'esperando_nombre', service: service?.name ?? input })
-      await sendText(phone, config.api_key, config.phone_number_id,
+      await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
         tr(lang, 'service_selected', { service: service?.name ?? '' }))
     }
   }
@@ -241,14 +239,14 @@ serve(async (req) => {
   // PASO 2: Nombre → pedir vehículo
   else if (conv.step === 'esperando_nombre') {
     await updateConversation(phone, { step: 'esperando_vehiculo', client_name: text })
-    await sendText(phone, config.api_key, config.phone_number_id,
+    await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
       tr(lang, 'ask_vehicle', { name: text }))
   }
 
   // PASO 3: Vehículo → pedir dirección
   else if (conv.step === 'esperando_vehiculo') {
     await updateConversation(phone, { step: 'esperando_direccion', vehicle: text })
-    await sendText(phone, config.api_key, config.phone_number_id,
+    await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
       tr(lang, 'ask_address'))
   }
 
@@ -284,7 +282,7 @@ serve(async (req) => {
 
     const msg = `📅 Dirección registrada ✅\n\n¿Qué fecha prefieres?\n\n1️⃣ ${fecha1.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 9:00 AM\n2️⃣ ${fecha2.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 2:00 PM\n3️⃣ ${fecha3.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 9:00 AM\n4️⃣ ${fecha4.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 2:00 PM\n5️⃣ ${fecha5.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 9:00 AM\n6️⃣ ${fecha6.toLocaleDateString('en-AE', {weekday:'long', day:'numeric', month:'long', timeZone:'Asia/Dubai'})} - 2:00 PM\n\nWrite the number of your preference`
 
-    await sendText(phone, config.api_key, config.phone_number_id, msg)
+    await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID, msg)
   }
 
   // PASO 5: Fecha → confirmar reserva
@@ -293,7 +291,7 @@ serve(async (req) => {
     const selected = slots[input]
 
     if (!selected) {
-      await sendText(phone, config.api_key, config.phone_number_id,
+      await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
         'Por favor escribe el número de la fecha que prefieres (1-6) 👆')
     } else {
       const fecha = new Date(selected)
@@ -359,7 +357,7 @@ serve(async (req) => {
         .find(v => !occupiedVehicleIds.has(v.id))
 
       if (!availableVehicle) {
-        await sendText(phone, config.api_key, config.phone_number_id,
+        await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
           '😔 Lo sentimos, no hay vehículos disponibles para ese horario.\nPor favor elige otra fecha.')
         await updateConversation(phone, { step: 'esperando_fecha' })
         return new Response('OK', { status: 200 })
@@ -390,14 +388,14 @@ serve(async (req) => {
 
       if (bookingError) {
         console.log('Error creando reserva:', JSON.stringify(bookingError))
-        await sendText(phone, config.api_key, config.phone_number_id,
+        await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
           `Error interno: ${bookingError.message}`)
         return new Response('OK', { status: 200 })
       }
 
       await updateConversation(phone, { step: 'inicio' })
 
-      await sendText(phone, config.api_key, config.phone_number_id,
+      await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
         `✅ *¡Reserva confirmada!*\n\n👤 Cliente: ${conv.client_name}\n🚗 Vehículo: ${conv.vehicle}\n🔧 Servicio: ${conv.service}\n📍 Dirección: ${conv.address}\n📅 Fecha: ${fecha.toLocaleString('es-CO')}\n\n¡Te esperamos! 😊`)
     }
   }
@@ -405,7 +403,7 @@ serve(async (req) => {
   // Cancelar
   else if (input === 'cancelar') {
     await updateConversation(phone, { step: 'inicio' })
-    await sendText(phone, config.api_key, config.phone_number_id,
+    await sendText(phone, WHATSAPP_TOKEN, WHATSAPP_PHONE_NUMBER_ID,
       tr(lang, 'cancelled'))
   }
 
