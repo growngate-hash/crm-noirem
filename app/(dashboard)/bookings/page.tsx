@@ -725,14 +725,15 @@ function getDemoForVehicle(vName:string):any[] {
             {vehicles.map((v,i)=>{
               const vBookings = getBookingsForVehicle(v.id)
               const demoItems = getDemoForVehicle(v.name)
-              const enRuta    = v.status==='en_ruta'
+              const isActivo  = v.status !== 'inactivo'
               const techs:string[] = Array.isArray(v.technicians)&&v.technicians.length>0
                 ? v.technicians : v.technician?[v.technician]:[]
 
               return (
                 <div key={v.id} style={{display:'flex',height:ROW_H,
                   borderBottom:'1px solid rgba(255,255,255,0.04)',
-                  background:i%2===0?'#141416':'#0d0d0f'}}>
+                  background:i%2===0?'#141416':'#0d0d0f',
+                  opacity: isActivo ? 1 : 0.5}}>
 
                   {/* vehicle label — sticky */}
                   <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:2,
@@ -741,12 +742,16 @@ function getDemoForVehicle(vName:string):any[] {
                     display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 14px',gap:2}}>
                     <div style={{display:'flex',alignItems:'center',gap:6}}>
                       <div style={{width:6,height:6,borderRadius:'50%',flexShrink:0,
-                        background:enRuta?'#34d399':'rgba(255,255,255,0.2)'}}/>
+                        background:isActivo?'#34d399':'#ff4f4f'}}/>
                       <span style={{fontSize:12,fontWeight:600,color:'#f0ede8',
                         whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{v.name}</span>
                     </div>
                     <div style={{fontSize:10,fontFamily:'monospace',color:'#c9a84c',paddingLeft:12}}>
                       {v.license_plate}
+                    </div>
+                    <div style={{fontSize:9,fontWeight:700,paddingLeft:12,
+                      color:isActivo?'#34d399':'#ff4f4f',letterSpacing:'0.06em'}}>
+                      {isActivo ? 'En servicio' : 'Fuera de servicio'}
                     </div>
                     {techs.length>0&&(
                       <div style={{fontSize:10,color:'#888580',paddingLeft:12,

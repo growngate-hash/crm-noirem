@@ -275,10 +275,11 @@ function VehicleAgenda({ bookings }: { bookings: any[] }) {
 }
 
 // ─── vehicle card ─────────────────────────────────────────────────────────────
-function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory, onProgressUpdate }: {
+function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory, onProgressUpdate, onToggleStatus }: {
   v: any; alertCount: number; agenda: any[];
   onEdit: ()=>void; onClear: ()=>void; onAssign: ()=>void; onInventory: ()=>void;
   onProgressUpdate: (bookingId: string, pct: number) => void;
+  onToggleStatus: ()=>void;
 }) {
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -311,6 +312,27 @@ function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInven
           <div style={{color:'#666',fontSize:12}}>
             {[v.make, v.model, v.year].filter(Boolean).join(' ') || v.name || ''}
           </div>
+          {/* Service status toggle badge */}
+          {(() => {
+            const fuera = v.status === 'inactivo'
+            return (
+              <button
+                onClick={e=>{ e.stopPropagation(); onToggleStatus() }}
+                title="Clic para cambiar estado"
+                style={{
+                  marginTop:6, padding:'3px 10px', borderRadius:99, border:'none',
+                  cursor:'pointer', fontSize:9, fontWeight:800, letterSpacing:'0.1em',
+                  background: fuera ? 'rgba(255,79,79,0.15)' : 'rgba(34,197,94,0.15)',
+                  color:       fuera ? '#ff4f4f'              : '#22c55e',
+                  display:'inline-flex', alignItems:'center', gap:5,
+                  fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
+                }}>
+                <span style={{width:5,height:5,borderRadius:'50%',
+                  background: fuera ? '#ff4f4f' : '#22c55e', flexShrink:0}}/>
+                {fuera ? 'FUERA DE SERVICIO' : 'EN SERVICIO'}
+              </button>
+            )
+          })()}
         </div>
         <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
           <span style={{padding:'4px 10px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'1px',background:sc.bg,color:sc.color,border:`1px solid ${sc.color}40`,whiteSpace:'nowrap'}}>
@@ -742,6 +764,14 @@ export default function VehiclesPage() {
     addToast(t('vehicleDeleted'), 'success'); setEditVeh(null); fetchVehicles()
   }
 
+  async function toggleServiceStatus(v: any) {
+    const newStatus = v.status === 'inactivo' ? 'activo' : 'inactivo'
+    const { error } = await createClient().from('vehicles').update({ status: newStatus }).eq('id', v.id)
+    if (error) { addToast(error.message, 'error'); return }
+    addToast(newStatus === 'activo' ? 'Vehículo en servicio' : 'Vehículo fuera de servicio', 'success')
+    fetchVehicles()
+  }
+
   async function clearVehicle(v: any) {
     const {error} = await createClient().from('vehicles').update({
       status:'libre', service:null, client_name:null, client_address:null,
@@ -814,6 +844,7 @@ export default function VehiclesPage() {
               onClear={()=>clearVehicle(v)}
               onAssign={()=>{ setAssignVeh(v); setAssignForm({...EMPTY_ASSIGN}) }}
               onInventory={()=>openInventory(v)}
+              onToggleStatus={()=>toggleServiceStatus(v)}
               onProgressUpdate={async (bookingId, pct) => {
                 await createClient().from('bookings').update({
                   progress: pct,
