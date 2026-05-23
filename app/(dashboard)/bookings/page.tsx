@@ -230,6 +230,7 @@ export default function BookingsPage() {
   const [toasts,           setToasts]           = useState<Toast[]>([])
   const toastId          = useRef(0)
   const lastCheckedAt    = useRef(new Date().toISOString())
+  const lastBookingRequestId = useRef<string>('')
 
   function playNotificationSound() {
     try {
@@ -320,18 +321,18 @@ export default function BookingsPage() {
         .from('booking_requests')
         .select('id, customer_name, service_name, scheduled_at, created_at')
         .gt('created_at', lastCheckedAt.current)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
 
       if (data && data.length > 0) {
-        lastCheckedAt.current = new Date().toISOString()
+        // Advance cursor to the most recent record's created_at
+        lastCheckedAt.current = data[data.length - 1].created_at
         playNotificationSound()
         const names = data.map((b: any) => b.customer_name ?? 'Web Booking').join(', ')
-        createNotification({
+        await createNotification({
           type: 'booking',
           title: data.length > 1 ? `${data.length} nuevas reservas` : 'Nueva reserva',
           message: names,
         })
-        // Reload Gantt if the new booking falls on the currently visible day
         fetchBookings(selectedDay)
       }
     }

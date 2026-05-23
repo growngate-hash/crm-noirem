@@ -77,10 +77,6 @@ export default function NotificationsPanel() {
   }, [])
 
   useEffect(() => {
-    if (open && unread > 0) markAllRead()
-  }, [open])
-
-  useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false)
     }
@@ -100,11 +96,19 @@ export default function NotificationsPanel() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
   }
 
+  function openPanel() {
+    setOpen(o => {
+      const next = !o
+      if (next && unread > 0) markAllRead()
+      return next
+    })
+  }
+
   return (
     <div ref={panelRef} style={{ position: 'relative' }}>
       {/* Bell trigger */}
       <button
-        onClick={() => setOpen(o => !o)}
+        onClick={openPanel}
         style={{
           position: 'relative', background: 'none', border: 'none',
           cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center',
