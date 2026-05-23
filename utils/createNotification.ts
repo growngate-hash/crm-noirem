@@ -12,5 +12,6 @@ export async function createNotification({
   link?: string
 }) {
   const supabase = createClient()
-  await supabase.from('notifications').insert({ type, title, message, link: link ?? null })
+  const { error } = await supabase.from('notifications').insert({ type, title, message, link: link ?? null })
+  if (error) console.error('[createNotification] insert failed:', error.message)
 }
