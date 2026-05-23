@@ -229,9 +229,7 @@ export default function BookingsPage() {
   const [reassignSaving,   setReassignSaving]   = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
   const toastId          = useRef(0)
-  const prevBookingCount = useRef(0)
-  const isFirstLoad      = useRef(true)
-  const prevDay          = useRef('')
+  const lastCheckedAt    = useRef(new Date().toISOString())
 
   function playNotificationSound() {
     try {
@@ -262,7 +260,6 @@ export default function BookingsPage() {
 
     // Use Dubai midnight → UTC range so the server-side filter is correct
     const { start: startISO, end: endISO } = dubaiDayRange(day)
-    console.log('Buscando reservas entre:', startISO, 'y', endISO)
 
     const { data, error } = await sb
       .from('bookings')
@@ -276,48 +273,6 @@ export default function BookingsPage() {
     }
 
     const result = data ?? []
-    console.log('[bookings] día seleccionado:', toDateStr(day))
-    console.log('[bookings] cargados:', result.length, result)
-    result.forEach(b => console.log('  booking:', {
-      id: b.id, vehicle_id: b.vehicle_id,
-      scheduled_at: b.scheduled_at, end_at: b.end_at,
-      cliente: b.contacts?.name, servicio: b.services?.name,
-    }))
-
-    // Notification detection — reset when day changes
-    const dayKey = day.toISOString().split('T')[0]
-    if (prevDay.current !== dayKey) {
-      prevDay.current = dayKey
-      isFirstLoad.current = true
-      console.log('[notif] Día cambiado →', dayKey, '— reseteando prevCount')
-    }
-
-    console.log('[notif] isFirstLoad:', isFirstLoad.current, '| prevCount:', prevBookingCount.current, '| result:', result.length)
-    if (isFirstLoad.current) {
-      prevBookingCount.current = result.length
-      isFirstLoad.current = false
-      console.log('[notif] Primera carga del día, count:', result.length)
-    } else if (result.length > prevBookingCount.current) {
-      const newCount = result.length - prevBookingCount.current
-      console.log('[notif] ¡NUEVA RESERVA DETECTADA! newCount:', newCount)
-      prevBookingCount.current = result.length
-      // Filter by created_at in the last 35 s to get the actual new bookings
-      const cutoff = Date.now() - 35000
-      const newOnes = result.filter((b: any) =>
-        b.created_at && new Date(b.created_at).getTime() > cutoff
-      )
-      const clientNames = (newOnes.length > 0 ? newOnes : result.slice(-newCount))
-        .map((b: any) => b.contacts?.name ?? 'Web Booking')
-        .join(', ')
-      playNotificationSound()
-      createNotification({
-        type: 'booking',
-        title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
-        message: clientNames,
-      })
-    } else {
-      prevBookingCount.current = result.length
-    }
 
     setBookings(result)
     setLoadingB(false)
@@ -332,7 +287,6 @@ export default function BookingsPage() {
       sb.from('vehicles').select('id, name, license_plate, status, technician, technicians').order('created_at'),
       sb.from('services').select('id, name, price').eq('is_active', true).order('name'),
     ])
-    console.log('[vehicles] cargados:', vRes.data?.length, vRes.data?.map(v=>({id:v.id,name:v.name})))
     setContacts(cRes.data??[])
     setVehicles(vRes.data??[])
     setServices(sRes.data??[])
@@ -352,12 +306,39 @@ export default function BookingsPage() {
     const sb = createClient()
     const channel = sb.channel('bookings-realtime')
       .on('postgres_changes',{event:'*',schema:'public',table:'bookings'},()=>{
-        console.log('[realtime] cambio detectado en bookings, recargando…')
         fetchBookings(selectedDay)
       })
       .subscribe()
     return ()=>{ sb.removeChannel(channel) }
   },[selectedDay, fetchBookings])
+
+  // ── global new-booking monitor (booking_requests, any day) ────────────────
+  useEffect(()=>{
+    const checkNewBookings = async () => {
+      const sb = createClient()
+      const { data } = await sb
+        .from('booking_requests')
+        .select('id, customer_name, service_name, scheduled_at, created_at')
+        .gt('created_at', lastCheckedAt.current)
+        .order('created_at', { ascending: false })
+
+      if (data && data.length > 0) {
+        lastCheckedAt.current = new Date().toISOString()
+        playNotificationSound()
+        const names = data.map((b: any) => b.customer_name ?? 'Web Booking').join(', ')
+        createNotification({
+          type: 'booking',
+          title: data.length > 1 ? `${data.length} nuevas reservas` : 'Nueva reserva',
+          message: names,
+        })
+        // Reload Gantt if the new booking falls on the currently visible day
+        fetchBookings(selectedDay)
+      }
+    }
+
+    const interval = setInterval(checkNewBookings, 15000)
+    return () => clearInterval(interval)
+  }, [selectedDay, fetchBookings])
 
   // ── reset reassign state when detail panel opens/closes ──────────────────
   useEffect(()=>{
