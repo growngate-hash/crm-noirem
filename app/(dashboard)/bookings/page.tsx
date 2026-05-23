@@ -315,6 +315,15 @@ export default function BookingsPage() {
 
   // ── global new-booking monitor (booking_requests, any day) ────────────────
   useEffect(()=>{
+    function formatDubaiDate(isoDate: string): string {
+      const d = new Date(new Date(isoDate).getTime() + 4 * 60 * 60 * 1000)
+      const day   = d.getUTCDate()
+      const month = d.toLocaleString('es', { month: 'short', timeZone: 'UTC' })
+      const hh    = d.getUTCHours().toString().padStart(2, '0')
+      const mm    = d.getUTCMinutes().toString().padStart(2, '0')
+      return `${day} ${month} · ${hh}:${mm}`
+    }
+
     const checkNewBookings = async () => {
       const sb = createClient()
       const { data } = await sb
@@ -324,15 +333,22 @@ export default function BookingsPage() {
         .order('created_at', { ascending: true })
 
       if (data && data.length > 0) {
-        // Advance cursor to the most recent record's created_at
         lastCheckedAt.current = data[data.length - 1].created_at
         playNotificationSound()
-        const names = data.map((b: any) => b.customer_name ?? 'Web Booking').join(', ')
-        await createNotification({
-          type: 'booking',
-          title: data.length > 1 ? `${data.length} nuevas reservas` : 'Nueva reserva',
-          message: names,
-        })
+        if (data.length === 1) {
+          const b = data[0]
+          await createNotification({
+            type: 'booking',
+            title: `Nueva reserva — ${formatDubaiDate(b.scheduled_at)}`,
+            message: `${b.customer_name ?? 'Web Booking'} · ${b.service_name ?? '—'}`,
+          })
+        } else {
+          await createNotification({
+            type: 'booking',
+            title: `${data.length} nuevas reservas`,
+            message: data.map((b: any) => `${b.customer_name ?? 'Web Booking'} · ${formatDubaiDate(b.scheduled_at)}`).join(', '),
+          })
+        }
         fetchBookings(selectedDay)
       }
     }
