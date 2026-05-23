@@ -46,12 +46,14 @@ export default function NotificationsPanel() {
   const unread = notifications.filter(n => !n.read).length
 
   async function fetchNotifications() {
+    console.log('[NotificationsPanel] fetchNotifications llamado')
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(20)
+    console.log('[NotificationsPanel] fetch resultado:', { count: data?.length, error })
     if (data) setNotifications(data as Notification[])
   }
 
@@ -61,10 +63,13 @@ export default function NotificationsPanel() {
     const supabase = createClient()
     const channel = supabase
       .channel('notifications-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
+        console.log('[NotificationsPanel] realtime evento recibido:', payload)
         fetchNotifications()
       })
-      .subscribe()
+      .subscribe((status) => {
+        console.log('[NotificationsPanel] realtime status:', status)
+      })
 
     return () => { supabase.removeChannel(channel) }
   }, [])
