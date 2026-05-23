@@ -46,14 +46,18 @@ export default function NotificationsPanel() {
   const unread = notifications.filter(n => !n.read).length
 
   async function fetchNotifications() {
-    console.log('[NotificationsPanel] fetchNotifications llamado')
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const userId = user?.id ?? null
+
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
+      .or(userId ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null')
       .order('created_at', { ascending: false })
       .limit(20)
-    console.log('[NotificationsPanel] fetch resultado:', { count: data?.length, error })
+
+    console.log('[NotificationsPanel] fetch:', { count: data?.length, error, userId })
     if (data) setNotifications(data as Notification[])
   }
 
