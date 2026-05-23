@@ -234,7 +234,6 @@ export default function BookingsPage() {
   const [showCancelled,    setShowCancelled]    = useState(false)
   const toastId          = useRef(0)
   const lastCheckedAt    = useRef(new Date().toISOString())
-  const lastBookingRequestId = useRef<string>('')
 
   function playNotificationSound() {
     try {
@@ -532,97 +531,7 @@ function getDemoForVehicle(vName:string):any[] {
     fetchBookings(selectedDay)
   }
 
-  async function updateStatus(id:string, status:string){
-    const supabase = createClient()
 
-    // Actualizar status
-    const { error: statusError } = await supabase
-      .from('bookings')
-      .update({
-        status,
-        ...(status === 'completed' && { completed_at: new Date().toISOString() }),
-      })
-      .eq('id', id)
-
-    if (statusError) { addToast(statusError.message, 'error'); return }
-
-    // Si se marca como completada, generar factura
-    if (status === 'completed') {
-      console.log('🔥 Generando factura para booking:', id)
-
-      // Obtener datos del booking
-      const { data: booking, error: bookingErr } = await supabase
-        .from('bookings')
-        .select('*, contacts(name), services(name)')
-        .eq('id', id)
-        .single()
-
-      console.log('📋 Booking:', booking)
-      console.log('❌ Booking error:', bookingErr)
-
-      if (booking) {
-        // Número de factura
-        const now = new Date()
-        const year = now.getFullYear()
-        const month = String(now.getMonth() + 1).padStart(2, '0')
-
-        const { count } = await supabase
-          .from('invoices')
-          .select('*', { count: 'exact', head: true })
-          .gte('created_at', `${year}-${month}-01`)
-
-        const sequence = String((count || 0) + 1).padStart(3, '0')
-        const invoiceNo = `INV-${year}${month}-${sequence}`
-
-        const subtotal = Number(booking.price) || 0
-        const discount = Number(booking.discount) || 0
-        const tax      = Number(((subtotal - discount) * 0.05).toFixed(2))
-        const total    = Number((subtotal - discount + tax).toFixed(2))
-
-        console.log('💰 Creando factura:', { invoiceNo, total })
-
-        const { data: invoice, error: invoiceError } = await supabase
-          .from('invoices')
-          .insert({
-            booking_id: id,
-            contact_id: booking.contact_id,
-            invoice_no: invoiceNo,
-            subtotal,
-            discount,
-            tax,
-            total,
-            status: 'por_cobrar',
-            issued_at: now.toISOString(),
-            due_at: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          })
-          .select()
-          .single()
-
-        if (invoiceError) {
-          console.error('❌ Error factura:', invoiceError)
-          addToast(`${t('bookingCompleted')} · Error al generar factura`, 'warn')
-        } else {
-          console.log('✅ Factura creada:', invoice)
-
-          await supabase.from('notifications').insert({
-            type: 'payment',
-            title: 'Factura generada',
-            message: `${invoiceNo} · ${booking.contacts?.name ?? '—'} · AED ${total}`,
-            read: false,
-          })
-
-          alert(`✅ Factura ${invoiceNo} generada · AED ${total}`)
-          setCompletedInvoice(invoice)
-          setShowInvoiceModal(true)
-        }
-      }
-    } else {
-      addToast(t('bookingCancelled'), 'warn')
-    }
-
-    setDetailBooking(null)
-    fetchBookings(selectedDay)
-  }
 
   const loading = loadingB||loadingV
   const todayStr = getDubaiToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
