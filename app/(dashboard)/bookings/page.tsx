@@ -283,26 +283,30 @@ export default function BookingsPage() {
       cliente: b.contacts?.name, servicio: b.services?.name,
     }))
 
-    // First load: snapshot count, do not alert
+    // Notification detection
+    console.log('[notif] isFirstLoad:', isFirstLoad.current, '| prevCount:', prevBookingCount.current, '| result:', result.length)
     if (isFirstLoad.current) {
       prevBookingCount.current = result.length
       isFirstLoad.current = false
-    } else if (result.length > prevBookingCount.current) {
-      // Subsequent refreshes: new bookings arrived
-      const newCount = result.length - prevBookingCount.current
-      prevBookingCount.current = result.length
-      playNotificationSound()
-      createNotification({
-        type: 'booking',
-        title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
-        message: result
-          .slice(-newCount)
-          .map((b: any) => b.contacts?.name ?? 'Web Booking')
-          .join(', '),
-      })
+      console.log('[notif] Primera carga, count:', result.length)
     } else {
-      // Same or fewer (e.g. day navigation) — just update snapshot
-      prevBookingCount.current = result.length
+      console.log('[notif] Refresh detectado, prev:', prevBookingCount.current, 'new:', result.length)
+      if (result.length > prevBookingCount.current) {
+        const newCount = result.length - prevBookingCount.current
+        console.log('[notif] ¡NUEVA RESERVA DETECTADA! newCount:', newCount)
+        prevBookingCount.current = result.length
+        playNotificationSound()
+        createNotification({
+          type: 'booking',
+          title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
+          message: result
+            .slice(-newCount)
+            .map((b: any) => b.contacts?.name ?? 'Web Booking')
+            .join(', '),
+        })
+      } else {
+        prevBookingCount.current = result.length
+      }
     }
 
     setBookings(result)
@@ -327,7 +331,11 @@ export default function BookingsPage() {
 
   // ── initial load + re-fetch when day changes ───────────────────────────────
   useEffect(()=>{ fetchRefs() },[])
-  useEffect(()=>{ fetchBookings(selectedDay) },[selectedDay, fetchBookings])
+  useEffect(()=>{
+    fetchBookings(selectedDay)
+    const interval = setInterval(()=>fetchBookings(selectedDay), 30000)
+    return ()=>clearInterval(interval)
+  },[selectedDay, fetchBookings])
 
   // ── realtime subscription ──────────────────────────────────────────────────
   useEffect(()=>{
