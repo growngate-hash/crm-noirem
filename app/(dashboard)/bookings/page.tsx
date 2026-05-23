@@ -231,6 +231,7 @@ export default function BookingsPage() {
   const toastId          = useRef(0)
   const prevBookingCount = useRef(0)
   const isFirstLoad      = useRef(true)
+  const prevDay          = useRef('')
 
   function playNotificationSound() {
     try {
@@ -283,30 +284,34 @@ export default function BookingsPage() {
       cliente: b.contacts?.name, servicio: b.services?.name,
     }))
 
-    // Notification detection
+    // Notification detection — reset when day changes
+    const dayKey = day.toISOString().split('T')[0]
+    if (prevDay.current !== dayKey) {
+      prevDay.current = dayKey
+      isFirstLoad.current = true
+      console.log('[notif] Día cambiado →', dayKey, '— reseteando prevCount')
+    }
+
     console.log('[notif] isFirstLoad:', isFirstLoad.current, '| prevCount:', prevBookingCount.current, '| result:', result.length)
     if (isFirstLoad.current) {
       prevBookingCount.current = result.length
       isFirstLoad.current = false
-      console.log('[notif] Primera carga, count:', result.length)
+      console.log('[notif] Primera carga del día, count:', result.length)
+    } else if (result.length > prevBookingCount.current) {
+      const newCount = result.length - prevBookingCount.current
+      console.log('[notif] ¡NUEVA RESERVA DETECTADA! newCount:', newCount)
+      prevBookingCount.current = result.length
+      playNotificationSound()
+      createNotification({
+        type: 'booking',
+        title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
+        message: result
+          .slice(-newCount)
+          .map((b: any) => b.contacts?.name ?? 'Web Booking')
+          .join(', '),
+      })
     } else {
-      console.log('[notif] Refresh detectado, prev:', prevBookingCount.current, 'new:', result.length)
-      if (result.length > prevBookingCount.current) {
-        const newCount = result.length - prevBookingCount.current
-        console.log('[notif] ¡NUEVA RESERVA DETECTADA! newCount:', newCount)
-        prevBookingCount.current = result.length
-        playNotificationSound()
-        createNotification({
-          type: 'booking',
-          title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
-          message: result
-            .slice(-newCount)
-            .map((b: any) => b.contacts?.name ?? 'Web Booking')
-            .join(', '),
-        })
-      } else {
-        prevBookingCount.current = result.length
-      }
+      prevBookingCount.current = result.length
     }
 
     setBookings(result)
