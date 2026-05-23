@@ -301,14 +301,19 @@ export default function BookingsPage() {
       const newCount = result.length - prevBookingCount.current
       console.log('[notif] ¡NUEVA RESERVA DETECTADA! newCount:', newCount)
       prevBookingCount.current = result.length
+      // Filter by created_at in the last 35 s to get the actual new bookings
+      const cutoff = Date.now() - 35000
+      const newOnes = result.filter((b: any) =>
+        b.created_at && new Date(b.created_at).getTime() > cutoff
+      )
+      const clientNames = (newOnes.length > 0 ? newOnes : result.slice(-newCount))
+        .map((b: any) => b.contacts?.name ?? 'Web Booking')
+        .join(', ')
       playNotificationSound()
       createNotification({
         type: 'booking',
         title: `${newCount} nueva${newCount > 1 ? 's' : ''} reserva${newCount > 1 ? 's' : ''}`,
-        message: result
-          .slice(-newCount)
-          .map((b: any) => b.contacts?.name ?? 'Web Booking')
-          .join(', '),
+        message: clientNames,
       })
     } else {
       prevBookingCount.current = result.length

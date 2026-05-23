@@ -70,6 +70,10 @@ export default function NotificationsPanel() {
   }, [])
 
   useEffect(() => {
+    if (open && unread > 0) markAllRead()
+  }, [open])
+
+  useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) setOpen(false)
     }
