@@ -39,6 +39,8 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPanel() {
+  console.log('[NotificationsPanel] Montado')
+
   const [open, setOpen]                     = useState(false)
   const [notifications, setNotifications]   = useState<Notification[]>([])
   const panelRef = useRef<HTMLDivElement>(null)
@@ -46,18 +48,14 @@ export default function NotificationsPanel() {
   const unread = notifications.filter(n => !n.read).length
 
   async function fetchNotifications() {
+    console.log('[NotificationsPanel] Fetching...')
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const userId = user?.id ?? null
-
-    const { data, error } = await supabase
+    const { data, error, count } = await supabase
       .from('notifications')
-      .select('*')
-      .or(userId ? `user_id.is.null,user_id.eq.${userId}` : 'user_id.is.null')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false })
       .limit(20)
-
-    console.log('[NotificationsPanel] fetch:', { count: data?.length, error, userId })
+    console.log('[NotificationsPanel] data:', data, 'error:', error, 'count:', count)
     if (data) setNotifications(data as Notification[])
   }
 
