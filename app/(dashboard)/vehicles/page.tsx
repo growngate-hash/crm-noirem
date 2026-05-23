@@ -288,14 +288,12 @@ function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInven
 
   const vehicleStatus = !isActive ? 'disponible'
     : booking.status === 'in_progress' ? 'en_ruta'
-    : booking.status === 'confirmed'   ? 'asignado'
-    : 'pendiente'
+    : 'asignado'
 
   const statusConfig: Record<string, {label: string; color: string; bg: string}> = {
     disponible: { label: 'DISPONIBLE', color: '#22c55e', bg: '#22c55e20' },
     en_ruta:    { label: 'EN RUTA',    color: '#f59e0b', bg: '#f59e0b20' },
     asignado:   { label: 'ASIGNADO',   color: '#3b82f6', bg: '#3b82f620' },
-    pendiente:  { label: 'PENDIENTE',  color: '#888',    bg: '#88888820' },
   }
   const sc = statusConfig[vehicleStatus]
   const progress = booking?.progress ?? 0
@@ -324,7 +322,7 @@ function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInven
                   cursor:'pointer', fontSize:9, fontWeight:800, letterSpacing:'0.1em',
                   background: fuera ? 'rgba(255,79,79,0.15)' : 'rgba(34,197,94,0.15)',
                   color:       fuera ? '#ff4f4f'              : '#22c55e',
-                  display:'inline-flex', alignItems:'center', gap:5,
+                  display:'inline-flex', alignItems:'center', gap:5, whiteSpace:'nowrap',
                   fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
                 }}>
                 <span style={{width:5,height:5,borderRadius:'50%',
