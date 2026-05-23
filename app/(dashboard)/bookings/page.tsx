@@ -228,6 +228,10 @@ export default function BookingsPage() {
   const [reassignConflict, setReassignConflict] = useState('')
   const [reassignSaving,   setReassignSaving]   = useState(false)
   const [toasts,           setToasts]           = useState<Toast[]>([])
+  const [cancelTarget,     setCancelTarget]     = useState<any|null>(null)
+  const [cancelReason,     setCancelReason]     = useState('')
+  const [cancelledBookings,setCancelledBookings]= useState<any[]>([])
+  const [showCancelled,    setShowCancelled]    = useState(false)
   const toastId          = useRef(0)
   const lastCheckedAt    = useRef(new Date().toISOString())
   const lastBookingRequestId = useRef<string>('')
@@ -259,23 +263,26 @@ export default function BookingsPage() {
     setLoadingB(true)
     const sb = createClient()
 
-    // Use Dubai midnight → UTC range so the server-side filter is correct
     const { start: startISO, end: endISO } = dubaiDayRange(day)
 
-    const { data, error } = await sb
-      .from('bookings')
-      .select('*, contacts(name), vehicles(name,license_plate), services(name,duration_minutes)')
-      .gte('scheduled_at', startISO)
-      .lte('scheduled_at', endISO)
-      .order('scheduled_at', {ascending:true})
+    const [activeRes, cancelledRes] = await Promise.all([
+      sb.from('bookings')
+        .select('*, contacts(name), vehicles(name,license_plate), services(name,duration_minutes)')
+        .gte('scheduled_at', startISO)
+        .lte('scheduled_at', endISO)
+        .neq('status', 'cancelled')
+        .order('scheduled_at', { ascending: true }),
+      sb.from('bookings')
+        .select('id, scheduled_at, cancelled_at, cancellation_reason, contacts(name), services(name)')
+        .gte('scheduled_at', startISO)
+        .lte('scheduled_at', endISO)
+        .eq('status', 'cancelled')
+        .order('cancelled_at', { ascending: false }),
+    ])
 
-    if (error) {
-      console.error('[bookings] fetch error:', error)
-    }
-
-    const result = data ?? []
-
-    setBookings(result)
+    if (activeRes.error) console.error('[bookings] fetch error:', activeRes.error)
+    setBookings(activeRes.data ?? [])
+    setCancelledBookings(cancelledRes.data ?? [])
     setLoadingB(false)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -502,6 +509,27 @@ function getDemoForVehicle(vName:string):any[] {
     })
     setNewTechs(b.technician?b.technician.split(', ').filter(Boolean):[])
     setEditId(b.id);setDetailBooking(null);setShowNew(true)
+  }
+
+  async function cancelBooking() {
+    if (!cancelTarget || cancelReason.trim().length < 10) return
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { error } = await supabase
+      .from('bookings')
+      .update({
+        status: 'cancelled',
+        cancellation_reason: cancelReason.trim(),
+        cancelled_at: new Date().toISOString(),
+        cancelled_by: user?.email ?? user?.id ?? 'CRM',
+      })
+      .eq('id', cancelTarget.id)
+    if (error) { addToast(error.message, 'error'); return }
+    addToast(t('bookingCancelled'), 'warn')
+    setCancelTarget(null)
+    setCancelReason('')
+    setDetailBooking(null)
+    fetchBookings(selectedDay)
   }
 
   async function updateStatus(id:string, status:string){
@@ -774,6 +802,107 @@ function getDemoForVehicle(vName:string):any[] {
         </div>
       </div>
 
+      {/* ── Cancelled bookings section ── */}
+      {cancelledBookings.length > 0 && (
+        <div style={{marginTop:16}}>
+          <button
+            onClick={()=>setShowCancelled(o=>!o)}
+            style={{display:'flex',alignItems:'center',gap:8,background:'none',border:'none',
+              cursor:'pointer',padding:'10px 0',fontFamily:'Outfit,sans-serif'}}>
+            <span style={{fontSize:13,fontWeight:700,color:'#ff4f4f'}}>
+              Reservas canceladas hoy ({cancelledBookings.length})
+            </span>
+            <span style={{fontSize:12,color:'#888580'}}>{showCancelled ? '▲' : '▼'}</span>
+          </button>
+          {showCancelled && (
+            <div style={{borderRadius:10,border:'1px solid rgba(255,79,79,0.2)',overflow:'hidden',background:'#141416'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontFamily:'Outfit,sans-serif'}}>
+                <thead>
+                  <tr style={{background:'rgba(255,79,79,0.06)',borderBottom:'1px solid rgba(255,79,79,0.15)'}}>
+                    {['Cliente','Servicio','Hora','Motivo','Cancelada'].map(h=>(
+                      <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,
+                        textTransform:'uppercase',letterSpacing:'0.08em',color:'#888580'}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {cancelledBookings.map((b,i)=>(
+                    <tr key={b.id} style={{borderBottom:i<cancelledBookings.length-1?'1px solid rgba(255,255,255,0.04)':'none'}}>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#f0ede8'}}>{b.contacts?.name??'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#888580'}}>{b.services?.name??'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#888580',fontVariantNumeric:'tabular-nums'}}>
+                        {formatHoraDubai(b.scheduled_at)}
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:12,color:'#ff4f4f',maxWidth:220,
+                        overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                        {b.cancellation_reason??'—'}
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:12,color:'#888580',whiteSpace:'nowrap'}}>
+                        {b.cancelled_at ? formatHoraDubai(b.cancelled_at) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══ MODAL: Cancelar Reserva ════════════════════════════════════════════ */}
+      {cancelTarget && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.72)',zIndex:700,
+          display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
+          onClick={()=>{ setCancelTarget(null); setCancelReason('') }}>
+          <div style={{background:'#141416',border:'1px solid rgba(255,79,79,0.2)',borderRadius:14,
+            padding:28,width:'100%',maxWidth:460}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:17,fontWeight:700,color:'#f0ede8',marginBottom:4}}>
+                Cancelar reserva
+              </div>
+              <div style={{fontSize:13,color:'#888580'}}>
+                {cancelTarget.contacts?.name ?? '—'} · {formatHoraDubai(cancelTarget.scheduled_at)}
+              </div>
+            </div>
+            <div style={{marginBottom:16}}>
+              <MLabel>Motivo de cancelación *</MLabel>
+              <MTextarea
+                rows={4}
+                placeholder="Describe el motivo de cancelación (mínimo 10 caracteres)…"
+                value={cancelReason}
+                onChange={e=>setCancelReason(e.target.value)}
+              />
+              {cancelReason.length > 0 && cancelReason.trim().length < 10 && (
+                <div style={{marginTop:6,fontSize:11,color:'#ff4f4f'}}>
+                  Mínimo 10 caracteres ({cancelReason.trim().length}/10)
+                </div>
+              )}
+            </div>
+            <div style={{display:'flex',gap:10}}>
+              <button
+                onClick={()=>{ setCancelTarget(null); setCancelReason('') }}
+                style={{flex:1,padding:12,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
+                  background:'transparent',color:'#888580',fontSize:13,fontWeight:600,
+                  fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                Volver
+              </button>
+              <button
+                onClick={cancelBooking}
+                disabled={cancelReason.trim().length < 10}
+                style={{flex:1,padding:12,borderRadius:8,border:'none',
+                  background: cancelReason.trim().length < 10 ? 'rgba(255,79,79,0.3)' : '#ff4f4f',
+                  color:'#fff',fontSize:13,fontWeight:700,
+                  fontFamily:'Outfit,sans-serif',
+                  cursor: cancelReason.trim().length < 10 ? 'not-allowed' : 'pointer',
+                  transition:'background 0.15s'}}>
+                Confirmar cancelación
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ══ MODAL: Nueva / Editar Reserva ══════════════════════════════════════ */}
       {showNew&&(
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.72)',zIndex:700,
@@ -1030,7 +1159,7 @@ function getDemoForVehicle(vName:string):any[] {
                 ✏ {t('edit')}
               </button>
               {detailBooking.status!=='cancelled'&&detailBooking.status!=='completed'&&(
-                <button onClick={()=>updateStatus(detailBooking.id,'cancelled')}
+                <button onClick={()=>{ setCancelTarget(detailBooking); setDetailBooking(null) }}
                   style={{width:'100%',padding:11,borderRadius:8,
                     border:'1px solid rgba(255,79,79,0.3)',background:'transparent',
                     color:'#ff4f4f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
