@@ -741,16 +741,16 @@ function getDemoForVehicle(vName:string):any[] {
                     borderRight:'1px solid rgba(255,255,255,0.06)',
                     display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 14px',gap:2}}>
                     <div style={{display:'flex',alignItems:'center',gap:6}}>
-                      <div style={{width:6,height:6,borderRadius:'50%',flexShrink:0,
+                      <div style={{width:7,height:7,borderRadius:'50%',flexShrink:0,
                         background:isActivo?'#34d399':'#ff4f4f'}}/>
-                      <span style={{fontSize:12,fontWeight:600,color:'#f0ede8',
+                      <span style={{fontSize:14,fontWeight:700,color:'#f0ede8',
                         whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{v.name}</span>
                     </div>
-                    <div style={{fontSize:10,fontFamily:'monospace',color:'#c9a84c',paddingLeft:12}}>
+                    <div style={{fontSize:12,fontFamily:'monospace',color:'#c9a84c',paddingLeft:13}}>
                       {v.license_plate}
                     </div>
-                    <div style={{fontSize:9,fontWeight:700,paddingLeft:12,
-                      color:isActivo?'#34d399':'#ff4f4f',letterSpacing:'0.06em'}}>
+                    <div style={{fontSize:11,fontWeight:700,paddingLeft:13,
+                      color:isActivo?'#34d399':'#ff4f4f',letterSpacing:'0.04em'}}>
                       {isActivo ? 'En servicio' : 'Fuera de servicio'}
                     </div>
                     {techs.length>0&&(
