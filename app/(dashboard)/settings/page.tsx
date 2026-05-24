@@ -920,10 +920,15 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 
   async function saveHours() {
     setSavingHours(true)
-    const rows = hours.map(h => ({ day_of_week: h.day, day_label: h.label, is_open: h.is_open, start_time: h.start_time, end_time: h.end_time }))
-    const { error } = await createClient().from('business_hours').upsert(rows, { onConflict: 'day_of_week' })
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    const userId = user?.id
+    const { error: delError } = await sb.from('business_hours').delete().eq('user_id', userId)
+    if (delError) { setSavingHours(false); showToast('Error: ' + delError.message, 'error'); return }
+    const rows = hours.map(h => ({ user_id: userId, day_of_week: h.day, day_label: h.label, is_open: h.is_open, start_time: h.start_time, end_time: h.end_time }))
+    const { error: insError } = await sb.from('business_hours').insert(rows)
     setSavingHours(false)
-    if (error) { showToast('Error: ' + error.message, 'error'); return }
+    if (insError) { showToast('Error: ' + insError.message, 'error'); return }
     showToast('Horario guardado ✓', 'success')
   }
 
