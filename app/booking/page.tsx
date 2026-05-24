@@ -472,21 +472,34 @@ export default function BookingPage() {
   async function submit(){
     if(!selService||!selDate||selTime===null)return
     setSaving(true); setErr('')
-    const {error:dbErr}=await createClient().from('booking_requests').insert({
-      service_id:selService.id, service_name:selService.name,
-      scheduled_at:slotToUTC(selDate,selTime),
-      customer_name:cf.full_name, customer_phone:cf.whatsapp,
-      vehicle_make_model:cf.vehicle_model||null, plate:cf.plate_number||null,
-      address:buildAddress(cf)||null,
-      vehicle_model:cf.vehicle_model||null, plate_number:cf.plate_number||null,
-      villa_flat:cf.villa_flat||null, area:cf.area||null,
-      community:cf.community||null, address_notes:cf.address_notes||null,
-      price:servicePrice||null,
-      vat:servicePrice?vatAmount:null, total_amount:servicePrice?totalAmount:null,
-      payment_method:paymentMethod, status:'pending',
+    const res = await fetch('/api/booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id: selService.id, service_name: selService.name,
+        scheduled_at: slotToUTC(selDate, selTime),
+        customer_name: cf.full_name, customer_phone: cf.whatsapp,
+        vehicle_make_model: cf.vehicle_model || null,
+        plate: cf.plate_number || null,
+        plate_number: cf.plate_number || null,
+        vehicle_model: cf.vehicle_model || null,
+        address: buildAddress(cf) || null,
+        villa_flat: cf.villa_flat || null,
+        area: cf.area || null,
+        community: cf.community || null,
+        address_notes: cf.address_notes || null,
+        price: servicePrice || null,
+        vat: servicePrice ? vatAmount : null,
+        total_amount: servicePrice ? totalAmount : null,
+        payment_method: paymentMethod,
+      }),
     })
     setSaving(false)
-    if(dbErr){setErr(dbErr.message);return}
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setErr(data.error ?? 'Error al crear la reserva')
+      return
+    }
     setDone(true)
   }
 
