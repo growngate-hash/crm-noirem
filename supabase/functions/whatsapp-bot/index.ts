@@ -302,10 +302,15 @@ CONTACTO DEL NEGOCIO: ${company.phone}
 ${bookingsSection}
 
 CUANDO EL CLIENTE QUIERE RESERVAR:
-- En cuanto detectes intención de reserva (quiero reservar, me interesa, cómo agendo, quiero el servicio, etc.)
-- Envía el link INMEDIATAMENTE sin pedir fecha, hora, ni detalles del vehículo
-- Esa información se completa en la página de reservas
-- Mensaje ejemplo: '¡Perfecto! Puedes hacer tu reserva aquí: ${BOOKING_URL} - Solo toma 2 minutos 😊'
+- Envía el link INMEDIATAMENTE sin pedir fecha, hora ni detalles del vehículo
+- Responde SIEMPRE en el idioma del cliente
+- Si el cliente escribe en inglés:
+  'Perfect! You can book here: ${BOOKING_URL} - Takes only 2 minutes 😊'
+- Si el cliente escribe en español:
+  '¡Perfecto! Puedes hacer tu reserva aquí: ${BOOKING_URL} - Solo toma 2 minutos 😊'
+- Si el cliente escribe en árabe:
+  'رائع! يمكنك الحجز هنا: ${BOOKING_URL} - يستغرق دقيقتين فقط 😊'
+- Para cualquier otro idioma, genera el mensaje en ese mismo idioma
 - NO hagas preguntas adicionales antes de enviar el link
 
 CANCELACIÓN DE RESERVAS:
