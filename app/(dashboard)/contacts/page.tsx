@@ -26,6 +26,65 @@ function CategoryBadge({ tier }: { tier: string }) {
   )
 }
 
+// ─── vehicles cell ────────────────────────────────────────────────────────────
+function VehiclesCell({ vehicles }: { vehicles: any[] }) {
+  const [showTip, setShowTip] = useState(false)
+  if (!vehicles || vehicles.length === 0) return <span style={{ color:'#3a3836' }}>—</span>
+  const first = vehicles[0]
+  const rest  = vehicles.slice(1)
+  const label = `${first.make ?? ''} ${first.model ?? ''} · ${first.license_plate ?? '—'}`
+  return (
+    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+      <span style={{ fontSize:12, color:'#888580', whiteSpace:'nowrap' }}>{label.trim()}</span>
+      {rest.length > 0 && (
+        <div style={{ position:'relative' }} onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
+          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'rgba(201,168,76,0.15)', border:'1px solid rgba(201,168,76,0.4)', color:'#c9a84c', cursor:'default', whiteSpace:'nowrap' }}>+{rest.length} más</span>
+          {showTip && (
+            <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', borderRadius:8, padding:'8px 12px', minWidth:180, boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+              {rest.map((v: any) => (
+                <div key={v.id} style={{ fontSize:11, color:'#f0ede8', padding:'3px 0', whiteSpace:'nowrap' }}>
+                  {v.make} {v.model} · <span style={{ color:'#c9a84c', fontFamily:'monospace' }}>{v.license_plate ?? '—'}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── phone cell (WhatsApp) ────────────────────────────────────────────────────
+function PhoneCell({ phone }: { phone?: string }) {
+  if (!phone) return <span style={{ color:'#3a3836' }}>—</span>
+  const clean = phone.replace(/\D/g, '')
+  return (
+    <a href={`https://wa.me/${clean}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
+      style={{ display:'inline-flex', alignItems:'center', gap:5, color:'#25D366', fontSize:12, textDecoration:'none', whiteSpace:'nowrap' }}
+    >
+      <MessageCircle size={12} />
+      {phone}
+    </a>
+  )
+}
+
+// ─── address cell (truncated + tooltip) ───────────────────────────────────────
+function AddressCell({ address }: { address?: string }) {
+  const [showTip, setShowTip] = useState(false)
+  if (!address) return <span style={{ color:'#3a3836' }}>—</span>
+  const truncated = address.length > 30 ? address.slice(0, 30) + '…' : address
+  return (
+    <div style={{ position:'relative' }} onMouseEnter={() => address.length > 30 && setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
+      <span style={{ fontSize:12, color:'#888580', cursor:address.length > 30 ? 'help' : 'default' }}>{truncated}</span>
+      {showTip && (
+        <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'8px 12px', minWidth:200, maxWidth:320, boxShadow:'0 4px 20px rgba(0,0,0,0.5)', fontSize:11, color:'#f0ede8', lineHeight:1.5, whiteSpace:'normal' }}>
+          {address}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── action button ────────────────────────────────────────────────────────────
 function ActionBtn({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) {
   const [hov, setHov] = useState(false)
@@ -185,7 +244,7 @@ export default function ContactsPage() {
     const curTab = tab ?? activeTab
     setLoading(true)
     const sb = createClient()
-    let q = sb.from('contacts').select('*, vehicles(*), bookings(id,price,status,created_at)').order('created_at', { ascending: false })
+    let q = sb.from('contacts').select('*, vehicles(id,make,model,license_plate), bookings(id,total_price)').order('created_at', { ascending: false })
     if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
     if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
     const { data } = await q
@@ -346,7 +405,7 @@ export default function ContactsPage() {
             />
           ) : filtered.map(c => {
             const bkCount   = (c.bookings ?? []).length
-            const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
+            const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.total_price ?? 0), 0)
             return (
               <div key={c.id} onClick={() => setSelectedContact(c)}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', marginBottom:8, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, cursor:'pointer', transition:'border-color 0.15s', active:{borderColor:'#c9a84c'} } as any}
@@ -377,31 +436,23 @@ export default function ContactsPage() {
           <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
             <thead>
               <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
-                {[t('client'), t('category')].map(h => (
-                  <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
-                ))}
                 {activeTab === 'suppliers' ? (
-                  <>
-                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('supplierType')}</th>
-                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('phone')}</th>
-                  </>
+                  [t('client'), t('category'), t('supplierType'), t('phone'), t('totalSpent'), t('actions')].map(h => (
+                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                  ))
                 ) : (
-                  <>
-                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('mainVehicle')}</th>
-                    <th style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{t('licensePlate')}</th>
-                  </>
+                  [t('client'), t('category'), t('phone'), 'Dirección', 'Vehículos', t('totalSpent'), t('actions')].map(h => (
+                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                  ))
                 )}
-                {[t('totalSpent'), t('actions')].map(h => (
-                  <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
-                ))}
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6}><SkeletonTable rows={4} cols={6} /></td></tr>
+                <tr><td colSpan={activeTab === 'clients' ? 7 : 6}><SkeletonTable rows={4} cols={activeTab === 'clients' ? 7 : 6} /></td></tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={activeTab === 'clients' ? 7 : 6}>
                     <EmptyState
                       icon={activeTab === 'suppliers' ? 'supplier' : 'contact'}
                       title={activeTab === 'suppliers' ? 'No hay proveedores aún' : 'No hay contactos aún'}
@@ -412,18 +463,19 @@ export default function ContactsPage() {
                   </td>
                 </tr>
               ) : filtered.map(c => {
-                const vehicleName = c.vehicle_type || '—'
-                const plate       = c.license_plate || '—'
-                const bkCount     = (c.bookings ?? []).length
-                const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
+                const bkCount    = (c.bookings ?? []).length
+                const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.total_price ?? 0), 0)
+                const vehicles   = c.vehicles ?? []
                 return (
                   <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
+                    {/* CLIENTE */}
                     <td style={{ padding:'14px 16px' }}>
                       <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
                       {activeTab !== 'suppliers' && (
                         <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
                       )}
                     </td>
+                    {/* CATEGORÍA */}
                     <td style={{ padding:'14px 16px' }}>
                       {activeTab === 'suppliers'
                         ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>{t('suppliers').toUpperCase()}</span>
@@ -437,13 +489,17 @@ export default function ContactsPage() {
                       </>
                     ) : (
                       <>
-                        <td style={{ padding:'14px 16px', fontSize:13, color: c.vehicle_type ? '#888580' : '#3a3836' }}>{vehicleName}</td>
-                        <td style={{ padding:'14px 16px' }}>
-                          <span style={{ fontFamily:'monospace', fontSize:12, color: c.license_plate ? '#c9a84c' : '#3a3836', fontWeight:600 }}>{plate}</span>
-                        </td>
+                        {/* TELÉFONO */}
+                        <td style={{ padding:'14px 16px' }}><PhoneCell phone={c.phone} /></td>
+                        {/* DIRECCIÓN */}
+                        <td style={{ padding:'14px 16px' }}><AddressCell address={c.address} /></td>
+                        {/* VEHÍCULOS */}
+                        <td style={{ padding:'14px 16px' }}><VehiclesCell vehicles={vehicles} /></td>
                       </>
                     )}
+                    {/* GASTO TOTAL */}
                     <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{fmt(totalSpent)}</td>
+                    {/* ACCIONES */}
                     <td style={{ padding:'14px 16px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display:'flex', gap:6 }}>
                         <ActionBtn><MessageCircle size={13} /></ActionBtn>
