@@ -237,7 +237,7 @@ export default function ContactsPage() {
     const curTab = tab ?? activeTab
     setLoading(true)
     const sb = createClient()
-    let q = sb.from('contacts').select('id,name,email,phone,address,notes,tier,tipo,vehicle_type,license_plate,supplier_type,user_id,company_id,created_at,updated_at,deleted_at,vehicles(id,make,model,license_plate),bookings(id,price)').order('created_at', { ascending: false })
+    let q = sb.from('contacts').select('id,name,email,phone,address,notes,tier,tipo,vehicle_type,license_plate,supplier_type,user_id,company_id,created_at,updated_at,vehicles(id,make,model,license_plate),bookings(id,price)').order('created_at', { ascending: false })
     if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
     if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
     const { data, error, status, statusText } = await q
