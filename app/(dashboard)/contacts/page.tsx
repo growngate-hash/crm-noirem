@@ -223,7 +223,19 @@ export default function ContactsPage() {
     if (c.tipo === 'proveedor') {
       setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', supplier_type: c.supplier_type ?? '', address: c.address ?? '', notes: c.notes ?? '' })
     } else {
-      setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', vehicle_type: c.vehicle_type ?? '', license_plate: c.license_plate ?? '', tier: c.tier ?? 'VIP', address: c.address ?? '', notes: c.notes ?? '' })
+      const v0 = c.vehicles?.[0]
+      const SKIP = ['', 'N/A', 'Unknown']
+      const vehicleType = v0
+        ? [v0.make, v0.model].filter((x: string) => x && !SKIP.includes(x)).join(' ')
+        : (c.vehicle_type ?? '')
+      setEditForm({
+        name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '',
+        vehicle_type: vehicleType,
+        license_plate: v0?.license_plate ?? c.license_plate ?? '',
+        vehicle_id: v0?.id ?? null,
+        tier: c.tier ?? 'VIP',
+        address: c.address ?? '', notes: c.notes ?? '',
+      })
     }
   }
 
@@ -286,20 +298,35 @@ export default function ContactsPage() {
   async function saveEdit() {
     if (!editForm.name?.trim() || !editContact) return
     setSaving(true)
+    const sb = createClient()
     const payload: any = { name:editForm.name, phone:editForm.phone, email:editForm.email, address:editForm.address, notes:editForm.notes, updated_at:new Date().toISOString() }
     if (editContact.tipo === 'proveedor') {
       payload.supplier_type = editForm.supplier_type
     } else {
-      payload.vehicle_type = editForm.vehicle_type
-      payload.license_plate = editForm.license_plate
       payload.tier = editForm.tier
     }
-    const { error } = await createClient().from('contacts').update(payload).eq('id', editContact.id)
+    const { error } = await sb.from('contacts').update(payload).eq('id', editContact.id)
+    if (error) { setSaving(false); addToast(error.message, 'error'); return }
+
+    // Update or create vehicle
+    if (editContact.tipo !== 'proveedor') {
+      const rawParts = (editForm.vehicle_type ?? '').trim().split(' ').filter(Boolean)
+      const make  = rawParts[0] || 'N/A'
+      const model = rawParts.slice(1).join(' ') || 'N/A'
+      const plate = (editForm.license_plate ?? '').trim()
+
+      if (editForm.vehicle_id) {
+        await sb.from('vehicles').update({ make, model, license_plate: plate }).eq('id', editForm.vehicle_id)
+      } else if (plate) {
+        await sb.from('vehicles').insert({ contact_id: editContact.id, make, model, license_plate: plate, status: 'libre' })
+      }
+    }
+
     setSaving(false)
-    if (error) { addToast(error.message, 'error'); return }
     addToast(t('changesSaved'), 'success')
     setContacts(prev => prev.map(c => c.id === editContact.id ? { ...c, ...payload } : c))
     closeEdit()
+    fetchContacts()
   }
 
   // ── delete contact ─────────────────────────────────────────────────────────
@@ -652,7 +679,7 @@ export default function ContactsPage() {
             <div><MLabel>{t('phone')}</MLabel><MInput placeholder="+971 50 000 0000" value={clientForm.phone} onChange={e => setClientForm({...clientForm, phone:e.target.value})} /></div>
             <div><MLabel>{t('email')}</MLabel><MInput type="email" placeholder="ahmed@example.ae" value={clientForm.email} onChange={e => setClientForm({...clientForm, email:e.target.value})} /></div>
             <div><MLabel>{t('vehicleType')}</MLabel><MInput placeholder="ej. Bugatti Chiron" value={clientForm.vehicle_type} onChange={e => setClientForm({...clientForm, vehicle_type:e.target.value})} /></div>
-            <div><MLabel>{t('licensePlate')}</MLabel><MInput placeholder="ej. M-00007" value={clientForm.license_plate} onChange={e => setClientForm({...clientForm, license_plate:e.target.value})} /></div>
+            <div><MLabel>{t('licensePlate')}</MLabel><MInput placeholder="ej. ABC 1234" value={clientForm.license_plate} onChange={e => setClientForm({...clientForm, license_plate:e.target.value})} /></div>
             <div><MLabel>{t('category')}</MLabel><TierPicker value={clientForm.tier} onChange={v => setClientForm({...clientForm, tier:v})} /></div>
             <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('address')}</MLabel><MInput placeholder="Dubai, UAE" value={clientForm.address} onChange={e => setClientForm({...clientForm, address:e.target.value})} /></div>
             <div style={{ gridColumn:'1 / -1' }}><MLabel>{t('notes')}</MLabel><MTextarea rows={3} placeholder="..." value={clientForm.notes} onChange={e => setClientForm({...clientForm, notes:e.target.value})} /></div>
@@ -698,7 +725,7 @@ export default function ContactsPage() {
               <div><MLabel>Teléfono</MLabel><MInput value={editForm.phone ?? ''} onChange={e => setEditForm({...editForm, phone:e.target.value})} /></div>
               <div><MLabel>Correo</MLabel><MInput type="email" value={editForm.email ?? ''} onChange={e => setEditForm({...editForm, email:e.target.value})} /></div>
               <div><MLabel>Tipo de Vehículo</MLabel><MInput value={editForm.vehicle_type ?? ''} onChange={e => setEditForm({...editForm, vehicle_type:e.target.value})} /></div>
-              <div><MLabel>Matrícula</MLabel><MInput placeholder="ej. M-00007" value={editForm.license_plate ?? ''} onChange={e => setEditForm({...editForm, license_plate:e.target.value})} /></div>
+              <div><MLabel>Matrícula</MLabel><MInput placeholder="ej. ABC 1234" value={editForm.license_plate ?? ''} onChange={e => setEditForm({...editForm, license_plate:e.target.value})} /></div>
               <div><MLabel>Categoría</MLabel><TierPicker value={editForm.tier ?? 'VIP'} onChange={v => setEditForm({...editForm, tier:v})} /></div>
               <div style={{ gridColumn:'1 / -1' }}><MLabel>Dirección</MLabel><MInput value={editForm.address ?? ''} onChange={e => setEditForm({...editForm, address:e.target.value})} /></div>
               <div style={{ gridColumn:'1 / -1' }}><MLabel>Notas</MLabel><MTextarea rows={3} value={editForm.notes ?? ''} onChange={e => setEditForm({...editForm, notes:e.target.value})} /></div>
