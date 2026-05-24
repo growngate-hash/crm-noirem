@@ -240,7 +240,11 @@ export default function ContactsPage() {
     let q = sb.from('contacts').select('*, vehicles(id,make,model,license_plate), bookings(id,total_price)').order('created_at', { ascending: false })
     if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
     if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
-    const { data } = await q
+    const { data, error, status, statusText } = await q
+    console.log('[contacts] tab:', curTab)
+    console.log('[contacts] data:', data)
+    console.log('[contacts] error:', error)
+    console.log('[contacts] status:', status, statusText)
     setContacts(data ?? [])
     setLoading(false)
   }
