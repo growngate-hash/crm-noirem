@@ -843,11 +843,10 @@ const WA_TABS: { key: WaTab; label: string }[] = [
 function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<WaTab>('connection')
 
-  // Conexión
-  const [phoneId,      setPhoneId]      = useState('')
-  const [waToken,      setWaToken]      = useState('')
-  const [verifyStatus, setVerifyStatus] = useState<'idle'|'checking'|'ok'|'error'>('idle')
-  const [savingConn,   setSavingConn]   = useState(false)
+  // Conexión — Embedded Signup
+  const [waConnected,    setWaConnected]    = useState(false)
+  const [waPhoneNumber,  setWaPhoneNumber]  = useState<string | null>(null)
+  const [connectingWA,   setConnectingWA]   = useState(false)
 
   // Horario
   const [hours,       setHours]       = useState(WA_DEFAULT_HOURS.map(d => ({ ...d })))
@@ -872,17 +871,20 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     async function load() {
       const sb = createClient()
-      const [{ data: settings }, { data: hoursData }, { data: zonesData }] = await Promise.all([
-        sb.from('company_settings').select('key,value').in('key', ['whatsapp_phone_number_id','whatsapp_token','whatsapp_welcome_message']),
+      const [{ data: settings }, { data: hoursData }, { data: zonesData }, { data: waConfig }] = await Promise.all([
+        sb.from('company_settings').select('key,value').in('key', ['whatsapp_welcome_message']),
         sb.from('business_hours').select('*').order('day_of_week'),
         sb.from('coverage_zones').select('*').order('created_at'),
+        sb.from('whatsapp_configs').select('connected,phone_number').eq('connected', true).maybeSingle(),
       ])
       if (settings) {
         settings.forEach((s: any) => {
-          if (s.key === 'whatsapp_phone_number_id') setPhoneId(s.value ?? '')
-          if (s.key === 'whatsapp_token')           setWaToken(s.value ?? '')
           if (s.key === 'whatsapp_welcome_message') setWelcome(s.value ?? '')
         })
+      }
+      if (waConfig) {
+        setWaConnected(waConfig.connected ?? false)
+        setWaPhoneNumber(waConfig.phone_number ?? null)
       }
       if (hoursData && (hoursData as any[]).length > 0) {
         setHours(WA_DEFAULT_HOURS.map((d, i) => {
@@ -895,27 +897,76 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
       }
     }
     load()
+
+    // Cargar FB SDK
+    const FB_APP_ID = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID
+    if (FB_APP_ID && !(window as any).FB) {
+      ;(window as any).fbAsyncInit = function () {
+        ;(window as any).FB.init({
+          appId: FB_APP_ID,
+          autoLogAppEvents: true,
+          xfbml: true,
+          version: 'v19.0',
+        })
+      }
+      const script = document.createElement('script')
+      script.src = 'https://connect.facebook.net/en_US/sdk.js'
+      script.async = true
+      script.defer = true
+      document.body.appendChild(script)
+    }
   }, [])
 
-  async function verifyConnection() {
-    if (!phoneId || !waToken) { showToast('Ingresa el Phone Number ID y el Token', 'error'); return }
-    setVerifyStatus('checking')
-    try {
-      const res  = await fetch(`https://graph.facebook.com/v19.0/${phoneId}?access_token=${waToken}`)
-      const data = await res.json()
-      setVerifyStatus(data.error ? 'error' : 'ok')
-    } catch { setVerifyStatus('error') }
+  function launchEmbeddedSignup() {
+    const FB = (window as any).FB
+    if (!FB) { showToast('SDK de Facebook no cargado. Recarga la página.', 'error'); return }
+    setConnectingWA(true)
+    FB.login(
+      async (response: any) => {
+        if (response.authResponse?.code) {
+          try {
+            const res  = await fetch('/api/whatsapp/exchange-token', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: response.authResponse.code }),
+            })
+            const data = await res.json()
+            if (data.success) {
+              setWaConnected(true)
+              setWaPhoneNumber(data.phone_number ?? null)
+              showToast('WhatsApp conectado correctamente ✓', 'success')
+            } else {
+              showToast('Error al conectar: ' + (data.error ?? 'desconocido'), 'error')
+            }
+          } catch (err: any) {
+            showToast('Error de red: ' + err.message, 'error')
+          }
+        } else {
+          showToast('Conexión cancelada', 'error')
+        }
+        setConnectingWA(false)
+      },
+      {
+        config_id: '983108701106865',
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          setup: {},
+          featureName: 'whatsapp_embedded_signup',
+          sessionInfoVersion: '3',
+        },
+      }
+    )
   }
 
-  async function saveConnection() {
-    setSavingConn(true)
+  async function disconnectWhatsApp() {
     const sb = createClient()
-    await Promise.all([
-      sb.from('company_settings').upsert({ key: 'whatsapp_phone_number_id', value: phoneId }, { onConflict: 'key' }),
-      sb.from('company_settings').upsert({ key: 'whatsapp_token',           value: waToken }, { onConflict: 'key' }),
-    ])
-    setSavingConn(false)
-    showToast('Credenciales guardadas ✓', 'success')
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) return
+    await sb.from('whatsapp_configs').update({ connected: false }).eq('user_id', user.id)
+    setWaConnected(false)
+    setWaPhoneNumber(null)
+    showToast('WhatsApp desconectado', 'success')
   }
 
   async function saveHours() {
@@ -1005,26 +1056,52 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
         {/* Body */}
         <div style={{ flex:1, overflowY:'auto', padding:24 }}>
 
-          {/* ── Conexión ── */}
+          {/* ── Conexión (Embedded Signup) ── */}
           {tab === 'connection' && (
-            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
-              <div>
-                <label style={LBL}>Phone Number ID</label>
-                <input style={INP} value={phoneId} onChange={e => { setPhoneId(e.target.value); setVerifyStatus('idle') }} placeholder="1234567890123456" />
-              </div>
-              <div>
-                <label style={LBL}>WhatsApp Token</label>
-                <input style={INP} type="password" value={waToken} onChange={e => { setWaToken(e.target.value); setVerifyStatus('idle') }} placeholder="EAAxxxxxxxx…" />
-              </div>
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <button onClick={verifyConnection} disabled={verifyStatus==='checking'}
-                  style={{ padding:'9px 18px', borderRadius:8, border:'1px solid rgba(201,168,76,0.35)', background:'#1a1a1e', color:'#c9a84c', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:verifyStatus==='checking'?'default':'pointer', opacity:verifyStatus==='checking'?0.7:1 }}>
-                  {verifyStatus === 'checking' ? 'Verificando…' : 'Verificar conexión'}
-                </button>
-                {verifyStatus === 'ok'    && <span style={{ fontSize:12, color:'#22c55e' }}>✅ Conectado</span>}
-                {verifyStatus === 'error' && <span style={{ fontSize:12, color:'#ff4f4f' }}>❌ Token inválido</span>}
-              </div>
-              <div><SaveBtn loading={savingConn} onClick={saveConnection} label="Guardar credenciales" /></div>
+            <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              {waConnected ? (
+                /* ── Estado: Conectado ── */
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:14, padding:'16px 18px', background:'rgba(34,197,94,0.08)', border:'1px solid rgba(34,197,94,0.25)', borderRadius:10 }}>
+                    <span style={{ fontSize:22 }}>✅</span>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:'#22c55e' }}>WhatsApp conectado</div>
+                      {waPhoneNumber && (
+                        <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>{waPhoneNumber}</div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ fontSize:12, color:'#888580', lineHeight:1.6 }}>
+                    Tu número está activo y recibiendo mensajes. El bot responderá automáticamente a tus clientes.
+                  </div>
+                  <button onClick={disconnectWhatsApp}
+                    style={{ alignSelf:'flex-start', padding:'9px 18px', borderRadius:8, border:'1px solid rgba(255,79,79,0.3)', background:'transparent', color:'#ff4f4f', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+                    Desconectar
+                  </button>
+                </div>
+              ) : (
+                /* ── Estado: No conectado ── */
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                  <div style={{ fontSize:12, color:'#888580', lineHeight:1.7 }}>
+                    Conecta tu número de WhatsApp Business directamente desde Meta. No necesitas copiar tokens ni IDs manualmente.
+                  </div>
+                  <div style={{ padding:'16px 18px', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, fontSize:11, color:'#888580', lineHeight:1.7 }}>
+                    <strong style={{ color:'#f0ede8' }}>Cómo funciona:</strong><br/>
+                    1. Haz clic en "Conectar WhatsApp"<br/>
+                    2. Inicia sesión con tu cuenta de Meta Business<br/>
+                    3. Selecciona tu número de WhatsApp Business<br/>
+                    4. ¡Listo! El token se guarda automáticamente
+                  </div>
+                  <button onClick={launchEmbeddedSignup} disabled={connectingWA}
+                    style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:10, padding:'13px 20px', borderRadius:10, border:'none', background: connectingWA ? '#2a4a2a' : '#25D366', color:'#fff', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor: connectingWA ? 'default' : 'pointer', opacity: connectingWA ? 0.7 : 1, transition:'all 0.15s' }}>
+                    {/* WhatsApp icon */}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    {connectingWA ? 'Conectando…' : 'Conectar WhatsApp'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
