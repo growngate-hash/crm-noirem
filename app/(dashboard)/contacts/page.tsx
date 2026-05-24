@@ -237,7 +237,7 @@ export default function ContactsPage() {
     const curTab = tab ?? activeTab
     setLoading(true)
     const sb = createClient()
-    let q = sb.from('contacts').select('id,name,email,phone,address,notes,tier,tipo,vehicle_type,license_plate,supplier_type,user_id,company_id,created_at,updated_at,deleted_at,vehicles(id,make,model,license_plate),bookings(id,total_price)').order('created_at', { ascending: false })
+    let q = sb.from('contacts').select('id,name,email,phone,address,notes,tier,tipo,vehicle_type,license_plate,supplier_type,user_id,company_id,created_at,updated_at,deleted_at,vehicles(id,make,model,license_plate),bookings(id,price)').order('created_at', { ascending: false })
     if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
     if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
     const { data, error, status, statusText } = await q
@@ -399,7 +399,7 @@ export default function ContactsPage() {
             />
           ) : filtered.map(c => {
             const bkCount   = (c.bookings ?? []).length
-            const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.total_price ?? 0), 0)
+            const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
             return (
               <div key={c.id} onClick={() => setSelectedContact(c)}
                 style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', marginBottom:8, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, cursor:'pointer', transition:'border-color 0.15s', active:{borderColor:'#c9a84c'} } as any}
@@ -458,7 +458,7 @@ export default function ContactsPage() {
                 </tr>
               ) : filtered.map(c => {
                 const bkCount    = (c.bookings ?? []).length
-                const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.total_price ?? 0), 0)
+                const totalSpent = c.total ?? (c.bookings ?? []).reduce((s: number, b: any) => s + (b.price ?? 0), 0)
                 const vehicles   = c.vehicles ?? []
                 return (
                   <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
