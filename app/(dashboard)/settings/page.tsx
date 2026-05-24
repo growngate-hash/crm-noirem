@@ -947,7 +947,7 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
         setConnectingWA(false)
       },
       {
-        config_id: '983108701106865',
+        config_id: '2776902419375291',
         response_type: 'code',
         override_default_response_type: true,
         extras: {
