@@ -917,34 +917,40 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
     }
   }, [])
 
+  const handleFBResponse = async (code: string) => {
+    try {
+      const res  = await fetch('/api/whatsapp/exchange-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setWaConnected(true)
+        setWaPhoneNumber(data.phone_number ?? null)
+        showToast('WhatsApp conectado correctamente ✓', 'success')
+      } else {
+        showToast('Error al conectar: ' + (data.error ?? 'desconocido'), 'error')
+      }
+    } catch (err: any) {
+      showToast('Error de red: ' + err.message, 'error')
+    } finally {
+      setConnectingWA(false)
+    }
+  }
+
   function launchEmbeddedSignup() {
     const FB = (window as any).FB
     if (!FB) { showToast('SDK de Facebook no cargado. Recarga la página.', 'error'); return }
     setConnectingWA(true)
     FB.login(
-      async (response: any) => {
+      (response: any) => {
         if (response.authResponse?.code) {
-          try {
-            const res  = await fetch('/api/whatsapp/exchange-token', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code: response.authResponse.code }),
-            })
-            const data = await res.json()
-            if (data.success) {
-              setWaConnected(true)
-              setWaPhoneNumber(data.phone_number ?? null)
-              showToast('WhatsApp conectado correctamente ✓', 'success')
-            } else {
-              showToast('Error al conectar: ' + (data.error ?? 'desconocido'), 'error')
-            }
-          } catch (err: any) {
-            showToast('Error de red: ' + err.message, 'error')
-          }
+          handleFBResponse(response.authResponse.code)
         } else {
           showToast('Conexión cancelada', 'error')
+          setConnectingWA(false)
         }
-        setConnectingWA(false)
       },
       {
         config_id: '2776902419375291',
