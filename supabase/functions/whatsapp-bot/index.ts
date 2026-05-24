@@ -18,7 +18,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const WHATSAPP_TOKEN    = Deno.env.get('WHATSAPP_TOKEN')!
 const PHONE_NUMBER_ID   = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!
 const VERIFY_TOKEN      = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY') ?? ''
+const OPENAI_API_KEY    = Deno.env.get('OPENAI_API_KEY') ?? ''
 const BOOKING_URL       = Deno.env.get('BOOKING_URL') ?? 'https://crm-noirem.vercel.app/booking'
 
 const supabase = createClient(
@@ -45,36 +45,37 @@ async function sendWhatsApp(to: string, text: string): Promise<void> {
   })
 }
 
-// ── Claude API ─────────────────────────────────────────────────────────────────
-async function callClaude(
+// ── OpenAI API ─────────────────────────────────────────────────────────────────
+async function callOpenAI(
   system: string,
   messages: { role: 'user' | 'assistant'; content: string }[],
 ): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      system,
-      messages,
+      model: 'gpt-4o-mini',
+      max_tokens: 500,
+      messages: [
+        { role: 'system', content: system },
+        ...messages,
+      ],
     }),
   })
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`Claude ${res.status}: ${body}`)
+    throw new Error(`OpenAI ${res.status}: ${body}`)
   }
   const data = await res.json()
-  return data.content?.[0]?.text ?? ''
+  return data.choices?.[0]?.message?.content ?? ''
 }
 
 // ── Action executor ────────────────────────────────────────────────────────────
 // Detecta tags [ACTION:CANCEL:uuid] y [ACTION:MODIFY:uuid:ISO] en la respuesta
-// de Claude, ejecuta los updates en Supabase y devuelve el texto limpio.
+// de OpenAI, ejecuta los updates en Supabase y devuelve el texto limpio.
 async function executeActions(text: string, phone: string): Promise<string> {
   let clean = text
 
@@ -332,14 +333,14 @@ INSTRUCCIONES DE COMPORTAMIENTO:
 - Los precios incluyen 5% VAT
 - Fechas y horas en formato local UAE (UTC+4)`
 
-  // ── 4. Llamar Claude ───────────────────────────────────────────────────────
+  // ── 4. Llamar OpenAI ──────────────────────────────────────────────────────
   let reply: string
 
-  if (!ANTHROPIC_API_KEY) {
+  if (!OPENAI_API_KEY) {
     reply = FALLBACK_MSG
   } else {
     try {
-      const claudeMessages = [
+      const chatMessages = [
         ...history.map((m: any) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content as string,
@@ -347,11 +348,11 @@ INSTRUCCIONES DE COMPORTAMIENTO:
         { role: 'user' as const, content: text },
       ]
 
-      const raw = await callClaude(systemPrompt, claudeMessages)
+      const raw = await callOpenAI(systemPrompt, chatMessages)
       reply = await executeActions(raw, phone)
       if (!reply) reply = FALLBACK_MSG
     } catch (err) {
-      console.error('[whatsapp-bot] Claude error:', err)
+      console.error('[whatsapp-bot] OpenAI error:', err)
       reply = FALLBACK_MSG
     }
   }
