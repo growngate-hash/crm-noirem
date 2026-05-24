@@ -163,13 +163,6 @@ function ContactModal({ title, onClose, children }: { title: string; onClose: ()
 // ─── toast ────────────────────────────────────────────────────────────────────
 type Toast = { id: number; msg: string; type: 'success' | 'error' }
 
-// ─── demo data (shown only in Todos tab when no real data) ────────────────────
-const DEMO_CONTACTS = [
-  { id:'d1', name:'Khalid Al Mansoori', tier:'Black Diamond', tipo:'cliente', bookings:[{},{},{},{},{},{},{},{}],             vehicles:[{ make:'Lamborghini', model:'Urus',    license_plate:'DXB·1234', id:'v1', year:2023 }], total:94500  },
-  { id:'d2', name:'Sara Bint Mohammed',  tier:'Platinum',      tipo:'cliente', bookings:[{},{},{},{},{}],                     vehicles:[{ make:'Range Rover',  model:'Vogue',   license_plate:'AUH·5678', id:'v2', year:2022 }], total:47200  },
-  { id:'d3', name:'Mohammed Al Maktoum', tier:'Black Diamond', tipo:'cliente', bookings:[{},{},{},{},{},{},{},{},{},{},{},{}], vehicles:[{ make:'Ferrari',      model:'SF90',    license_plate:'DXB·0001', id:'v3', year:2024 }], total:128000 },
-  { id:'d4', name:'Fatima Al Zaabi',     tier:'VIP',           tipo:'cliente', bookings:[{},{}],                              vehicles:[{ make:'Porsche',      model:'Cayenne', license_plate:'SHJ·9012', id:'v4', year:2021 }], total:18700  },
-]
 
 const TIER_PILLS = ['All','Black Diamond','Platinum','VIP']
 
@@ -309,10 +302,7 @@ export default function ContactsPage() {
   }
 
   // ── display data ───────────────────────────────────────────────────────────
-  const isDemo = contacts.length === 0 && activeTab === 'clients' && !loading
-  const source = isDemo ? DEMO_CONTACTS : contacts
-
-  const filtered = source.filter(c => {
+  const filtered = contacts.filter(c => {
     const q = search.toLowerCase()
     const matchSearch = !q || c.name?.toLowerCase().includes(q)
     const matchTier   = tierFilter === 'All' || c.tier === tierFilter
