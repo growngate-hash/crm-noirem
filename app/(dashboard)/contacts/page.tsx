@@ -27,15 +27,24 @@ function CategoryBadge({ tier }: { tier: string }) {
 }
 
 // ─── vehicles cell ────────────────────────────────────────────────────────────
+const INVALID = ['', 'N/A', 'Unknown', 'null', 'undefined']
+function formatVehicle(v: { make?: string; model?: string; license_plate?: string }) {
+  const hasMake  = v.make  && !INVALID.includes(v.make.trim())
+  const hasModel = v.model && !INVALID.includes(v.model.trim())
+  const plate    = v.license_plate ?? '—'
+  if (hasMake && hasModel) return `${v.make} ${v.model} · ${plate}`
+  if (hasMake)             return `${v.make} · ${plate}`
+  return `· ${plate}`
+}
+
 function VehiclesCell({ vehicles }: { vehicles: any[] }) {
   const [showTip, setShowTip] = useState(false)
   if (!vehicles || vehicles.length === 0) return <span style={{ color:'#3a3836' }}>—</span>
   const first = vehicles[0]
   const rest  = vehicles.slice(1)
-  const label = `${first.make ?? ''} ${first.model ?? ''} · ${first.license_plate ?? '—'}`
   return (
     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-      <span style={{ fontSize:12, color:'#888580', whiteSpace:'nowrap' }}>{label.trim()}</span>
+      <span style={{ fontSize:12, color:'#888580', whiteSpace:'nowrap' }}>{formatVehicle(first)}</span>
       {rest.length > 0 && (
         <div style={{ position:'relative' }} onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
           <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'rgba(201,168,76,0.15)', border:'1px solid rgba(201,168,76,0.4)', color:'#c9a84c', cursor:'default', whiteSpace:'nowrap' }}>+{rest.length} más</span>
@@ -43,7 +52,7 @@ function VehiclesCell({ vehicles }: { vehicles: any[] }) {
             <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', borderRadius:8, padding:'8px 12px', minWidth:180, boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
               {rest.map((v: any) => (
                 <div key={v.id} style={{ fontSize:11, color:'#f0ede8', padding:'3px 0', whiteSpace:'nowrap' }}>
-                  {v.make} {v.model} · <span style={{ color:'#c9a84c', fontFamily:'monospace' }}>{v.license_plate ?? '—'}</span>
+                  {formatVehicle(v)}
                 </div>
               ))}
             </div>
