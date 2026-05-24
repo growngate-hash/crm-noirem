@@ -827,31 +827,329 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
   )
 }
 
+// ─── WhatsApp config panel ─────────────────────────────────────────────────────
+const WA_DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
+const WA_DEFAULT_HOURS = WA_DAYS.map((label, i) => ({
+  day: i, label, is_open: i < 5, start_time: '08:00', end_time: '18:00',
+}))
+type WaTab = 'connection' | 'hours' | 'zones' | 'welcome'
+const WA_TABS: { key: WaTab; label: string }[] = [
+  { key: 'connection', label: 'Conexión'   },
+  { key: 'hours',      label: 'Horario'    },
+  { key: 'zones',      label: 'Zonas'      },
+  { key: 'welcome',    label: 'Bienvenida' },
+]
+
+function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<WaTab>('connection')
+
+  // Conexión
+  const [phoneId,      setPhoneId]      = useState('')
+  const [waToken,      setWaToken]      = useState('')
+  const [verifyStatus, setVerifyStatus] = useState<'idle'|'checking'|'ok'|'error'>('idle')
+  const [savingConn,   setSavingConn]   = useState(false)
+
+  // Horario
+  const [hours,       setHours]       = useState(WA_DEFAULT_HOURS.map(d => ({ ...d })))
+  const [savingHours, setSavingHours] = useState(false)
+
+  // Zonas
+  const [zones,       setZones]       = useState<{ id?: string; name: string; is_active: boolean }[]>([])
+  const [newZone,     setNewZone]     = useState('')
+  const [savingZones, setSavingZones] = useState(false)
+
+  // Bienvenida
+  const [welcome,       setWelcome]       = useState('')
+  const [savingWelcome, setSavingWelcome] = useState(false)
+
+  // Toast
+  const [toast, setToast] = useState<{ msg: string; type: 'success'|'error' } | null>(null)
+  function showToast(msg: string, type: 'success'|'error') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  useEffect(() => {
+    async function load() {
+      const sb = createClient()
+      const [{ data: settings }, { data: hoursData }, { data: zonesData }] = await Promise.all([
+        sb.from('company_settings').select('key,value').in('key', ['whatsapp_phone_number_id','whatsapp_token','whatsapp_welcome_message']),
+        sb.from('business_hours').select('*').order('day_of_week'),
+        sb.from('coverage_zones').select('*').order('created_at'),
+      ])
+      if (settings) {
+        settings.forEach((s: any) => {
+          if (s.key === 'whatsapp_phone_number_id') setPhoneId(s.value ?? '')
+          if (s.key === 'whatsapp_token')           setWaToken(s.value ?? '')
+          if (s.key === 'whatsapp_welcome_message') setWelcome(s.value ?? '')
+        })
+      }
+      if (hoursData && (hoursData as any[]).length > 0) {
+        setHours(WA_DEFAULT_HOURS.map((d, i) => {
+          const row = (hoursData as any[]).find(h => h.day_of_week === i)
+          return row ? { ...d, is_open: row.is_open, start_time: row.start_time ?? '08:00', end_time: row.end_time ?? '18:00' } : d
+        }))
+      }
+      if (zonesData) {
+        setZones((zonesData as any[]).map(z => ({ id: z.id, name: z.name, is_active: z.is_active ?? true })))
+      }
+    }
+    load()
+  }, [])
+
+  async function verifyConnection() {
+    if (!phoneId || !waToken) { showToast('Ingresa el Phone Number ID y el Token', 'error'); return }
+    setVerifyStatus('checking')
+    try {
+      const res  = await fetch(`https://graph.facebook.com/v19.0/${phoneId}?access_token=${waToken}`)
+      const data = await res.json()
+      setVerifyStatus(data.error ? 'error' : 'ok')
+    } catch { setVerifyStatus('error') }
+  }
+
+  async function saveConnection() {
+    setSavingConn(true)
+    const sb = createClient()
+    await Promise.all([
+      sb.from('company_settings').upsert({ key: 'whatsapp_phone_number_id', value: phoneId }, { onConflict: 'key' }),
+      sb.from('company_settings').upsert({ key: 'whatsapp_token',           value: waToken }, { onConflict: 'key' }),
+    ])
+    setSavingConn(false)
+    showToast('Credenciales guardadas ✓', 'success')
+  }
+
+  async function saveHours() {
+    setSavingHours(true)
+    const rows = hours.map(h => ({ day_of_week: h.day, day_label: h.label, is_open: h.is_open, start_time: h.start_time, end_time: h.end_time }))
+    const { error } = await createClient().from('business_hours').upsert(rows, { onConflict: 'day_of_week' })
+    setSavingHours(false)
+    if (error) { showToast('Error: ' + error.message, 'error'); return }
+    showToast('Horario guardado ✓', 'success')
+  }
+
+  async function addZone() {
+    const name = newZone.trim()
+    if (!name) return
+    const { data, error } = await createClient().from('coverage_zones').insert({ name, is_active: true }).select().single()
+    if (error) { showToast('Error: ' + error.message, 'error'); return }
+    setZones(prev => [...prev, { id: (data as any).id, name: (data as any).name, is_active: true }])
+    setNewZone('')
+  }
+
+  async function deleteZone(idx: number) {
+    const z = zones[idx]
+    if (z.id) await createClient().from('coverage_zones').delete().eq('id', z.id)
+    setZones(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  async function saveZones() {
+    setSavingZones(true)
+    const sb = createClient()
+    await Promise.all(zones.filter(z => z.id).map(z =>
+      sb.from('coverage_zones').update({ is_active: z.is_active }).eq('id', z.id!)
+    ))
+    setSavingZones(false)
+    showToast('Zonas guardadas ✓', 'success')
+  }
+
+  async function saveWelcome() {
+    setSavingWelcome(true)
+    await createClient().from('company_settings').upsert({ key: 'whatsapp_welcome_message', value: welcome }, { onConflict: 'key' })
+    setSavingWelcome(false)
+    showToast('Mensaje guardado ✓', 'success')
+  }
+
+  const INP: React.CSSProperties = { width:'100%', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'10px 12px', color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box' }
+  const LBL: React.CSSProperties = { display:'block', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#888580', marginBottom:6 }
+  function SaveBtn({ loading, onClick, label = 'Guardar' }: { loading: boolean; onClick: () => void; label?: string }) {
+    return (
+      <button onClick={onClick} disabled={loading}
+        style={{ padding:'10px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:loading?'default':'pointer', opacity:loading?0.7:1 }}>
+        {loading ? 'Guardando…' : label}
+      </button>
+    )
+  }
+
+  return (
+    <>
+      <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:700 }} onClick={onClose} />
+      <div style={{ position:'fixed', top:0, right:0, width:500, height:'100vh', zIndex:800, background:'#141416', borderLeft:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+
+        {/* Header */}
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <div style={{ width:36, height:36, borderRadius:8, background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#22c55e' }}>WA</div>
+            <div>
+              <div style={{ fontSize:15, fontWeight:700, color:'#f0ede8' }}>WhatsApp Business</div>
+              <div style={{ fontSize:11, color:'#888580' }}>Configuración y automatización</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.06)', padding:'0 24px', flexShrink:0 }}>
+          {WA_TABS.map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)}
+              style={{ background:'transparent', border:'none', cursor:'pointer', padding:'12px 14px', fontSize:12, fontFamily:'Outfit,sans-serif', fontWeight:tab===t.key?700:400, color:tab===t.key?'#c9a84c':'#888580', borderBottom:`2px solid ${tab===t.key?'#c9a84c':'transparent'}`, marginBottom:-1, transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Body */}
+        <div style={{ flex:1, overflowY:'auto', padding:24 }}>
+
+          {/* ── Conexión ── */}
+          {tab === 'connection' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+              <div>
+                <label style={LBL}>Phone Number ID</label>
+                <input style={INP} value={phoneId} onChange={e => { setPhoneId(e.target.value); setVerifyStatus('idle') }} placeholder="1234567890123456" />
+              </div>
+              <div>
+                <label style={LBL}>WhatsApp Token</label>
+                <input style={INP} type="password" value={waToken} onChange={e => { setWaToken(e.target.value); setVerifyStatus('idle') }} placeholder="EAAxxxxxxxx…" />
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <button onClick={verifyConnection} disabled={verifyStatus==='checking'}
+                  style={{ padding:'9px 18px', borderRadius:8, border:'1px solid rgba(201,168,76,0.35)', background:'#1a1a1e', color:'#c9a84c', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:verifyStatus==='checking'?'default':'pointer', opacity:verifyStatus==='checking'?0.7:1 }}>
+                  {verifyStatus === 'checking' ? 'Verificando…' : 'Verificar conexión'}
+                </button>
+                {verifyStatus === 'ok'    && <span style={{ fontSize:12, color:'#22c55e' }}>✅ Conectado</span>}
+                {verifyStatus === 'error' && <span style={{ fontSize:12, color:'#ff4f4f' }}>❌ Token inválido</span>}
+              </div>
+              <div><SaveBtn loading={savingConn} onClick={saveConnection} label="Guardar credenciales" /></div>
+            </div>
+          )}
+
+          {/* ── Horario ── */}
+          {tab === 'hours' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ fontSize:12, color:'#888580' }}>Define el horario de atención. Fuera de este horario el bot puede responder automáticamente.</div>
+              <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', background:'#1a1a1e', borderBottom:'1px solid rgba(255,255,255,0.06)', padding:'8px 14px', gap:8 }}>
+                  {['Día','Abierto','Apertura','Cierre'].map(h => (
+                    <div key={h} style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                  ))}
+                </div>
+                {hours.map((h, i) => (
+                  <div key={h.day} style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', alignItems:'center', padding:'10px 14px', gap:8, background:i%2===0?'#141416':'#1a1a1e', borderBottom:i<6?'1px solid rgba(255,255,255,0.04)':'none' }}>
+                    <span style={{ fontSize:13, color:'#f0ede8', fontWeight:500 }}>{h.label}</span>
+                    <Toggle on={h.is_open} onChange={() => setHours(prev => prev.map((d,j) => j===i ? {...d, is_open:!d.is_open} : d))} />
+                    <input type="time" disabled={!h.is_open} value={h.start_time}
+                      onChange={e => setHours(prev => prev.map((d,j) => j===i ? {...d, start_time:e.target.value} : d))}
+                      style={{ ...INP, padding:'6px 10px', fontSize:12, opacity:h.is_open?1:0.3, cursor:h.is_open?'auto':'not-allowed' }} />
+                    <input type="time" disabled={!h.is_open} value={h.end_time}
+                      onChange={e => setHours(prev => prev.map((d,j) => j===i ? {...d, end_time:e.target.value} : d))}
+                      style={{ ...INP, padding:'6px 10px', fontSize:12, opacity:h.is_open?1:0.3, cursor:h.is_open?'auto':'not-allowed' }} />
+                  </div>
+                ))}
+              </div>
+              <div><SaveBtn loading={savingHours} onClick={saveHours} label="Guardar horario" /></div>
+            </div>
+          )}
+
+          {/* ── Zonas ── */}
+          {tab === 'zones' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ fontSize:12, color:'#888580' }}>Define las zonas de cobertura del servicio.</div>
+              <div style={{ display:'flex', gap:8 }}>
+                <input style={{ ...INP, flex:1 }} value={newZone} onChange={e => setNewZone(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addZone()}
+                  placeholder="ej. Dubai Marina, Palm Jumeirah…" />
+                <button onClick={addZone}
+                  style={{ padding:'10px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
+                  + Agregar
+                </button>
+              </div>
+              {zones.length === 0 ? (
+                <div style={{ padding:'24px 0', textAlign:'center', color:'#3a3836', fontSize:12 }}>No hay zonas. Agrega la primera zona de cobertura.</div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                  {zones.map((z, i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8 }}>
+                      <Toggle on={z.is_active} onChange={() => setZones(prev => prev.map((x,j) => j===i ? {...x, is_active:!x.is_active} : x))} />
+                      <span style={{ flex:1, fontSize:13, color:z.is_active?'#f0ede8':'#888580' }}>{z.name}</span>
+                      <button onClick={() => deleteZone(i)}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'#3a3836', padding:4, display:'flex', alignItems:'center', transition:'color 0.15s' }}
+                        onMouseEnter={e => (e.currentTarget.style.color='#ff4f4f')}
+                        onMouseLeave={e => (e.currentTarget.style.color='#3a3836')}>
+                        <Trash2 size={14}/>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div><SaveBtn loading={savingZones} onClick={saveZones} label="Guardar zonas" /></div>
+            </div>
+          )}
+
+          {/* ── Bienvenida ── */}
+          {tab === 'welcome' && (
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ fontSize:12, color:'#888580' }}>Este mensaje se envía automáticamente cuando un cliente escribe por primera vez.</div>
+              <div>
+                <label style={LBL}>Mensaje de bienvenida</label>
+                <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={8}
+                  placeholder="Hola! 👋 Bienvenido a NOIREM. ¿En qué podemos ayudarte hoy?"
+                  style={{ ...INP, resize:'vertical', lineHeight:1.6 }} />
+              </div>
+              <div style={{ padding:'12px 16px', background:'rgba(201,168,76,0.06)', border:'1px solid rgba(201,168,76,0.15)', borderRadius:8, fontSize:11, color:'#888580', lineHeight:1.7 }}>
+                <strong style={{ color:'#c9a84c' }}>Variables disponibles:</strong><br/>
+                <code style={{ color:'#c9a84c' }}>{'{{name}}'}</code> — Nombre del cliente &nbsp;|&nbsp;
+                <code style={{ color:'#c9a84c' }}>{'{{date}}'}</code> — Fecha actual &nbsp;|&nbsp;
+                <code style={{ color:'#c9a84c' }}>{'{{company}}'}</code> — Tu empresa
+              </div>
+              <div><SaveBtn loading={savingWelcome} onClick={saveWelcome} label="Guardar mensaje" /></div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {toast && (
+        <div style={{ position:'fixed', bottom:24, right:24, zIndex:900, padding:'12px 18px', borderRadius:10, fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', color:'#fff', background:toast.type==='success'?'rgba(34,197,94,0.95)':'rgba(255,79,79,0.95)', boxShadow:'0 4px 20px rgba(0,0,0,0.4)', backdropFilter:'blur(8px)' }}>
+          {toast.msg}
+        </div>
+      )}
+    </>
+  )
+}
+
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const { t } = useLanguage()
-  const [enabled, setEnabled] = useState<Record<string, boolean>>({ whatsapp: true, stripe: false, gcal: true, gmail: false, zapier: false })
+  const [enabled,     setEnabled]     = useState<Record<string, boolean>>({ whatsapp: true, stripe: false, gcal: true, gmail: false, zapier: false })
+  const [showWAPanel, setShowWAPanel] = useState(false)
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('integrations')}</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('connectApps')}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>{t('integrations')}</div>
+      <div style={{ fontSize:12, color:'var(--text2)', marginBottom:24 }}>{t('connectApps')}</div>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
         {INTEGRATIONS.map(int => (
-          <div key={int.key} className="glass" style={{ padding: 18, display: 'flex', gap: 14, alignItems: 'center' }}>
-            <div style={{ width: 44, height: 44, borderRadius: 10, background: `${int.color}18`, border: `1px solid ${int.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: int.color, flexShrink: 0 }}>
+          <div key={int.key} className="glass" style={{ padding:18, display:'flex', gap:14, alignItems:'center', cursor:int.key==='whatsapp'?'pointer':'default', transition:'border-color 0.15s' }}
+            onClick={() => int.key === 'whatsapp' && setShowWAPanel(true)}>
+            <div style={{ width:44, height:44, borderRadius:10, background:`${int.color}18`, border:`1px solid ${int.color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:int.color, flexShrink:0 }}>
               {int.initials}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 3 }}>{int.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--text2)' }}>{int.desc}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:13, fontWeight:700, marginBottom:3 }}>{int.name}</div>
+              <div style={{ fontSize:11, color:'var(--text2)' }}>
+                {int.key === 'whatsapp' ? 'Clic para configurar →' : int.desc}
+              </div>
             </div>
-            <button onClick={() => setEnabled({...enabled, [int.key]: !enabled[int.key]})}
-              style={{ width: 42, height: 22, borderRadius: 99, border: 'none', cursor: 'pointer', position: 'relative', flexShrink: 0, background: enabled[int.key] ? 'var(--gold)' : 'var(--bg3)', transition: 'background 0.2s' }}>
-              <div style={{ position: 'absolute', top: 3, left: enabled[int.key] ? 22 : 3, width: 16, height: 16, borderRadius: '50%', background: enabled[int.key] ? '#000' : 'var(--text2)', transition: 'left 0.2s' }}/>
-            </button>
+            {int.key !== 'whatsapp' ? (
+              <button onClick={e => { e.stopPropagation(); setEnabled(p => ({...p, [int.key]:!p[int.key]})) }}
+                style={{ width:42, height:22, borderRadius:99, border:'none', cursor:'pointer', position:'relative', flexShrink:0, background:enabled[int.key]?'var(--gold)':'var(--bg3)', transition:'background 0.2s' }}>
+                <div style={{ position:'absolute', top:3, left:enabled[int.key]?22:3, width:16, height:16, borderRadius:'50%', background:enabled[int.key]?'#000':'var(--text2)', transition:'left 0.2s' }}/>
+              </button>
+            ) : (
+              <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:99, background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'#22c55e', whiteSpace:'nowrap' }}>ACTIVO</span>
+            )}
           </div>
         ))}
       </div>
+      {showWAPanel && <WhatsAppConfigPanel onClose={() => setShowWAPanel(false)} />}
     </div>
   )
 }
