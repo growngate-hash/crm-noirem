@@ -219,9 +219,17 @@ export default function ContactsPage() {
 
   // open edit modal pre-filled
   function openEdit(c: any) {
+    console.log('Contacto a editar:', JSON.stringify(c, null, 2))
     setEditContact(c)
+
+    // Dirección: preferir contacts.address, si null buscar en booking más reciente
+    const sortedBk = [...(c.bookings ?? [])].sort((a: any, b: any) =>
+      new Date(b.scheduled_at ?? 0).getTime() - new Date(a.scheduled_at ?? 0).getTime()
+    )
+    const resolvedAddress = c.address || sortedBk.find((b: any) => b.address)?.address || ''
+
     if (c.tipo === 'proveedor') {
-      setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', supplier_type: c.supplier_type ?? '', address: c.address ?? '', notes: c.notes ?? '' })
+      setEditForm({ name: c.name ?? '', phone: c.phone ?? '', email: c.email ?? '', supplier_type: c.supplier_type ?? '', address: resolvedAddress, notes: c.notes ?? '' })
     } else {
       const v0 = c.vehicles?.[0]
       const SKIP = ['', 'N/A', 'Unknown']
@@ -234,7 +242,7 @@ export default function ContactsPage() {
         license_plate: v0?.license_plate ?? c.license_plate ?? '',
         vehicle_id: v0?.id ?? null,
         tier: c.tier ?? 'VIP',
-        address: c.address ?? '', notes: c.notes ?? '',
+        address: resolvedAddress, notes: c.notes ?? '',
       })
     }
   }
