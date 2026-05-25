@@ -452,7 +452,7 @@ export default function BookingPage() {
   useEffect(()=>{
     if(!selDate||!selService)return
     setBlockedMap({});setLoadingSlots(true)
-    fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`)
+    fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`, { cache: 'no-store' })
       .then(r=>r.json())
       .then(({blocked})=>{
         const m:Record<string,string>={}

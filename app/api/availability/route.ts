@@ -54,17 +54,28 @@ function overlaps(block: Block, slotStart: number, slotEnd: number): boolean {
   return slotStart < block.endMin && block.startMin < slotEnd
 }
 
+function noCache(data: object, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
+  })
+}
+
 export async function GET(req: NextRequest) {
   const params    = req.nextUrl.searchParams
   const date      = params.get('date')       // YYYY-MM-DD (required)
   const serviceId = params.get('service_id') // optional
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
+    return noCache({ error: 'Invalid date' }, 400)
   }
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceKey) return NextResponse.json({ error: 'Server config error' }, { status: 500 })
+  if (!serviceKey) return noCache({ error: 'Server config error' }, 500)
 
   const sb = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -108,7 +119,7 @@ export async function GET(req: NextRequest) {
 
   // ── Día cerrado según business_hours ──────────────────────────────────────
   if (!businessHour?.is_open) {
-    return NextResponse.json({ available: [], blocked: [], closed: true })
+    return noCache({ available: [], blocked: [], closed: true })
   }
 
   // ── Parámetros dinámicos ──────────────────────────────────────────────────
@@ -199,5 +210,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ available, blocked, requestedDurMin, bufferMin: BUFFER_MIN })
+  return noCache({ available, blocked, requestedDurMin, bufferMin: BUFFER_MIN })
 }
