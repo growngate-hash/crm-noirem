@@ -227,5 +227,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return noCache({ available, blocked, requestedDurMin, bufferMin: BUFFER_MIN })
+  return noCache({ available, blocked, requestedDurMin, bufferMin: BUFFER_MIN, timezone })
 }

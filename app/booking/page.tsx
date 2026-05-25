@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { localToUTCWithTz } from '@/utils/timezone'
 
 // ── Design tokens — dark luxury ────────────────────────────────────────────────
 const GOLD   = '#D4AF37'
@@ -83,11 +84,11 @@ function generateTimeSlots(_svc:Service|null):TimeSlot[] {
   }
   return slots
 }
-function slotToUTC(date:Date,hourStart:number):string {
-  const ymd=toYMD(date)
-  const hStr=String(Math.floor(hourStart)).padStart(2,'0')
-  const mStr=String(Math.round((hourStart%1)*60)).padStart(2,'0')
-  return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
+function slotToUTC(date:Date, hourStart:number, tz:string):string {
+  const ymd  = toYMD(date)
+  const hStr = String(Math.floor(hourStart)).padStart(2,'0')
+  const mStr = String(Math.round((hourStart%1)*60)).padStart(2,'0')
+  return localToUTCWithTz(ymd, `${hStr}:${mStr}`, tz)
 }
 function buildAddress(f:CustomerForm):string {
   return [f.address,f.villa_flat,f.area,f.community,f.address_notes].filter(Boolean).join(', ')
@@ -405,6 +406,7 @@ export default function BookingPage() {
   const [services,setServices]       = useState<Service[]>([])
   const [blockedMap,setBlockedMap]   = useState<Record<string,string>>({})
   const [loadingSlots,setLoadingSlots] = useState(false)
+  const [timezone,   setTimezone]      = useState('Asia/Dubai')
 
   const [selCategory,setSelCategory] = useState<Category|null>(null)
   const [selService, setSelService]  = useState<Service|null>(null)
@@ -454,7 +456,8 @@ export default function BookingPage() {
     setBlockedMap({});setLoadingSlots(true)
     fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`, { cache: 'no-store' })
       .then(r=>r.json())
-      .then(({blocked})=>{
+      .then(({blocked, timezone:tz})=>{
+        if(tz) setTimezone(tz)
         const m:Record<string,string>={}
         for(const b of (blocked??[])) m[b.slot]=b.reason
         setBlockedMap(m)
@@ -475,7 +478,7 @@ export default function BookingPage() {
     const { error: dbErr } = await createClient().from('booking_requests').insert({
       service_id:       selService.id,
       service_name:     selService.name,
-      scheduled_at:     slotToUTC(selDate, selTime),
+      scheduled_at:     slotToUTC(selDate, selTime, timezone),
       customer_name:    cf.full_name,
       customer_phone:   cf.whatsapp,
       vehicle_make_model: cf.vehicle_model || null,
