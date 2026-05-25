@@ -26,7 +26,17 @@ export async function middleware(request: NextRequest) {
   // Refresca la sesión — no agregar lógica entre createServerClient y getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
+  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+
+  // Autenticado en /login → redirigir al dashboard
+  if (user && isLoginPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
+  // No autenticado fuera del login → redirigir al login
+  if (!user && !isLoginPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)
@@ -43,10 +53,11 @@ export const config = {
      * - favicon.ico
      * - api/availability            (pública — la usa /booking sin auth)
      * - api/whatsapp/webhook        (pública — Meta llama sin auth)
-     * - booking                     (página pública de reservas)
-     * - login / auth                (flujo de autenticación)
+     * - booking                     (página pública de reservas para clientes)
+     * - auth                        (callbacks de OAuth)
      * - archivos de imagen
+     * /login SÍ está incluido para poder redirigir usuarios ya autenticados al dashboard
      */
-    '/((?!_next/static|_next/image|favicon\\.ico|api/availability|api/whatsapp/webhook|booking|login|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|api/availability|api/whatsapp/webhook|booking|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
