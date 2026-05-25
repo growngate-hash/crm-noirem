@@ -26,7 +26,7 @@ interface TemplateConfig {
 }
 
 export function InvoiceViewer({ invoice, onClose }: Props) {
-  const { companyName, companySubtitle } = useCompany()
+  const { companyName, companySubtitle, timezone } = useCompany()
   const invoiceRef = useRef<HTMLDivElement>(null)
   const [downloading, setDownloading] = useState(false)
   const [tpl, setTpl] = useState<TemplateConfig>({
@@ -74,9 +74,9 @@ export function InvoiceViewer({ invoice, onClose }: Props) {
   }, [companyName, companySubtitle])
 
   const invoiceNo  = invoice.invoice_no ?? invoice.id?.slice(0, 8).toUpperCase()
-  const issueDate  = new Date(invoice.issued_at ?? invoice.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })
-  const dueDate    = invoice.due_at ? new Date(invoice.due_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : null
-  const paidDate   = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' }) : null
+  const issueDate  = new Date(invoice.issued_at ?? invoice.created_at).toLocaleDateString('en-AE', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' })
+  const dueDate    = invoice.due_at ? new Date(invoice.due_at).toLocaleDateString('en-AE', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : null
+  const paidDate   = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString('en-AE', { timeZone: timezone, year: 'numeric', month: 'long', day: 'numeric' }) : null
   const clientName = invoice.contacts?.name ?? invoice.contacts?.full_name ?? 'Cliente'
   const subtotal   = Number(invoice.subtotal ?? 0)
   const tax        = Number(invoice.tax ?? 0)

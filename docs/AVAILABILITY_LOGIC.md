@@ -84,7 +84,7 @@ Expires: 0
 
 ## 3. FUENTES DE DATOS
 
-La API lanza **4 queries en paralelo** con `Promise.all`:
+La API lanza **5 queries en paralelo** con `Promise.all`:
 
 ### `business_hours`
 ```sql
@@ -104,6 +104,15 @@ SELECT travel_time_minutes FROM company_settings LIMIT 1
 - Define el buffer de traslado que se aplica antes y después de cada reserva.
 - Fallback si la columna es NULL: `FALLBACK_BUFFER = 30` minutos.
 
+### `business_settings`
+```sql
+SELECT timezone FROM business_settings LIMIT 1
+```
+- Zona horaria IANA de la empresa (ej. `'Asia/Dubai'`, `'America/Bogota'`).
+- Usada para convertir los límites del día a UTC y para interpretar las horas de los bookings existentes.
+- Fallback si la fila no existe: `FALLBACK_TZ = 'Asia/Dubai'`.
+- Se configura desde el panel de Ajustes → Configuración (ver §8).
+
 ### `vehicles`
 ```sql
 SELECT id FROM vehicles
@@ -116,15 +125,18 @@ WHERE contact_id IS NULL
 
 ### `bookings` (query posterior, no en el Promise.all inicial)
 ```sql
+-- Los límites se calculan con localToUTCWithTz():
+--   dayStart = localToUTCWithTz(date, '00:00:00', timezone)
+--   dayEnd   = localToUTCWithTz(date, '23:59:59', timezone)
 SELECT vehicle_id, scheduled_at, end_at,
        services(duration_minutes, duration, duration_hrs)
 FROM bookings
-WHERE scheduled_at >= '$date T00:00:00+04:00'
-  AND scheduled_at <= '$date T23:59:59+04:00'
+WHERE scheduled_at >= dayStart
+  AND scheduled_at <= dayEnd
   AND status != 'cancelled'
   AND vehicle_id IS NOT NULL
 ```
-- Reservas del día en zona horaria Dubai (UTC+4).
+- Reservas del día en la zona horaria de la empresa (leída de `business_settings.timezone`).
 - Incluye el servicio asociado para calcular la duración si falta `end_at`.
 
 ### `services`
@@ -180,16 +192,21 @@ const slotKey = `${String(Math.floor(slot.start)).padStart(2,'0')}` +
 // 13  → "13:00"
 ```
 
-### Conversión de zona horaria: UTC → Dubai (UTC+4)
+### Conversión de zona horaria: UTC → minutos locales
 
 ```typescript
-// dubaiMinutes() en availability/route.ts
-function dubaiMinutes(isoStr: string): number {
+// localMinutes() en availability/route.ts — DST-safe, cualquier timezone IANA
+function localMinutes(isoStr: string, timezone: string): number {
   const d = new Date(isoStr)
-  const h = (d.getUTCHours() + 4) % 24
-  return h * 60 + d.getUTCMinutes()
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d)
+  const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0')
+  const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0')
+  return (h === 24 ? 0 : h) * 60 + m
 }
-// "2026-05-24T06:00:00Z" → hora Dubai = 10:00 → 600 minutos
+// "2026-05-24T06:00:00Z" en 'Asia/Dubai' (UTC+4) → 10:00 → 600 minutos
+// Reemplaza la antigua dubaiMinutes() que usaba offset fijo (d.getUTCHours() + 4)
 ```
 
 ### Conversión de día de semana
@@ -246,11 +263,11 @@ Un slot se **bloquea** si `slotStart < blockEnd && blockStart < slotEnd`:
 
 ```typescript
 // bookingToBlock() en availability/route.ts
-function bookingToBlock(scheduled_at, end_at, svc, bufferMin, closeMin): Block {
-  const startMin  = dubaiMinutes(scheduled_at)
+function bookingToBlock(scheduled_at, end_at, svc, bufferMin, closeMin, timezone): Block {
+  const startMin  = localMinutes(scheduled_at, timezone)
   let   durMin    = FALLBACK_DUR  // 60
   if (end_at) {
-    const diff = dubaiMinutes(end_at) - startMin
+    const diff = localMinutes(end_at, timezone) - startMin
     durMin = diff > 0 ? diff : FALLBACK_DUR
   } else if (svc) {
     durMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
@@ -366,6 +383,14 @@ Valores numéricos menores de 24 se interpretan como horas y se convierten a min
 | `end_time`   | time    | Hora de cierre, ej. `"18:00"`         |
 | `is_open`    | boolean | `false` → día cerrado                 |
 
+### Zona horaria
+
+**Dónde:** Ajustes → Configuración → campo **Zona Horaria**  
+**Tabla:** `business_settings.timezone` (texto IANA, ej. `'Asia/Dubai'`, `'Europe/Madrid'`)  
+**Efecto:** Determina en qué timezone se interpretan los horarios de atención y se generan los slots  
+**Fallback en la API:** `'Asia/Dubai'` si la fila no existe  
+**No requiere reiniciar** el servidor — la API lee el valor en cada request
+
 ### Estado de vehículos
 
 **Dónde:** Módulo **Vehículos** → columna `status`  
@@ -400,27 +425,25 @@ for (let hour = 8; hour < 18; hour += 0.5)
 for (let hour = 8; hour < 18; hour += 0.25)
 ```
 
-### Cambiar la zona horaria (Dubai UTC+4 → otra)
+### Cambiar la zona horaria
 
-**Archivo:** [app/api/availability/route.ts](../app/api/availability/route.ts) — función `dubaiMinutes`
+La zona horaria **no se modifica editando código**. Se gestiona desde la base de datos:
 
-```typescript
-// Actual (Dubai UTC+4):
-const h = (d.getUTCHours() + 4) % 24
+**Desde el panel del CRM:**  
+Ajustes → Configuración → Zona Horaria → seleccionar timezone IANA
 
-// Para Riyadh UTC+3:
-const h = (d.getUTCHours() + 3) % 24
-
-// Para London UTC+1:
-const h = (d.getUTCHours() + 1) % 24
+**Directamente en base de datos:**
+```sql
+UPDATE business_settings SET timezone = 'America/Bogota';
+-- o: 'Europe/Madrid', 'Asia/Riyadh', 'America/New_York', etc.
 ```
 
-También cambiar `slotToUTC` en [app/booking/page.tsx](../app/booking/page.tsx) para que el
-booking se envíe en la zona correcta:
-```typescript
-// Actual: +04:00 (Dubai)
-return new Date(`${ymd}T${hStr}:${mStr}:00.000+04:00`).toISOString()
-```
+La API lee el nuevo valor en cada request sin reiniciar el servidor.  
+El fallback `FALLBACK_TZ = 'Asia/Dubai'` solo aplica si la fila de `business_settings` no existe.
+
+> **Pendiente:** `slotToUTC` en [app/booking/page.tsx](../app/booking/page.tsx) aún usa `+04:00`
+> hardcodeado. Hasta que se resuelva, el timezone de la página pública de reservas no sigue
+> esta configuración. Ver backlog (Fase 3).
 
 ### Cambiar el fallback de duración de servicio
 

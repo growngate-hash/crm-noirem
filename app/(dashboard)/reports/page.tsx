@@ -693,7 +693,7 @@ export default function ReportsPage() {
                 <div>
                   <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</div>
                   <div style={{ fontSize:11, color:'#888580', marginTop:2 }}>
-                    {inv.invoice_no} · {new Date(inv.created_at).toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' })}
+                    {inv.invoice_no} · {new Date(inv.created_at).toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai', day:'2-digit', month:'2-digit', year:'numeric' })}
                   </div>
                 </div>
                 <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -727,7 +727,7 @@ export default function ReportsPage() {
                     <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{inv.contacts?.name ?? inv.supplier_name ?? '—'}</div>
                     <div style={{ fontSize:11, color: isOverdue ? '#ff4f4f' : '#888580', marginTop:2 }}>
                       {inv.invoice_number}
-                      {inv.due_date ? ` · vence ${new Date(inv.due_date + 'T12:00:00').toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' })}` : ''}
+                      {inv.due_date ? ` · vence ${new Date(inv.due_date + 'T00:00:00+04:00').toLocaleDateString('en-AE', { day:'2-digit', month:'2-digit', year:'numeric' })}` : ''}
                       {isOverdue ? ' · VENCIDA' : ''}
                     </div>
                   </div>
