@@ -90,8 +90,7 @@ export async function GET(req: NextRequest) {
       .maybeSingle(),
 
     sb.from('company_settings')
-      .select('value')
-      .eq('key', 'travel_time_minutes')
+      .select('travel_time_minutes')
       .maybeSingle(),
 
     serviceId
@@ -113,7 +112,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ── Parámetros dinámicos ──────────────────────────────────────────────────
-  const BUFFER_MIN = parseInt(travelSetting?.value ?? '') || FALLBACK_BUFFER
+  const BUFFER_MIN = travelSetting?.travel_time_minutes ?? FALLBACK_BUFFER
 
   const [startH, startM = 0] = (businessHour.start_time ?? '08:00').split(':').map(Number)
   const [endH,   endM   = 0] = (businessHour.end_time   ?? '18:00').split(':').map(Number)
@@ -170,7 +169,7 @@ export async function GET(req: NextRequest) {
 
   for (const slot of BASE_SLOTS) {
     const slotStart = toMinutes(slot)
-    const slotEnd   = slotStart + 60  // ventana de 1h para detectar solapamiento
+    const slotEnd   = slotStart + requestedDurMin
 
     // El servicio solicitado debe caber íntegro antes del cierre
     if (slotStart + requestedDurMin > CLOSE_MIN) {
