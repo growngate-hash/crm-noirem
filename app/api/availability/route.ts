@@ -1,9 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
-const BASE_SLOTS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00']
-const BUFFER_MIN  = 60
-const CLOSE_MIN   = 18 * 60 // hard close: no service may end after 18:00
+const FALLBACK_BUFFER = 30  // si company_settings no tiene travel_time_minutes
+const FALLBACK_DUR    = 60  // si el booking no tiene end_at ni el servicio tiene duración
 
 function toMinutes(slot: string): number {
   const [h, m] = slot.split(':').map(Number)
@@ -12,14 +11,14 @@ function toMinutes(slot: string): number {
 
 function parseDuration(raw: unknown): number {
   if (typeof raw === 'number' && raw > 0) return raw
-  if (typeof raw !== 'string' || !raw) return 60
+  if (typeof raw !== 'string' || !raw) return FALLBACK_DUR
   const num = parseFloat(raw)
   if (!isNaN(num) && num > 0) return num < 24 ? Math.round(num * 60) : Math.round(num)
   const hMatch = raw.match(/(\d+(?:\.\d+)?)\s*h/i)
   if (hMatch) return Math.round(parseFloat(hMatch[1]) * 60)
   const mMatch = raw.match(/(\d+)\s*m/i)
   if (mMatch) return parseInt(mMatch[1])
-  return 60
+  return FALLBACK_DUR
 }
 
 function dubaiMinutes(isoStr: string): number {
@@ -31,20 +30,24 @@ function dubaiMinutes(isoStr: string): number {
 type ServiceShape = { duration_minutes?: number; duration?: string; duration_hrs?: string }
 type Block = { startMin: number; endMin: number }
 
-function bookingToBlock(scheduled_at: string, end_at: string | null, svc: ServiceShape | null): Block {
-  // dubaiMinutes converts UTC ISO → Dubai local minutes-from-midnight (UTC+4)
+function bookingToBlock(
+  scheduled_at: string,
+  end_at: string | null,
+  svc: ServiceShape | null,
+  bufferMin: number,
+  closeMin: number,
+): Block {
   const startMin = dubaiMinutes(scheduled_at)
-  let durMin = 60
+  let durMin = FALLBACK_DUR
   if (end_at) {
     const diff = dubaiMinutes(end_at) - startMin
-    durMin = diff > 0 ? diff : 60
+    durMin = diff > 0 ? diff : FALLBACK_DUR
   } else if (svc) {
     durMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
   }
   const serviceEnd = startMin + durMin
-  // No post-buffer if the service ends at or after closing time — the day is over
-  const blockEnd = serviceEnd >= CLOSE_MIN ? serviceEnd : serviceEnd + BUFFER_MIN
-  return { startMin: startMin - BUFFER_MIN, endMin: blockEnd }
+  const blockEnd = serviceEnd >= closeMin ? serviceEnd : serviceEnd + bufferMin
+  return { startMin: startMin - bufferMin, endMin: blockEnd }
 }
 
 function overlaps(block: Block, slotStart: number, slotEnd: number): boolean {
@@ -53,16 +56,11 @@ function overlaps(block: Block, slotStart: number, slotEnd: number): boolean {
 
 export async function GET(req: NextRequest) {
   const params    = req.nextUrl.searchParams
-  const date      = params.get('date')        // YYYY-MM-DD (required)
-  const serviceId = params.get('service_id')  // optional
+  const date      = params.get('date')       // YYYY-MM-DD (required)
+  const serviceId = params.get('service_id') // optional
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Invalid date' }, { status: 400 })
-  }
-
-  // Sundays are closed — date is parsed as UTC so getUTCDay() is reliable
-  if (new Date(date).getUTCDay() === 0) {
-    return NextResponse.json({ available: [], blocked: [], reason: 'closed' })
   }
 
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -74,61 +72,109 @@ export async function GET(req: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // 1. Requested service duration
-  let requestedDurMin = 60
-  if (serviceId) {
-    const { data: svc } = await sb.from('services').select('*').eq('id', serviceId).single()
-    if (svc) {
-      requestedDurMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
-    }
+  // day_of_week en business_hours: 0=Lunes … 6=Domingo (igual que el panel de Settings)
+  // getUTCDay() devuelve 0=Domingo, 1=Lunes … 6=Sábado → conversión necesaria
+  const jsDay     = new Date(date).getUTCDay()
+  const dayOfWeek = (jsDay + 6) % 7  // 0=Mon … 6=Sun, igual que en la BD
+
+  // ── 4 queries en paralelo ──────────────────────────────────────────────────
+  const [
+    { data: businessHour },
+    { data: travelSetting },
+    { data: svc },
+    { data: vehiclesData },
+  ] = await Promise.all([
+    sb.from('business_hours')
+      .select('is_open, start_time, end_time')
+      .eq('day_of_week', dayOfWeek)
+      .maybeSingle(),
+
+    sb.from('company_settings')
+      .select('value')
+      .eq('key', 'travel_time_minutes')
+      .maybeSingle(),
+
+    serviceId
+      ? sb.from('services')
+          .select('duration_minutes, duration, duration_hrs')
+          .eq('id', serviceId)
+          .single()
+      : Promise.resolve({ data: null }),
+
+    sb.from('vehicles')
+      .select('id')
+      .is('contact_id', null)   // solo vehículos de empresa
+      .neq('status', 'inactivo'),
+  ])
+
+  // ── Día cerrado según business_hours ──────────────────────────────────────
+  if (!businessHour?.is_open) {
+    return NextResponse.json({ available: [], blocked: [], closed: true })
   }
 
-  // 2. Active vehicles in the fleet
-  const { data: vehiclesData } = await sb
-    .from('vehicles')
-    .select('id')
-    .neq('status', 'inactivo')
+  // ── Parámetros dinámicos ──────────────────────────────────────────────────
+  const BUFFER_MIN = parseInt(travelSetting?.value ?? '') || FALLBACK_BUFFER
 
+  const [startH, startM = 0] = (businessHour.start_time ?? '08:00').split(':').map(Number)
+  const [endH,   endM   = 0] = (businessHour.end_time   ?? '18:00').split(':').map(Number)
+  const OPEN_MIN  = startH * 60 + startM
+  const CLOSE_MIN = endH   * 60 + endM
+
+  // Slots generados dinámicamente desde apertura hasta cierre (uno por hora)
+  const BASE_SLOTS: string[] = []
+  for (let min = OPEN_MIN; min < CLOSE_MIN; min += 60) {
+    const h = Math.floor(min / 60)
+    const m = min % 60
+    BASE_SLOTS.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
+  }
+
+  // ── Duración del servicio solicitado ──────────────────────────────────────
+  let requestedDurMin = FALLBACK_DUR
+  if (svc) {
+    requestedDurMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
+  }
+
+  // ── Vehículos de empresa activos ──────────────────────────────────────────
   const vehicleIds: string[] = (vehiclesData ?? []).map((v: { id: string }) => v.id)
 
-  // 3. Non-cancelled bookings for the Dubai day (assigned to a vehicle only)
+  // ── Bookings del día (zona horaria Dubai UTC+4) ───────────────────────────
   const dayStart = new Date(`${date}T00:00:00+04:00`).toISOString()
   const dayEnd   = new Date(`${date}T23:59:59+04:00`).toISOString()
 
   const { data: dayBookings } = await sb
     .from('bookings')
-    .select('vehicle_id, scheduled_at, end_at, services(*)')
+    .select('vehicle_id, scheduled_at, end_at, services(duration_minutes, duration, duration_hrs)')
     .gte('scheduled_at', dayStart)
     .lte('scheduled_at', dayEnd)
     .neq('status', 'cancelled')
     .not('vehicle_id', 'is', null)
 
-  // 4. Build per-vehicle block sets
+  // ── Bloques ocupados por vehículo ─────────────────────────────────────────
   const vehicleBlocks: Record<string, Block[]> = {}
   for (const vid of vehicleIds) vehicleBlocks[vid] = []
 
   for (const b of (dayBookings ?? [])) {
     if (!b.vehicle_id || !b.scheduled_at) continue
     const vid = b.vehicle_id as string
-    if (!vehicleBlocks[vid]) vehicleBlocks[vid] = [] // booking for vehicle not in fleet
+    if (!vehicleBlocks[vid]) vehicleBlocks[vid] = []
     vehicleBlocks[vid].push(
-      bookingToBlock(b.scheduled_at, b.end_at, b.services as ServiceShape | null)
+      bookingToBlock(b.scheduled_at, b.end_at, b.services as ServiceShape | null, BUFFER_MIN, CLOSE_MIN)
     )
   }
 
-  // 5. Classify each base slot: available if ≥1 vehicle is free
+  // ── Clasificar cada slot ──────────────────────────────────────────────────
   const available: string[] = []
   const blocked: Array<{ slot: string; reason: string }> = []
 
-  // If fleet is empty, treat all within-hours slots as available
   const effectiveIds = vehicleIds.length > 0 ? vehicleIds : null
 
   for (const slot of BASE_SLOTS) {
-    const slotStart    = toMinutes(slot)
-    const slotEnd      = slotStart + 60 // 1-hour overlap window for existing bookings
-    // New service must finish by closing time (no self-buffer — buffer only applies to existing bookings)
+    const slotStart = toMinutes(slot)
+    const slotEnd   = slotStart + 60  // ventana de 1h para detectar solapamiento
+
+    // El servicio solicitado debe caber íntegro antes del cierre
     if (slotStart + requestedDurMin > CLOSE_MIN) {
-      blocked.push({ slot, reason: 'Fuera de horario (cierre 18:00)' })
+      blocked.push({ slot, reason: `Fuera de horario (cierre ${businessHour.end_time})` })
       continue
     }
 
@@ -137,10 +183,9 @@ export async function GET(req: NextRequest) {
       continue
     }
 
-    const freeVehicle = effectiveIds.find(vid => {
-      const blocks = vehicleBlocks[vid] ?? []
-      return !blocks.some(b => overlaps(b, slotStart, slotEnd))
-    })
+    const freeVehicle = effectiveIds.find(vid =>
+      !(vehicleBlocks[vid] ?? []).some(b => overlaps(b, slotStart, slotEnd))
+    )
 
     if (freeVehicle) {
       available.push(slot)
@@ -155,5 +200,5 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ available, blocked, requestedDurMin })
+  return NextResponse.json({ available, blocked, requestedDurMin, bufferMin: BUFFER_MIN })
 }

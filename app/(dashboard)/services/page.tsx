@@ -433,8 +433,9 @@ export default function ServicesPage() {
         name:        editServiceForm.name.trim(),
         description: editServiceForm.description.trim(),
         base_price:  parseFloat(editServiceForm.price) || 0,
-        duration:    editServiceForm.duration.trim(),
-        category:    editServiceForm.category.trim(),
+        duration:         editServiceForm.duration.trim(),
+        duration_minutes: durationToMinutes(editServiceForm.duration.trim()),
+        category:         editServiceForm.category.trim(),
         updated_at:  new Date().toISOString(),
       })
       .eq('id', editingService.id)
@@ -593,6 +594,17 @@ export default function ServicesPage() {
     addToast('Material eliminado','success')
   }
 
+  function durationToMinutes(raw: string): number | null {
+    if (!raw?.trim()) return null
+    const hMatch = raw.match(/(\d+(?:\.\d+)?)\s*h/i)
+    if (hMatch) return Math.round(parseFloat(hMatch[1]) * 60)
+    const mMatch = raw.match(/(\d+)\s*m/i)
+    if (mMatch) return parseInt(mMatch[1])
+    const num = parseFloat(raw)
+    if (!isNaN(num) && num > 0) return num < 24 ? Math.round(num * 60) : Math.round(num)
+    return null
+  }
+
   async function saveService() {
     if (!serviceForm.name.trim()) return
     setSaving(true)
@@ -600,6 +612,7 @@ export default function ServicesPage() {
       name: serviceForm.name, category: serviceForm.category,
       base_price: serviceForm.base_price ? Number(serviceForm.base_price) : null,
       description: serviceForm.description, duration_hrs: serviceForm.duration_hrs,
+      duration_minutes: durationToMinutes(serviceForm.duration_hrs),
       technician_count: Number(serviceForm.technician_count)||1,
       technician_level: serviceForm.technician_level, is_active: true,
     }).select('id').single()

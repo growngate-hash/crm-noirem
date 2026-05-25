@@ -232,6 +232,8 @@ export default function BookingsPage() {
   const [cancelReason,     setCancelReason]     = useState('')
   const [cancelledBookings,setCancelledBookings]= useState<any[]>([])
   const [showCancelled,    setShowCancelled]    = useState(false)
+  const [travelTime,       setTravelTime]       = useState<number>(30)
+  const [savingTravel,     setSavingTravel]     = useState(false)
   const toastId          = useRef(0)
   const lastCheckedAt    = useRef(new Date().toISOString())
 
@@ -300,8 +302,27 @@ export default function BookingsPage() {
     setLoadingV(false)
   }
 
+  async function saveTravelTime() {
+    setSavingTravel(true)
+    await createClient()
+      .from('company_settings')
+      .upsert({ key: 'travel_time_minutes', value: String(travelTime) }, { onConflict: 'key' })
+    setSavingTravel(false)
+    addToast('Tiempo de traslado guardado', 'success')
+  }
+
   // ── initial load + re-fetch when day changes ───────────────────────────────
   useEffect(()=>{ fetchRefs() },[])
+  useEffect(()=>{
+    createClient()
+      .from('company_settings')
+      .select('value')
+      .eq('key', 'travel_time_minutes')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.value) setTravelTime(parseInt(data.value) || 30)
+      })
+  },[])
   useEffect(()=>{
     fetchBookings(selectedDay)
     const interval = setInterval(()=>fetchBookings(selectedDay), 30000)
@@ -555,6 +576,29 @@ function getDemoForVehicle(vName:string):any[] {
           style={{padding:'8px 20px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',
             fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
           + {t('newBooking')}
+        </button>
+      </div>
+
+      {/* ── Travel time control ── */}
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,
+        padding:'10px 16px',borderRadius:10,background:'#141416',
+        border:'1px solid rgba(255,255,255,0.06)',alignSelf:'flex-start'}}>
+        <span style={{fontSize:12,color:'#888580',fontWeight:600,
+          textTransform:'uppercase',letterSpacing:'0.06em'}}>Traslado</span>
+        <input
+          type="number" min={0} max={120} value={travelTime}
+          onChange={e=>setTravelTime(Number(e.target.value))}
+          style={{width:52,background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',
+            borderRadius:6,padding:'4px 8px',color:'#f0ede8',fontSize:13,
+            fontFamily:'Outfit,sans-serif',textAlign:'center',outline:'none'}}
+        />
+        <span style={{fontSize:12,color:'#888580'}}>min</span>
+        <button onClick={saveTravelTime} disabled={savingTravel}
+          style={{padding:'5px 14px',borderRadius:6,border:'none',
+            background:'#c9a84c',color:'#0d0d0f',fontSize:12,fontWeight:700,
+            fontFamily:'Outfit,sans-serif',cursor:savingTravel?'default':'pointer',
+            opacity:savingTravel?0.6:1}}>
+          {savingTravel ? '…' : 'Guardar'}
         </button>
       </div>
 
