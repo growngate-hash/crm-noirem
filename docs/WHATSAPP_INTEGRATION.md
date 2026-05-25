@@ -270,6 +270,9 @@ const [services, zones, hours, settings, historyDesc, activeBookings] = await Pr
 
   supabase.from('company_settings').select('key, value')
     .in('key', ['company_name', 'company_phone', 'company_email', 'company_address']),
+  // NOTA: company_settings tiene estructura mixta. Esta query lee filas clave-valor
+  // (key/value columns). La API de disponibilidad lee travel_time_minutes como columna
+  // directa. Son dos mecanismos distintos sobre la misma tabla — ver BOOKING_CONTACTS_LOGIC.md §8.
 
   supabase.from('whatsapp_messages').select('role, content')
     .eq('phone', phone).order('created_at', { ascending: false }).limit(10),

@@ -88,7 +88,7 @@ CREATE POLICY "auth_manage_booking_requests"
 - **Trigger:** `trg_booking_request_to_bookings`
 - **Evento:** `AFTER INSERT ON booking_requests FOR EACH ROW`
 - **Seguridad:** `SECURITY DEFINER` — corre como el dueño de la función (postgres), ignorando RLS
-- **Archivo activo:** `20260524_trigger_company_vehicle_for_booking.sql`
+- **Archivo activo:** `20260524_trigger_add_end_at.sql` (reescribió la función completa para añadir cálculo de `end_at`)
 
 ### Paso a paso
 
@@ -145,11 +145,19 @@ LIMIT 1;
 
 **Paso 4 — Insertar booking**
 ```sql
-INSERT INTO bookings (contact_id, vehicle_id, service_id, scheduled_at, address, notes, price, status)
-VALUES (v_contact_id, v_company_vehicle_id, ...);
+INSERT INTO bookings (contact_id, vehicle_id, service_id, scheduled_at, end_at, address, notes, price, status)
+VALUES (
+  v_contact_id,
+  v_company_vehicle_id,
+  ...,
+  NEW.scheduled_at,
+  NEW.scheduled_at + (COALESCE(v_duration_minutes, 60) * interval '1 minute'),
+  ...
+);
 ```
 - `vehicle_id` apunta al **vehículo de empresa**, no al del cliente.
 - `contact_id` apunta al contacto del cliente.
+- `end_at` se calcula automáticamente desde `duration_minutes` del servicio (fallback: 60 min). La API de disponibilidad depende de este valor para calcular bloques ocupados — si es NULL, usa el fallback de 60 min.
 
 ### Manejo de errores
 ```sql
@@ -279,9 +287,10 @@ const { error } = await createClient().from('booking_requests').insert({ ... })
 
 ### Disponibilidad de slots
 ```typescript
-fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`)
+fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`, { cache: 'no-store' })
 ```
 Consulta `app/api/availability/route.ts` para obtener los slots bloqueados del día.
+`cache: 'no-store'` es obligatorio: browsers de WhatsApp y algunos móviles cachean agresivamente las respuestas fetch, lo que causaría que el cliente vea slots obsoletos. La API también devuelve cabeceras `Cache-Control: no-store` por el mismo motivo.
 
 ---
 
@@ -379,7 +388,13 @@ async function saveEdit() {
 
 7. **`NEXT_PUBLIC_SUPABASE_ANON_KEY` vs `SUPABASE_SERVICE_ROLE_KEY`.** El flujo de `/booking` solo necesita la anon key (política RLS pública). La service role key se necesita solo para operaciones admin. Actualmente `SUPABASE_SERVICE_ROLE_KEY` está vacío en `.env.local` — no es un problema para el flujo de booking.
 
-8. **El Gantt solo muestra vehículos de empresa.** Filtro `.is('contact_id', null)` en `app/(dashboard)/bookings/page.tsx`. Si un vehículo de empresa accidentalmente tiene `contact_id` asignado, desaparecerá del Gantt.
+8. **`company_settings` tiene estructura mixta.** La tabla se usa de dos formas distintas en el mismo proyecto:
+   - **Columna directa:** `travel_time_minutes INTEGER` — leída por la API de disponibilidad con `SELECT travel_time_minutes`.
+   - **Filas clave-valor:** columnas `key TEXT, value TEXT` — leídas por la Edge Function de WhatsApp para company_name, company_phone, company_email, company_address.
+   
+   El control "Traslado" del Gantt guarda via upsert key-value (`{ key: 'travel_time_minutes', value: '30' }`), pero la API lee la columna directa `travel_time_minutes`. **Ambos mecanismos no se sincronizan** — si el guardado desde el CRM no actualiza la columna directa, el cambio no tendrá efecto en la disponibilidad. Verificar qué schema está activo en Supabase.
+
+9. **El Gantt solo muestra vehículos de empresa.** Filtro `.is('contact_id', null)` en `app/(dashboard)/bookings/page.tsx`. Si un vehículo de empresa accidentalmente tiene `contact_id` asignado, desaparecerá del Gantt.
 
 ---
 
