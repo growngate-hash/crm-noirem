@@ -187,18 +187,6 @@ function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
 }
 
 // ─── vehicle agenda (today + tomorrow bookings) ───────────────────────────────
-function esMismaFechaDubai(utcDate: string, fecha: Date): boolean {
-  const date = new Date(utcDate)
-  const dubaiOffset = 4 * 60
-  const localOffset = date.getTimezoneOffset()
-  const dubaiDate = new Date(date.getTime() + (dubaiOffset + localOffset) * 60 * 1000)
-  return (
-    dubaiDate.getFullYear() === fecha.getFullYear() &&
-    dubaiDate.getMonth()    === fecha.getMonth() &&
-    dubaiDate.getDate()     === fecha.getDate()
-  )
-}
-
 const STATUS_DOT: Record<string, string> = {
   confirmed:   '#34d399',
   in_progress: '#c9a84c',
@@ -208,13 +196,15 @@ const STATUS_DOT: Record<string, string> = {
 function VehicleAgenda({ bookings }: { bookings: any[] }) {
   if (!bookings.length) return null
 
-  const ahoraDubai  = new Date(new Date().getTime() + (4 * 60 + new Date().getTimezoneOffset()) * 60 * 1000)
-  const hoyDubai    = new Date(ahoraDubai)
-  const mananaDubai = new Date(ahoraDubai)
+  const hoyDubai    = getDubaiToday()
+  const mananaDubai = new Date(hoyDubai)
   mananaDubai.setDate(mananaDubai.getDate() + 1)
 
-  const serviciosHoy    = bookings.filter(b => b.scheduled_at && esMismaFechaDubai(b.scheduled_at, hoyDubai))
-  const serviciosManana = bookings.filter(b => b.scheduled_at && esMismaFechaDubai(b.scheduled_at, mananaDubai))
+  const { start: startHoy,    end: endHoy    } = dubaiDayRange(hoyDubai)
+  const { start: startManana, end: endManana } = dubaiDayRange(mananaDubai)
+
+  const serviciosHoy    = bookings.filter(b => b.scheduled_at && b.scheduled_at >= startHoy    && b.scheduled_at <= endHoy)
+  const serviciosManana = bookings.filter(b => b.scheduled_at && b.scheduled_at >= startManana && b.scheduled_at <= endManana)
 
   if (!serviciosHoy.length && !serviciosManana.length) return null
 

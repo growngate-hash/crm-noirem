@@ -274,7 +274,7 @@ export default function AccountingPage() {
                     style={{ cursor: 'pointer', background: selectedEntry?.id === entry.id ? '#c9a84c15' : 'transparent', borderBottom: '1px solid #2a2a30' }}
                   >
                     <td style={{ ...td, color: '#c9a84c', fontWeight: 700 }}>{entry.entry_number}</td>
-                    <td style={{ ...td, color: '#888' }}>{new Date(entry.entry_date).toLocaleDateString('es-ES')}</td>
+                    <td style={{ ...td, color: '#888' }}>{new Date(entry.entry_date + 'T00:00:00+04:00').toLocaleDateString('en-AE')}</td>
                     <td style={{ ...td, color: '#f0ede8' }}>{entry.description}</td>
                     <td style={td}>
                       <span style={{ background: '#2a2a30', borderRadius: 4, padding: '2px 8px', color: '#888', fontSize: 10, fontWeight: 700 }}>
@@ -452,7 +452,7 @@ export default function AccountingPage() {
             ) : vatReport.map(row => (
               <div key={row.period} style={{ marginBottom: 16, padding: 16, background: '#0d0d0f', borderRadius: 8 }}>
                 <div style={{ color: '#f0ede8', fontWeight: 700, marginBottom: 12 }}>
-                  {new Date(row.period).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
+                  {new Date(row.period + '-01T00:00:00+04:00').toLocaleDateString('en-AE', { month: 'long', year: 'numeric' })}
                 </div>
                 {[
                   { label: 'Ventas gravables',  value: row.taxable_sales,  color: '#22c55e' },

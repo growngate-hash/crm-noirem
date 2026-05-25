@@ -343,11 +343,11 @@ export default function BookingsPage() {
   // ── global new-booking monitor (booking_requests, any day) ────────────────
   useEffect(()=>{
     function formatDubaiDate(isoDate: string): string {
-      const d = new Date(new Date(isoDate).getTime() + 4 * 60 * 60 * 1000)
-      const day   = d.getUTCDate()
-      const month = d.toLocaleString('es', { month: 'short', timeZone: 'UTC' })
-      const hh    = d.getUTCHours().toString().padStart(2, '0')
-      const mm    = d.getUTCMinutes().toString().padStart(2, '0')
+      const d   = toDubaiTime(isoDate)
+      const day   = d.getDate()
+      const month = d.toLocaleString('es-AE', { month: 'short', timeZone: 'Asia/Dubai' })
+      const hh    = d.getHours().toString().padStart(2, '0')
+      const mm    = d.getMinutes().toString().padStart(2, '0')
       return `${day} ${month} · ${hh}:${mm}`
     }
 

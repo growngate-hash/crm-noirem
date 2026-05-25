@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getDubaiToday, dubaiDayRange } from '@/utils/timezone'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -223,21 +224,24 @@ export default function DashboardPage() {
   // ── data fetch ──
   async function fetchDashboardData() {
     const supabase = createClient()
-    const ahora = new Date()
+    // Month boundaries anchored to the Dubai calendar (UTC+4)
+    const ahoraDubai = getDubaiToday()
+    const y  = ahoraDubai.getFullYear()
+    const m  = ahoraDubai.getMonth()        // 0-indexed
+    const mm = String(m + 1).padStart(2, '0')
 
-    // Month boundaries in Dubai (UTC+4)
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0, 23, 59, 59)
-    const inicioMesUTC = new Date(inicioMes.getTime() - 4 * 3600000).toISOString()
-    const finMesUTC = new Date(finMes.getTime() - 4 * 3600000).toISOString()
-    const inicioMesStr = inicioMes.toISOString().split('T')[0]
-    const finMesStr = finMes.toISOString().split('T')[0]
+    const lastDayMes         = new Date(y, m + 1, 0).getDate()
+    const { start: inicioMesUTC } = dubaiDayRange(new Date(y, m, 1))
+    const { end:   finMesUTC }    = dubaiDayRange(new Date(y, m, lastDayMes))
+    const inicioMesStr = `${y}-${mm}-01`
+    const finMesStr    = `${y}-${mm}-${String(lastDayMes).padStart(2, '0')}`
 
-    const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1)
-    const finMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth(), 0, 23, 59, 59)
-
-    const inicioMesAnteriorUTC = new Date(inicioMesAnterior.getTime() - 4 * 3600000).toISOString()
-    const finMesAnteriorUTC    = new Date(finMesAnterior.getTime() - 4 * 3600000).toISOString()
+    const mAnt  = m === 0 ? 11 : m - 1
+    const yAnt  = m === 0 ? y - 1 : y
+    const mmAnt = String(mAnt + 1).padStart(2, '0')
+    const lastDayAnt = new Date(yAnt, mAnt + 1, 0).getDate()
+    const { start: inicioMesAnteriorUTC } = dubaiDayRange(new Date(yAnt, mAnt, 1))
+    const { end:   finMesAnteriorUTC }    = dubaiDayRange(new Date(yAnt, mAnt, lastDayAnt))
 
     // ── Invoice KPIs (critical — isolated so bookings errors never block these) ──
     const [

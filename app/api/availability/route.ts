@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { localToUTCWithTz } from '@/utils/timezone'
 
 const FALLBACK_BUFFER = 30  // si company_settings no tiene travel_time_minutes
 const FALLBACK_DUR    = 60  // si el booking no tiene end_at ni el servicio tiene duración
+const FALLBACK_TZ     = 'Asia/Dubai'
 
 function toMinutes(slot: string): number {
   const [h, m] = slot.split(':').map(Number)
@@ -21,10 +23,17 @@ function parseDuration(raw: unknown): number {
   return FALLBACK_DUR
 }
 
-function dubaiMinutes(isoStr: string): number {
+/** Minutes elapsed since midnight in the given timezone. */
+function localMinutes(isoStr: string, timezone: string): number {
   const d = new Date(isoStr)
-  const h = (d.getUTCHours() + 4) % 24
-  return h * 60 + d.getUTCMinutes()
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    hour: '2-digit', minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d)
+  const h = parseInt(parts.find(p => p.type === 'hour')?.value   ?? '0')
+  const m = parseInt(parts.find(p => p.type === 'minute')?.value ?? '0')
+  return (h === 24 ? 0 : h) * 60 + m
 }
 
 type ServiceShape = { duration_minutes?: number; duration?: string; duration_hrs?: string }
@@ -36,11 +45,12 @@ function bookingToBlock(
   svc: ServiceShape | null,
   bufferMin: number,
   closeMin: number,
+  timezone: string,
 ): Block {
-  const startMin = dubaiMinutes(scheduled_at)
+  const startMin = localMinutes(scheduled_at, timezone)
   let durMin = FALLBACK_DUR
   if (end_at) {
-    const diff = dubaiMinutes(end_at) - startMin
+    const diff = localMinutes(end_at, timezone) - startMin
     durMin = diff > 0 ? diff : FALLBACK_DUR
   } else if (svc) {
     durMin = parseDuration(svc.duration_minutes ?? svc.duration ?? svc.duration_hrs)
@@ -88,10 +98,11 @@ export async function GET(req: NextRequest) {
   const jsDay     = new Date(date).getUTCDay()
   const dayOfWeek = (jsDay + 6) % 7  // 0=Mon … 6=Sun, igual que en la BD
 
-  // ── 4 queries en paralelo ──────────────────────────────────────────────────
+  // ── 5 queries en paralelo ──────────────────────────────────────────────────
   const [
     { data: businessHour },
     { data: travelSetting },
+    { data: tzSetting },
     { data: svc },
     { data: vehiclesData },
   ] = await Promise.all([
@@ -102,6 +113,10 @@ export async function GET(req: NextRequest) {
 
     sb.from('company_settings')
       .select('travel_time_minutes')
+      .maybeSingle(),
+
+    sb.from('business_settings')
+      .select('timezone')
       .maybeSingle(),
 
     serviceId
@@ -116,6 +131,8 @@ export async function GET(req: NextRequest) {
       .is('contact_id', null)   // solo vehículos de empresa
       .neq('status', 'inactivo'),
   ])
+
+  const timezone = tzSetting?.timezone ?? FALLBACK_TZ
 
   // ── Día cerrado según business_hours ──────────────────────────────────────
   if (!businessHour?.is_open) {
@@ -147,9 +164,9 @@ export async function GET(req: NextRequest) {
   // ── Vehículos de empresa activos ──────────────────────────────────────────
   const vehicleIds: string[] = (vehiclesData ?? []).map((v: { id: string }) => v.id)
 
-  // ── Bookings del día (zona horaria Dubai UTC+4) ───────────────────────────
-  const dayStart = new Date(`${date}T00:00:00+04:00`).toISOString()
-  const dayEnd   = new Date(`${date}T23:59:59+04:00`).toISOString()
+  // ── Bookings del día (zona horaria de la empresa) ─────────────────────────
+  const dayStart = localToUTCWithTz(date, '00:00:00', timezone)
+  const dayEnd   = localToUTCWithTz(date, '23:59:59', timezone)
 
   const { data: dayBookings } = await sb
     .from('bookings')
@@ -168,7 +185,7 @@ export async function GET(req: NextRequest) {
     const vid = b.vehicle_id as string
     if (!vehicleBlocks[vid]) vehicleBlocks[vid] = []
     vehicleBlocks[vid].push(
-      bookingToBlock(b.scheduled_at, b.end_at, b.services as ServiceShape | null, BUFFER_MIN, CLOSE_MIN)
+      bookingToBlock(b.scheduled_at, b.end_at, b.services as ServiceShape | null, BUFFER_MIN, CLOSE_MIN, timezone)
     )
   }
 

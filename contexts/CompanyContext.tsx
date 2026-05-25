@@ -6,28 +6,35 @@ interface CompanyContextType {
   companyName: string
   companySubtitle: string
   logoUrl: string | null
+  timezone: string
   setCompanyName: (name: string) => void
   setCompanySubtitle: (sub: string) => void
   setLogoUrl: (url: string | null) => void
+  setTimezone: (tz: string) => void
 }
 
 const CompanyContext = createContext<CompanyContextType>({
   companyName: 'SAFFI',
   companySubtitle: 'LUXURY DETAILING',
   logoUrl: null,
+  timezone: 'Asia/Dubai',
   setCompanyName: () => {},
   setCompanySubtitle: () => {},
   setLogoUrl: () => {},
+  setTimezone: () => {},
 })
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
-  const [companyName, setCompanyName] = useState('SAFFI')
+  const [companyName,    setCompanyName]    = useState('SAFFI')
   const [companySubtitle, setCompanySubtitle] = useState('LUXURY DETAILING')
-  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoUrl,        setLogoUrl]        = useState<string | null>(null)
+  const [timezone,       setTimezone]       = useState('Asia/Dubai')
 
   useEffect(() => {
-    createClient()
-      .from('company_settings')
+    const sb = createClient()
+
+    // key-value settings (company_settings table)
+    sb.from('company_settings')
       .select('key, value')
       .in('key', ['company_name', 'company_subtitle', 'logo_url'])
       .then(({ data }) => {
@@ -40,12 +47,20 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
             setLogoUrl(row.value)
         })
       })
+
+    // timezone from business_settings (belongs to the authenticated user)
+    sb.from('business_settings')
+      .select('timezone')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.timezone) setTimezone(data.timezone)
+      })
   }, [])
 
   return (
     <CompanyContext.Provider value={{
-      companyName, companySubtitle, logoUrl,
-      setCompanyName, setCompanySubtitle, setLogoUrl,
+      companyName, companySubtitle, logoUrl, timezone,
+      setCompanyName, setCompanySubtitle, setLogoUrl, setTimezone,
     }}>
       {children}
     </CompanyContext.Provider>

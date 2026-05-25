@@ -1,6 +1,7 @@
 ﻿'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { getDubaiToday, dubaiDayRange } from '@/utils/timezone'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
@@ -254,13 +255,16 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
 
   async function fetchFinanceKPIs() {
     const supabase = createClient()
-    const ahora = new Date()
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    const finMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0)
-    const inicioMesUTC = new Date(inicioMes.getTime() - 4 * 3600000).toISOString()
-    const finMesUTC = new Date(finMes.getTime() - 4 * 3600000).toISOString()
-    const inicioMesStr = inicioMes.toISOString().split('T')[0]
-    const finMesStr = finMes.toISOString().split('T')[0]
+    // Month boundaries anchored to the Dubai calendar (UTC+4)
+    const ahoraDubai = getDubaiToday()
+    const y  = ahoraDubai.getFullYear()
+    const m  = ahoraDubai.getMonth()
+    const mm = String(m + 1).padStart(2, '0')
+    const lastDayMes = new Date(y, m + 1, 0).getDate()
+    const { start: inicioMesUTC } = dubaiDayRange(new Date(y, m, 1))
+    const { end:   finMesUTC }    = dubaiDayRange(new Date(y, m, lastDayMes))
+    const inicioMesStr = `${y}-${mm}-01`
+    const finMesStr    = `${y}-${mm}-${String(lastDayMes).padStart(2, '0')}`
 
     const [{ data: invoicesPagadas }, { data: gastos }, { data: todasLasCompras }] = await Promise.all([
       supabase
@@ -518,7 +522,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
                   <div style={{ color: '#ff4f4f', fontWeight: 700, fontSize: 15 }}>{aed(e.amount ?? 0)}</div>
                   <div style={{ color: '#888580', fontSize: 11, marginTop: 3 }}>
-                    {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                    {e.date ? new Date(e.date + 'T00:00:00+04:00').toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                   </div>
                   {e.receipt_url && (
                     <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
@@ -554,7 +558,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
                       onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
                       <td style={{ padding: '12px 16px', fontSize: 11, color: '#888580', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
-                        {e.date ? new Date(e.date).toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
+                        {e.date ? new Date(e.date + 'T00:00:00+04:00').toLocaleDateString('en-AE', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—'}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{e.description}</td>
                       <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
@@ -1901,11 +1905,11 @@ function ComprasTab() {
                   <tr key={inv.id} style={{ borderBottom: '1px solid #1a1a1e' }}>
                     <td style={{ padding: '12px 14px', color: '#c9a84c', fontWeight: 700, fontSize: 13 }}>{inv.invoice_number || inv.id.slice(0,8).toUpperCase()}</td>
                     <td style={{ padding: '12px 14px', color: '#f0ede8', fontSize: 13 }}>{inv.supplier_name || inv.contacts?.name || '—'}</td>
-                    <td style={{ padding: '12px 14px', color: '#888', fontSize: 12 }}>{inv.issue_date ? new Date(inv.issue_date + 'T12:00:00').toLocaleDateString('es-ES') : '—'}</td>
+                    <td style={{ padding: '12px 14px', color: '#888', fontSize: 12 }}>{inv.issue_date ? new Date(inv.issue_date + 'T00:00:00+04:00').toLocaleDateString('en-AE') : '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: 12 }}>
                       {inv.due_date ? (
                         <span style={{ color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#888' }}>
-                          {new Date(inv.due_date + 'T12:00:00').toLocaleDateString('es-ES')}{isOverdue ? ' ⚠' : ''}
+                          {new Date(inv.due_date + 'T00:00:00+04:00').toLocaleDateString('en-AE')}{isOverdue ? ' ⚠' : ''}
                         </span>
                       ) : '—'}
                     </td>
@@ -1946,8 +1950,8 @@ function ComprasTab() {
             </div>
             {[
               { label: 'Proveedor',   value: viewingPurchase.supplier_name || viewingPurchase.contacts?.name || '—' },
-              { label: 'Emisión', value: viewingPurchase.issue_date ? new Date(viewingPurchase.issue_date + 'T12:00:00').toLocaleDateString('es-ES') : '—' },
-              { label: 'Vencimiento', value: viewingPurchase.due_date ? new Date(viewingPurchase.due_date + 'T12:00:00').toLocaleDateString('es-ES') : '—' },
+              { label: 'Emisión', value: viewingPurchase.issue_date ? new Date(viewingPurchase.issue_date + 'T00:00:00+04:00').toLocaleDateString('en-AE') : '—' },
+              { label: 'Vencimiento', value: viewingPurchase.due_date ? new Date(viewingPurchase.due_date + 'T00:00:00+04:00').toLocaleDateString('en-AE') : '—' },
               { label: 'Estado',      value: viewingPurchase.status?.toUpperCase() },
               { label: 'Subtotal',    value: 'AED ' + parseFloat(viewingPurchase.subtotal || 0).toFixed(2) },
               { label: 'IVA',         value: 'AED ' + parseFloat(viewingPurchase.tax || 0).toFixed(2) },
