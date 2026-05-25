@@ -1,5 +1,6 @@
 'use client'
 import StatusBadge from '@/components/ui/StatusBadge'
+import { useCompany } from '@/contexts/CompanyContext'
 
 interface BookingRowProps {
   booking: any
@@ -8,6 +9,7 @@ interface BookingRowProps {
 }
 
 export default function BookingRow({ booking, onMarkComplete, onDelete }: BookingRowProps) {
+  const { timezone } = useCompany()
   const fmt = (v: number) => `AED ${v.toLocaleString('en-AE', { maximumFractionDigits: 0 })}`
   const canComplete = ['Pending', 'Confirmed', 'In Progress'].includes(booking.status)
 
@@ -47,7 +49,7 @@ export default function BookingRow({ booking, onMarkComplete, onDelete }: Bookin
       <div style={{ color: 'var(--text2)' }}>{booking.services?.name ?? '—'}</div>
 
       <div style={{ color: 'var(--text2)', fontSize: 11 }}>
-        {booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString('en-AE', { day: '2-digit', month: 'short' }) : '—'}
+        {booking.scheduled_at ? new Date(booking.scheduled_at).toLocaleDateString('en-AE', { timeZone: timezone, day: '2-digit', month: 'short' }) : '—'}
       </div>
 
       <div style={{ color: 'var(--text2)' }}>{booking.technician ?? '—'}</div>

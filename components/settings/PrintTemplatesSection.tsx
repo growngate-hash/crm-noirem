@@ -131,7 +131,7 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
           <div style={{ fontSize: 26, fontWeight: 900 }}>FACTURA</div>
           <div style={{ color: t.accent_color, fontWeight: 700, fontSize: 15 }}>#{t.invoice_prefix}-001</div>
           <div style={{ color: '#888', fontSize: 11, marginTop: 8 }}>
-            Fecha: {new Date().toLocaleDateString('es-ES')}
+            Fecha: {new Date().toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai' })}
           </div>
         </div>
       </div>
