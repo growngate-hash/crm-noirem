@@ -78,8 +78,8 @@ function getServiceDurationHours(svc:Service|null):number {
 }
 function generateTimeSlots(_svc:Service|null):TimeSlot[] {
   const slots:TimeSlot[]=[]
-  for(let hour=8;hour<=17;hour++){
-    slots.push({start:hour,startLabel:formatHour(hour),endLabel:formatHour(hour+1)})
+  for(let hour=8;hour<18;hour+=0.5){
+    slots.push({start:hour,startLabel:formatHour(hour),endLabel:formatHour(hour+0.5)})
   }
   return slots
 }
@@ -700,7 +700,7 @@ export default function BookingPage() {
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:8 }}>
                 {timeSlots.map((slot,idx)=>{
-                  const slotKey=`${String(Math.floor(slot.start)).padStart(2,'0')}:00`
+                  const slotKey=`${String(Math.floor(slot.start)).padStart(2,'0')}:${String(Math.round((slot.start%1)*60)).padStart(2,'00')}`
                   const isBlocked=slotKey in blockedMap
                   const isSel=selTime===slot.start
                   const blockReason=blockedMap[slotKey]

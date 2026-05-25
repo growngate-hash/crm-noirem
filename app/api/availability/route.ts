@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
 
   // Slots generados dinámicamente desde apertura hasta cierre (uno por hora)
   const BASE_SLOTS: string[] = []
-  for (let min = OPEN_MIN; min < CLOSE_MIN; min += 60) {
+  for (let min = OPEN_MIN; min < CLOSE_MIN; min += 30) {
     const h = Math.floor(min / 60)
     const m = min % 60
     BASE_SLOTS.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`)
