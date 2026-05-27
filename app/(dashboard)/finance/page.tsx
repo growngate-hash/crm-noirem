@@ -203,6 +203,9 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       .eq('id', selectedInvoice.id)
       .select()
     console.log('Resultado invoice update:', invData, 'Error:', error)
+    console.log('ERROR COMPLETO:', JSON.stringify(error, null, 2))
+    console.log('INVOICE ID:', selectedInvoice.id)
+    console.log('USER:', (await supabase.auth.getUser()).data.user?.id)
     if (error) {
       console.error('Error detallado:', error)
       setPaymentError('Error: ' + error.message)
