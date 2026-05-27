@@ -46,31 +46,34 @@ export function InvoiceViewer({ invoice, onClose }: Props) {
   })
 
   useEffect(() => {
-    createClient()
-      .from('company_settings')
-      .select('key, value')
-      .like('key', 'template_%')
-      .then(({ data }) => {
-        if (!data) return
-        const map: Record<string, string> = {}
-        data.forEach(d => { map[d.key] = d.value })
-        setTpl(prev => ({
-          ...prev,
-          company_name:     map.template_company_name     || companyName,
-          company_subtitle: map.template_company_subtitle || companySubtitle,
-          company_address:  map.template_address          || '',
-          company_phone:    map.template_phone            || '',
-          company_email:    map.template_email            || '',
-          company_trn:      map.template_trn              || '',
-          accent_color:     map.template_accent_color     || '#c9a84c',
-          show_vat:         map.template_show_vat !== 'false',
-          show_trn:         map.template_show_trn !== 'false',
-          footer_text:      map.template_footer_text      || prev.footer_text,
-          invoice_prefix:   map.template_invoice_prefix   || 'INV',
-          payment_terms:    map.template_payment_terms    || '',
-          bank_details:     map.template_bank_details     || '',
-        }))
-      })
+    async function load() {
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      const { data } = await sb.from('company_settings')
+        .select('key, value')
+        .eq('user_id', user?.id ?? '')
+        .like('key', 'template_%')
+      if (!data) return
+      const map: Record<string, string> = {}
+      data.forEach(d => { map[d.key] = d.value })
+      setTpl(prev => ({
+        ...prev,
+        company_name:     map.template_company_name     || companyName,
+        company_subtitle: map.template_company_subtitle || companySubtitle,
+        company_address:  map.template_address          || '',
+        company_phone:    map.template_phone            || '',
+        company_email:    map.template_email            || '',
+        company_trn:      map.template_trn              || '',
+        accent_color:     map.template_accent_color     || '#c9a84c',
+        show_vat:         map.template_show_vat !== 'false',
+        show_trn:         map.template_show_trn !== 'false',
+        footer_text:      map.template_footer_text      || prev.footer_text,
+        invoice_prefix:   map.template_invoice_prefix   || 'INV',
+        payment_terms:    map.template_payment_terms    || '',
+        bank_details:     map.template_bank_details     || '',
+      }))
+    }
+    load()
   }, [companyName, companySubtitle])
 
   const invoiceNo  = invoice.invoice_no ?? invoice.id?.slice(0, 8).toUpperCase()

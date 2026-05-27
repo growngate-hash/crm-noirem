@@ -381,7 +381,10 @@ export default function ServicesPage() {
   async function fetchServices() {
     setLoadingS(true)
     const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    if (!user) return
     const { data: existing } = await sb.from('services').select('*').order('name')
+    // RLS filtra automáticamente por user_id via get_owner_id()
 
     if (existing && existing.length > 0) {
       setServices(existing)
@@ -391,10 +394,10 @@ export default function ServicesPage() {
 
     // Table empty — seed and capture the real UUIDs returned by Supabase
     const { data: seeded } = await sb.from('services').insert([
-      { name:'Ceramic Coating',  code:'CC-PRO',   category:'Protección', price_min:3500,  price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     is_active:true },
-      { name:'PPF Full Wrap',    code:'PPF-FULL',  category:'Protección', price_min:12000, price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', is_active:true },
-      { name:'Full Restoration', code:'REST-360',  category:'Detailing',  price_min:8000,  price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    is_active:true },
-      { name:'Interior Detail',  code:'INT-LUX',   category:'Detailing',  price_min:1500,  price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  is_active:true },
+      { user_id: user.id, name:'Ceramic Coating',  code:'CC-PRO',   category:'Protección', price_min:3500,  price_max:8500,  duration:'2-3 Days',  description:'Nano-ceramic protection for hydrophobics, UV resistance, and mirror-like gloss.',     is_active:true },
+      { user_id: user.id, name:'PPF Full Wrap',    code:'PPF-FULL',  category:'Protección', price_min:12000, price_max:35000, duration:'3-5 Days',  description:'Self-healing urethane film providing invisible armour against chips and abrasion.', is_active:true },
+      { user_id: user.id, name:'Full Restoration', code:'REST-360',  category:'Detailing',  price_min:8000,  price_max:25000, duration:'5-7 Days',  description:'Complete paint correction, exterior and interior transformation.',                    is_active:true },
+      { user_id: user.id, name:'Interior Detail',  code:'INT-LUX',   category:'Detailing',  price_min:1500,  price_max:4500,  duration:'4-8 hours', description:'Deep-clean, leather conditioning, steam treatment and fragrance.',                  is_active:true },
     ]).select()  // .select() makes Supabase return the inserted rows with their real UUIDs
 
     setServices(seeded ?? [])
@@ -608,7 +611,10 @@ export default function ServicesPage() {
   async function saveService() {
     if (!serviceForm.name.trim()) return
     setSaving(true)
-    const {data, error} = await createClient().from('services').insert({
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    const {data, error} = await sb.from('services').insert({
+      user_id: user?.id,
       name: serviceForm.name, category: serviceForm.category,
       base_price: serviceForm.base_price ? Number(serviceForm.base_price) : null,
       description: serviceForm.description, duration_hrs: serviceForm.duration_hrs,

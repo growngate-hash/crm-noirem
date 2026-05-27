@@ -313,9 +313,10 @@ export default function BookingsPage() {
 
   async function saveTravelTime() {
     setSavingTravel(true)
-    await createClient()
-      .from('company_settings')
-      .upsert({ key: 'travel_time_minutes', value: String(travelTime) }, { onConflict: 'key' })
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    await sb.from('company_settings')
+      .upsert({ user_id: user?.id, key: 'travel_time_minutes', value: String(travelTime) }, { onConflict: 'user_id,key' })
     setSavingTravel(false)
     addToast('Tiempo de traslado guardado', 'success')
   }
@@ -323,14 +324,20 @@ export default function BookingsPage() {
   // ── initial load + re-fetch when day changes ───────────────────────────────
   useEffect(()=>{ fetchRefs() },[])
   useEffect(()=>{
-    createClient()
-      .from('company_settings')
-      .select('value')
-      .eq('key', 'travel_time_minutes')
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data?.value) setTravelTime(parseInt(data.value) || 30)
-      })
+    async function loadTravel() {
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
+      sb.from('company_settings')
+        .select('value')
+        .eq('user_id', user.id)
+        .eq('key', 'travel_time_minutes')
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.value) setTravelTime(parseInt(data.value) || 30)
+        })
+    }
+    loadTravel()
   },[])
   useEffect(()=>{
     fetchBookings(selectedDay)

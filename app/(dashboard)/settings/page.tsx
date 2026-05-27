@@ -327,19 +327,23 @@ function ProfileSection() {
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    createClient()
-      .from('company_settings')
-      .select('key, value')
-      .in('key', ['company_name', 'company_subtitle'])
-      .then(({ data }) => {
-        if (!data) return
-        const patch: Partial<typeof form> = {}
-        data.forEach(row => {
-          if (row.key === 'company_name' && row.value) patch.businessName = row.value
-          if (row.key === 'company_subtitle' && row.value) patch.companySubtitle = row.value
-        })
-        if (Object.keys(patch).length) setForm(prev => ({ ...prev, ...patch }))
+    async function load() {
+      const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
+      const { data } = await sb.from('company_settings')
+        .select('key, value')
+        .eq('user_id', user.id)
+        .in('key', ['company_name', 'company_subtitle'])
+      if (!data) return
+      const patch: Partial<typeof form> = {}
+      data.forEach(row => {
+        if (row.key === 'company_name' && row.value) patch.businessName = row.value
+        if (row.key === 'company_subtitle' && row.value) patch.companySubtitle = row.value
       })
+      if (Object.keys(patch).length) setForm(prev => ({ ...prev, ...patch }))
+    }
+    load()
   }, [])
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
@@ -355,9 +359,11 @@ function ProfileSection() {
 
   async function save() {
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
     await Promise.all([
-      supabase.from('company_settings').upsert({ key: 'company_name', value: form.businessName }, { onConflict: 'key' }),
-      supabase.from('company_settings').upsert({ key: 'company_subtitle', value: form.companySubtitle }, { onConflict: 'key' }),
+      supabase.from('company_settings').upsert({ user_id: user.id, key: 'company_name', value: form.businessName }, { onConflict: 'user_id,key' }),
+      supabase.from('company_settings').upsert({ user_id: user.id, key: 'company_subtitle', value: form.companySubtitle }, { onConflict: 'user_id,key' }),
     ])
     setCtxName(form.businessName.toUpperCase())
     setCtxSub(form.companySubtitle.toUpperCase())
@@ -402,9 +408,10 @@ function ProfileSection() {
       if (error) throw error
       const { data: urlData } = supabase.storage.from('company-assets').getPublicUrl(fileName)
       const url = urlData.publicUrl
+      const { data: { user } } = await supabase.auth.getUser()
       await supabase.from('company_settings').upsert(
-        { key: 'logo_url', value: url, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
+        { user_id: user?.id, key: 'logo_url', value: url, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,key' }
       )
       setLogoUrl(url)
       setLogoPreview(null)
@@ -421,9 +428,10 @@ function ProfileSection() {
   async function removeLogo() {
     if (!window.confirm('¿Eliminar el logo actual?')) return
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
     await supabase.from('company_settings').upsert(
-      { key: 'logo_url', value: null, updated_at: new Date().toISOString() },
-      { onConflict: 'key' }
+      { user_id: user?.id, key: 'logo_url', value: null, updated_at: new Date().toISOString() },
+      { onConflict: 'user_id,key' }
     )
     setLogoUrl(null)
     showToast('Logo eliminado', 'success')
@@ -871,8 +879,9 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
   useEffect(() => {
     async function load() {
       const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
       const [{ data: settings }, { data: hoursData }, { data: zonesData }, { data: waConfig }] = await Promise.all([
-        sb.from('company_settings').select('key,value').in('key', ['whatsapp_welcome_message']),
+        sb.from('company_settings').select('key,value').in('key', ['whatsapp_welcome_message']).eq('user_id', user?.id ?? ''),
         sb.from('business_hours').select('*').order('day_of_week'),
         sb.from('coverage_zones').select('*').order('created_at'),
         sb.from('whatsapp_configs').select('connected,phone_number').eq('connected', true).maybeSingle(),
@@ -1016,7 +1025,9 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 
   async function saveWelcome() {
     setSavingWelcome(true)
-    await createClient().from('company_settings').upsert({ key: 'whatsapp_welcome_message', value: welcome }, { onConflict: 'key' })
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    await sb.from('company_settings').upsert({ user_id: user?.id, key: 'whatsapp_welcome_message', value: welcome }, { onConflict: 'user_id,key' })
     setSavingWelcome(false)
     showToast('Mensaje guardado ✓', 'success')
   }

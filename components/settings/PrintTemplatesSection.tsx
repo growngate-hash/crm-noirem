@@ -206,44 +206,49 @@ export function PrintTemplatesSection() {
   const [template, setTemplate] = useState<TemplateConfig>({ ...DEFAULTS })
 
   useEffect(() => {
-    supabase
-      .from('company_settings')
-      .select('key, value')
-      .in('key', [
-        'template_company_name', 'template_company_subtitle',
-        'template_address', 'template_phone', 'template_email',
-        'template_website', 'template_trn', 'template_accent_color',
-        'template_show_vat', 'template_show_trn', 'template_footer_text',
-        'template_invoice_prefix', 'template_payment_terms', 'template_bank_details',
-        'logo_url',
-      ])
-      .then(({ data }) => {
-        if (!data) return
-        const map: Record<string, string> = {}
-        data.forEach(d => { map[d.key] = d.value })
-        setTemplate(prev => ({
-          ...prev,
-          company_name:     map.template_company_name     || prev.company_name,
-          company_subtitle: map.template_company_subtitle || prev.company_subtitle,
-          company_address:  map.template_address          || '',
-          company_phone:    map.template_phone            || '',
-          company_email:    map.template_email            || '',
-          company_website:  map.template_website          || '',
-          company_trn:      map.template_trn              || '',
-          accent_color:     map.template_accent_color     || '#c9a84c',
-          show_vat:         map.template_show_vat !== 'false',
-          show_trn:         map.template_show_trn !== 'false',
-          footer_text:      map.template_footer_text      || prev.footer_text,
-          invoice_prefix:   map.template_invoice_prefix   || 'INV',
-          payment_terms:    map.template_payment_terms    || prev.payment_terms,
-          bank_details:     map.template_bank_details     || '',
-          logo_url:         map.logo_url                  || '',
-        }))
-      })
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data } = await supabase
+        .from('company_settings')
+        .select('key, value')
+        .eq('user_id', user.id)
+        .in('key', [
+          'template_company_name', 'template_company_subtitle',
+          'template_address', 'template_phone', 'template_email',
+          'template_website', 'template_trn', 'template_accent_color',
+          'template_show_vat', 'template_show_trn', 'template_footer_text',
+          'template_invoice_prefix', 'template_payment_terms', 'template_bank_details',
+          'logo_url',
+        ])
+      if (!data) return
+      const map: Record<string, string> = {}
+      data.forEach(d => { map[d.key] = d.value })
+      setTemplate(prev => ({
+        ...prev,
+        company_name:     map.template_company_name     || prev.company_name,
+        company_subtitle: map.template_company_subtitle || prev.company_subtitle,
+        company_address:  map.template_address          || '',
+        company_phone:    map.template_phone            || '',
+        company_email:    map.template_email            || '',
+        company_website:  map.template_website          || '',
+        company_trn:      map.template_trn              || '',
+        accent_color:     map.template_accent_color     || '#c9a84c',
+        show_vat:         map.template_show_vat !== 'false',
+        show_trn:         map.template_show_trn !== 'false',
+        footer_text:      map.template_footer_text      || prev.footer_text,
+        invoice_prefix:   map.template_invoice_prefix   || 'INV',
+        payment_terms:    map.template_payment_terms    || prev.payment_terms,
+        bank_details:     map.template_bank_details     || '',
+        logo_url:         map.logo_url                  || '',
+      }))
+    }
+    load()
   }, [])
 
   async function handleSave() {
     setSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
     const entries = [
       { key: 'template_company_name',    value: template.company_name },
       { key: 'template_company_subtitle',value: template.company_subtitle },
@@ -261,7 +266,7 @@ export function PrintTemplatesSection() {
       { key: 'template_bank_details',    value: template.bank_details },
     ]
     await Promise.all(
-      entries.map(e => supabase.from('company_settings').upsert({ key: e.key, value: e.value }, { onConflict: 'key' }))
+      entries.map(e => supabase.from('company_settings').upsert({ user_id: user?.id, key: e.key, value: e.value }, { onConflict: 'user_id,key' }))
     )
     setSaving(false)
     setSaved(true)
