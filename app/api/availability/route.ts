@@ -79,6 +79,7 @@ export async function GET(req: NextRequest) {
   const params    = req.nextUrl.searchParams
   const date      = params.get('date')       // YYYY-MM-DD (required)
   const serviceId = params.get('service_id') // optional
+  const ownerId   = params.get('owner_id')   // optional
 
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return noCache({ error: 'Invalid date' }, 400)
@@ -104,7 +105,6 @@ export async function GET(req: NextRequest) {
     { data: travelSetting },
     { data: tzSetting },
     { data: svc },
-    { data: vehiclesData },
   ] = await Promise.all([
     sb.from('business_hours')
       .select('is_open, start_time, end_time')
@@ -125,12 +125,14 @@ export async function GET(req: NextRequest) {
           .eq('id', serviceId)
           .single()
       : Promise.resolve({ data: null }),
-
-    sb.from('vehicles')
-      .select('id')
-      .is('contact_id', null)   // solo vehículos de empresa
-      .neq('status', 'inactivo'),
   ])
+
+  let vehiclesQuery = sb.from('vehicles')
+    .select('id')
+    .is('contact_id', null)
+    .neq('status', 'inactivo')
+  if (ownerId) vehiclesQuery = vehiclesQuery.eq('user_id', ownerId)
+  const { data: vehiclesData } = await vehiclesQuery
 
   const timezone = tzSetting?.timezone ?? FALLBACK_TZ
 
@@ -168,19 +170,20 @@ export async function GET(req: NextRequest) {
   const dayStart = localToUTCWithTz(date, '00:00:00', timezone)
   const dayEnd   = localToUTCWithTz(date, '23:59:59', timezone)
 
-  const { data: dayBookings } = await sb
-    .from('bookings')
+  let bookingsQuery = sb.from('bookings')
     .select('vehicle_id, scheduled_at, end_at, services(duration_minutes, duration, duration_hrs)')
     .gte('scheduled_at', dayStart)
     .lte('scheduled_at', dayEnd)
     .neq('status', 'cancelled')
     .not('vehicle_id', 'is', null)
+  if (ownerId) bookingsQuery = bookingsQuery.eq('user_id', ownerId)
+  const { data: bookingsRaw } = await bookingsQuery
 
   // ── Bloques ocupados por vehículo ─────────────────────────────────────────
   const vehicleBlocks: Record<string, Block[]> = {}
   for (const vid of vehicleIds) vehicleBlocks[vid] = []
 
-  for (const b of (dayBookings ?? [])) {
+  for (const b of (bookingsRaw ?? [])) {
     if (!b.vehicle_id || !b.scheduled_at) continue
     const vid = b.vehicle_id as string
     if (!vehicleBlocks[vid]) vehicleBlocks[vid] = []

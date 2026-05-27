@@ -432,7 +432,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       )
-      const { data, error } = await publicClient
+      const { data } = await publicClient
         .from('business_settings')
         .select('user_id, business_name, timezone, currency')
         .eq('slug', slug)
@@ -482,7 +482,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   useEffect(()=>{
     if(!selDate||!selService)return
     setBlockedMap({});setLoadingSlots(true)
-    fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`, { cache: 'no-store' })
+    fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}&owner_id=${ownerId ?? ''}`, { cache: 'no-store' })
       .then(r=>r.json())
       .then(({blocked, timezone:tz})=>{
         if(tz) setTimezone(tz)
