@@ -61,6 +61,10 @@ export async function middleware(request: NextRequest) {
       .eq('owner_id', user.id)
       .maybeSingle()
 
+    // DEBUG — eliminar después
+    console.log('[middleware] user.id:', user.id)
+    console.log('[middleware] tenant:', JSON.stringify(tenant))
+
     // Si no tiene tenant todavía (Noirem legacy o error) — dejar pasar
     if (tenant) {
       const now = new Date()
