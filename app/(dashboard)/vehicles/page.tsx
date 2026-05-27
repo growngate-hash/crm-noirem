@@ -520,13 +520,13 @@ export default function VehiclesPage() {
     const [{ data: existing }, { data: allVehicleInv }] = await Promise.all([
       sb.from('vehicles')
         .select(`*, active_booking:bookings(id, status, scheduled_at, progress, price, technician, contacts(name), services(name))`)
+        .is('contact_id', null)
         .order('created_at', {ascending: true}),
       sb.from('vehicle_inventory').select('vehicle_id, stock_current, stock_minimum'),
     ])
 
     if (!existing || existing.length === 0) {
-      const { data: seeded } = await sb.from('vehicles').insert(SEED_VEHICLES).select()
-      setVehicles(seeded ?? [])
+      setVehicles([])
       setLoading(false)
       return
     }
@@ -819,7 +819,7 @@ export default function VehiclesPage() {
         <EmptyState
           icon="vehicle"
           title="No hay vehículos registrados"
-          subtitle="Registra el primer vehículo de un cliente para comenzar"
+          subtitle="Registra los vehículos de tu flota para comenzar"
           actionLabel="+ AGREGAR VEHÍCULO"
           onAction={() => setShowAdd(true)}
         />
