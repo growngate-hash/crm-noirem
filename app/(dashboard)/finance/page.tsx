@@ -1762,10 +1762,13 @@ function ComprasTab() {
     if (validLines.length === 0) { showToast('Agrega al menos un producto', 'error'); return }
     setSaving(true)
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { showToast('No autenticado', 'error'); setSaving(false); return }
     const { subtotalNeto, vat, total } = calcPurchaseTotals(purchaseForm.lines, purchaseForm.discount)
     const { data: invoice, error } = await supabase
       .from('purchase_invoices')
       .insert({
+        user_id:        user.id,
         supplier_id:    purchaseForm.supplier_id   || null,
         supplier_name:  purchaseForm.supplier_name,
         invoice_number: purchaseForm.invoice_number,
@@ -1781,12 +1784,13 @@ function ComprasTab() {
       .select()
       .single()
     if (error || !invoice) { showToast('Error: ' + (error?.message ?? ''), 'error'); setSaving(false); return }
-    const { data: invAccount } = await supabase.from('chart_of_accounts').select('id').eq('code', '1300').single()
+    const { data: invAccount } = await supabase.from('chart_of_accounts').select('id').eq('code', '1300').eq('user_id', user.id).single()
     for (const line of purchaseForm.lines) {
       if (!line.description.trim()) continue
       const lineSubtotal = (parseFloat(line.quantity) || 0) * (parseFloat(line.unit_price) || 0) - (parseFloat(line.discount) || 0)
       const accountId = line.account_id === 'inv-1300' ? (invAccount as any)?.id : (line.account_id || (invAccount as any)?.id)
       await supabase.from('purchase_invoice_lines').insert({
+        user_id:             user.id,
         purchase_invoice_id: invoice.id,
         inventory_item_id:   line.inventory_item_id || null,
         account_id:          accountId || null,

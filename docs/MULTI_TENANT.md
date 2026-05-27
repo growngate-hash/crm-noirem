@@ -24,27 +24,41 @@ auth.users
 
 ## Función crítica: `get_owner_id()`
 
-Definida en `supabase/migrations/20260526_team_rls.sql`.
+Definida originalmente en `supabase/migrations/20260526_team_rls.sql`. Reescrita en `supabase/migrations/20260527_fix_get_owner_id.sql` para corregir el error `"more than one row returned by a subquery"` que ocurría en entornos multi-tenant cuando PostgreSQL evalúa la función como subquery escalar dentro de los `WITH CHECK` de RLS.
+
+**Versión activa (desde 2026-05-27):**
 
 ```sql
 CREATE OR REPLACE FUNCTION public.get_owner_id()
-RETURNS uuid LANGUAGE sql STABLE
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
 AS $$
-  SELECT COALESCE(
-    (SELECT owner_id FROM team_members WHERE member_id = auth.uid()),
-    auth.uid()
-  )
+  SELECT CASE
+    WHEN EXISTS (
+      SELECT 1 FROM public.team_members WHERE member_id = auth.uid()
+    )
+    THEN (
+      SELECT owner_id FROM public.team_members
+      WHERE member_id = auth.uid()
+      ORDER BY created_at ASC
+      LIMIT 1
+    )
+    ELSE auth.uid()
+  END;
 $$;
 ```
 
 - Si el usuario autenticado es **staff** (está en `team_members`), retorna el `owner_id` de su jefe.
 - Si es el **owner** directamente, retorna su propio `auth.uid()`.
 - Todas las políticas RLS usan esta función — permite que el staff del tenant acceda a los datos de su empresa sin cambios en el frontend.
+- El patrón `CASE/EXISTS` garantiza retorno escalar incluso cuando PostgreSQL evalúa la función como subquery dentro de `WITH CHECK`.
 
 **Reglas críticas:**
-- NO agregar `SECURITY DEFINER` — debe ejecutarse en el contexto del usuario autenticado.
-- NO cambiar a `STABLE` con permisos elevados.
+- `SECURITY DEFINER` es necesario — permite que la función lea `team_members` independientemente del contexto RLS del caller.
 - NO eliminar — rompe el RLS de todas las tablas del sistema.
+- NO simplificar de vuelta a `COALESCE` sin `LIMIT 1` explícito en el outer select — causa error 21000 en RLS.
 
 ---
 
@@ -256,7 +270,9 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | Archivo | Contenido |
 |---|---|
 | `20260526_user_permissions.sql` | Tabla `user_permissions` con roles por usuario |
-| `20260526_team_rls.sql` | Tabla `team_members` + función `get_owner_id()` + políticas RLS Grupo A |
+| `20260526_team_rls.sql` | Tabla `team_members` + función `get_owner_id()` v1 + políticas RLS Grupo A |
 | `20260526_tenants.sql` | Tablas `plans` y `tenants` + función `tenant_is_active()` |
 | `20260527_services_rls.sql` | `user_id` + RLS para tabla `services` |
 | `20260527_finance_rls.sql` | RLS para `invoices`, `expenses`, `purchase_invoices`, `bank_accounts` |
+| `20260527_fix_get_owner_id.sql` | Reescritura de `get_owner_id()` con patrón CASE/EXISTS — fix error 21000 |
+| `20260527_fix_journal_trigger.sql` | Documentación del fix a `generate_journal_entry_for_invoice()` aplicado directamente en BD |
