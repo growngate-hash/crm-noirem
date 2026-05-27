@@ -36,10 +36,16 @@ export async function POST(request: Request) {
   if (userId) {
     const perms = buildDefaultPermissions(role ?? 'Technician')
 
-    // Obtener el owner_id del admin que está haciendo la invitación
-    const authHeader = request.headers.get('Authorization') ?? ''
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user: invitingUser } } = await supabaseAdmin.auth.getUser(token)
+    // Obtener owner desde cookies de sesión (más robusto que Authorization header)
+    const { createServerClient } = await import('@supabase/ssr')
+    const { cookies } = await import('next/headers')
+    const cookieStore = await cookies()
+    const supabaseServer = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll: () => cookieStore.getAll() } }
+    )
+    const { data: { user: invitingUser } } = await supabaseServer.auth.getUser()
     const ownerId = invitingUser?.id
 
     await Promise.all([

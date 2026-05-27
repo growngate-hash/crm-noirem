@@ -1,0 +1,6 @@
+﻿-- Fix: user_permissions no tenia owner_id para aislamiento multi-tenant
+-- La API /api/team ahora filtra por team_members.owner_id = auth.uid()
+-- para retornar solo los miembros del equipo del tenant correcto.
+-- El insert en team_members se corrigio para usar cookies de sesion
+-- en lugar del header Authorization que el frontend no enviaba.
+-- Aplicado el 2026-05-27.

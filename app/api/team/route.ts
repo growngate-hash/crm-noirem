@@ -1,46 +1,32 @@
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!serviceRoleKey) {
-    return NextResponse.json({ error: 'Missing SUPABASE_SERVICE_ROLE_KEY' }, { status: 500 })
-  }
-
-  const supabaseAdmin = createClient(
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    serviceRoleKey,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll: () => cookieStore.getAll() } }
+  )
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+  const { data: members } = await supabase.from('team_members').select('member_id').eq('owner_id', user.id)
+  const memberIds = members?.map(m => m.member_id) ?? []
+  const allIds = [user.id, ...memberIds]
+  const { data: perms } = await supabase.from('user_permissions').select('user_id, role, permissions').in('user_id', allIds)
+  const supabaseAdmin = (await import('@supabase/supabase-js')).createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
-
-  const [{ data: permsData }, { data: usersData, error: usersError }] = await Promise.all([
-    supabaseAdmin.from('user_permissions').select('user_id, role, permissions'),
-    supabaseAdmin.auth.admin.listUsers({ perPage: 1000 }),
-  ])
-
-  if (usersError) {
-    return NextResponse.json({ error: usersError.message }, { status: 500 })
-  }
-
-  // Build email lookup from real auth users
-  const authEmailMap: Record<string, string> = {}
-  ;(usersData?.users ?? []).forEach((u: any) => {
-    authEmailMap[u.id] = u.email ?? ''
-  })
-
-  // user_permissions is the source of truth — only show users with a row there
-  const team = (permsData ?? []).map((row: any) => {
-    const r = row.role ?? 'admin'
-    const roleCap = r.charAt(0).toUpperCase() + r.slice(1)
-    const email = authEmailMap[row.user_id] ?? (row.permissions?._email ?? '')
-    return {
-      id: row.user_id,
-      email,
-      name: email ? email.split('@')[0] : row.user_id.slice(0, 8),
-      role: roleCap,
-      permissions: row.permissions ?? null,
-    }
-  })
-
+  const team = await Promise.all(
+    allIds.map(async (id) => {
+      const { data } = await supabaseAdmin.auth.admin.getUserById(id)
+      const perm = perms?.find(p => p.user_id === id)
+      const email = data.user?.email ?? ''
+      return { id, email, name: data.user?.user_metadata?.name || email.split('@')[0], role: perm?.role ?? 'admin', permissions: perm?.permissions ?? null }
+    })
+  )
   return NextResponse.json({ team })
 }
