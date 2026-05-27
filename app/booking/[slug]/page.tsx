@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { use, useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { localToUTCWithTz } from '@/utils/timezone'
 
@@ -394,7 +394,8 @@ function ServiceCard({ svc, onClick }:{ svc:Service; onClick:()=>void }) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-export default function BookingPage({ params }: { params: { slug: string } }) {
+export default function BookingPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params)
   const [step,setStep]             = useState(1)
   const [loading,setLoading]       = useState(true)
   const [saving,setSaving]         = useState(false)
@@ -426,11 +427,13 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
   // ── Load tenant by slug ────────────────────────────────────────────────────
   useEffect(() => {
     async function loadTenant() {
-      const { data } = await createClient()
+      console.log('[loadTenant] slug:', slug)
+      const { data, error } = await createClient()
         .from('business_settings')
         .select('user_id, business_name, timezone, currency')
-        .eq('slug', params.slug)
+        .eq('slug', slug)
         .single()
+      console.log('[loadTenant] data:', data, 'error:', error)
       if (!data) {
         setTenantNotFound(true)
         return
@@ -439,7 +442,7 @@ export default function BookingPage({ params }: { params: { slug: string } }) {
       if (data.timezone) setTimezone(data.timezone)
     }
     loadTenant()
-  }, [params.slug])
+  }, [slug])
 
   // ── Load services (only after tenant is resolved) ──────────────────────────
   useEffect(()=>{
