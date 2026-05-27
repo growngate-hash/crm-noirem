@@ -632,6 +632,11 @@ automáticamente — el staff debe reconectar cuando expire.
     Edge Function — si hay múltiples WABAs (multi-tenant), la arquitectura actual
     no lo soporta.
 
+12. **La query de `company_settings` en la Edge Function no filtra por `user_id`.** En el
+    contexto actual (un solo tenant en producción) esto no genera problemas, pero en un
+    entorno multi-tenant real esta query debe filtrar por el `user_id` del owner asociado
+    al número de teléfono entrante. Ver `docs/MULTI_TENANT.md`.
+
 ---
 
 ## 13. CÓMO HACER CAMBIOS COMUNES

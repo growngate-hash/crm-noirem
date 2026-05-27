@@ -391,7 +391,10 @@ async function saveEdit() {
 8. **`company_settings` tiene estructura mixta.** La tabla se usa de dos formas distintas en el mismo proyecto:
    - **Columna directa:** `travel_time_minutes INTEGER` — leída por la API de disponibilidad con `SELECT travel_time_minutes`.
    - **Filas clave-valor:** columnas `key TEXT, value TEXT` — leídas por la Edge Function de WhatsApp para company_name, company_phone, company_email, company_address.
-   
+
+9. **Multi-tenant y `company_settings`.** Todos los SELECTs a `company_settings` desde el frontend deben incluir `.eq('user_id', user.id)` y todos los upserts deben usar `onConflict: 'user_id,key'`. Sin esto, un tenant puede ver o sobrescribir datos de otro. Ver `docs/MULTI_TENANT.md`.
+
+10. **`user_id IS NULL` en contacts y multi-tenancy.** Los contactos del trigger (`user_id = NULL`) son visibles para todos los tenants autenticados mediante la política `auth_see_unowned_contacts`. Esto es intencional para el flujo de reservas públicas, pero implica que un tenant puede ver clientes que reservaron desde `/booking` sin estar asociados a su empresa.
    El control "Traslado" del Gantt guarda via upsert key-value (`{ key: 'travel_time_minutes', value: '30' }`), pero la API lee la columna directa `travel_time_minutes`. **Ambos mecanismos no se sincronizan** — si el guardado desde el CRM no actualiza la columna directa, el cambio no tendrá efecto en la disponibilidad. Verificar qué schema está activo en Supabase.
 
 9. **El Gantt solo muestra vehículos de empresa.** Filtro `.is('contact_id', null)` en `app/(dashboard)/bookings/page.tsx`. Si un vehículo de empresa accidentalmente tiene `contact_id` asignado, desaparecerá del Gantt.

@@ -103,6 +103,7 @@ SELECT travel_time_minutes FROM company_settings LIMIT 1
 - Columna directa (no clave-valor): `travel_time_minutes INTEGER`.
 - Define el buffer de traslado que se aplica antes y después de cada reserva.
 - Fallback si la columna es NULL: `FALLBACK_BUFFER = 30` minutos.
+- **Multi-tenant:** Esta API corre con service role (sin sesión de usuario), por lo que el `LIMIT 1` no filtra por tenant. En un contexto multi-tenant real, esta API debe recibir el `user_id` del owner como parámetro. Ver `docs/MULTI_TENANT.md`.
 
 ### `business_settings`
 ```sql
