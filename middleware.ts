@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -49,7 +50,12 @@ export async function middleware(request: NextRequest) {
 
   // Autenticado — verificar estado del tenant
   if (user && !isPublicPage) {
-    const { data: tenant } = await supabase
+    // Usar service role para evitar restricciones RLS en middleware
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const { data: tenant } = await supabaseAdmin
       .from('tenants')
       .select('status, trial_ends_at')
       .eq('owner_id', user.id)
