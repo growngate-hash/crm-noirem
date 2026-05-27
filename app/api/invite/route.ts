@@ -35,10 +35,32 @@ export async function POST(request: Request) {
   const userId = data.user?.id
   if (userId) {
     const perms = buildDefaultPermissions(role ?? 'Technician')
-    await supabaseAdmin.from('user_permissions').upsert(
-      { user_id: userId, role: (role ?? 'Technician').toLowerCase(), permissions: { ...perms, _email: email.trim() }, updated_at: new Date().toISOString() },
-      { onConflict: 'user_id' }
-    )
+
+    // Obtener el owner_id del admin que está haciendo la invitación
+    const authHeader = request.headers.get('Authorization') ?? ''
+    const token = authHeader.replace('Bearer ', '')
+    const { data: { user: invitingUser } } = await supabaseAdmin.auth.getUser(token)
+    const ownerId = invitingUser?.id
+
+    await Promise.all([
+      // Permisos de módulos
+      supabaseAdmin.from('user_permissions').upsert(
+        {
+          user_id: userId,
+          role: (role ?? 'Technician').toLowerCase(),
+          permissions: { ...perms, _email: email.trim() },
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'user_id' }
+      ),
+      // Mapeo staff → owner para RLS
+      ownerId
+        ? supabaseAdmin.from('team_members').upsert(
+            { owner_id: ownerId, member_id: userId },
+            { onConflict: 'owner_id,member_id' }
+          )
+        : Promise.resolve(),
+    ])
   }
 
   return NextResponse.json({ success: true, userId })
