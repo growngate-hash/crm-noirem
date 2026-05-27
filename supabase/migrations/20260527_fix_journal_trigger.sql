@@ -1,0 +1,6 @@
+-- Fix: generate_journal_entry_for_invoice()
+-- Problema: función no filtraba por user_id en chart_of_accounts
+-- causando error 21000 en entornos multi-tenant.
+-- Fix: agregar user_id = v_owner_id en todos los SELECT y INSERT.
+-- Aplicado directamente en Supabase SQL Editor el 2026-05-27.
+-- Este archivo es documentación — la función ya está actualizada en BD.

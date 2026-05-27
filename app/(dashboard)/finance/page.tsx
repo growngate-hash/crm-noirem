@@ -186,12 +186,6 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       return
     }
     const supabase = createClient()
-    console.log('Actualizando factura:', {
-      id: selectedInvoice.id,
-      status: 'pagada',
-      transaction_id: transactionId.trim(),
-      bank_account_id: selectedBankAccount,
-    })
     const { data: invData, error } = await supabase
       .from('invoices')
       .update({
@@ -202,12 +196,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       })
       .eq('id', selectedInvoice.id)
       .select()
-    console.log('Resultado invoice update:', invData, 'Error:', error)
-    console.log('ERROR COMPLETO:', JSON.stringify(error, null, 2))
-    console.log('INVOICE ID:', selectedInvoice.id)
-    console.log('USER:', (await supabase.auth.getUser()).data.user?.id)
     if (error) {
-      console.error('Error detallado:', error)
       setPaymentError('Error: ' + error.message)
       return
     }
@@ -222,7 +211,6 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', selectedBankAccount)
-      console.log('Bank update error:', bankError)
     }
     addToast('Pago registrado correctamente', 'success')
     setShowPaymentModal(false)
