@@ -1049,27 +1049,25 @@ function getDemoForVehicle(vName:string):any[] {
                 <button
                   onClick={async () => {
                     const bookingId = detailBooking.id
-                    console.log('🔥 CLIC EN MARK COMPLETE')
-                    console.log('🔥 Booking ID:', bookingId)
-
-                    if (!bookingId) { console.error('❌ Sin booking ID'); return }
+                    if (!bookingId) return
 
                     const sb = createClient()
+
+                    // Verificar autenticación primero
+                    const { data: { user } } = await sb.auth.getUser()
+                    if (!user) { addToast('No autenticado', 'error'); return }
 
                     // Paso 1: actualizar status
                     const { error: updateError } = await sb.from('bookings')
                       .update({ status: 'completed', completed_at: new Date().toISOString() })
                       .eq('id', bookingId)
-                    console.log('📋 Update error:', updateError)
                     if (updateError) { addToast(updateError.message, 'error'); return }
 
                     // Paso 2: obtener booking
-                    const { data: bk, error: bkErr } = await sb.from('bookings')
+                    const { data: bk } = await sb.from('bookings')
                       .select('*, contacts(name)')
                       .eq('id', bookingId)
                       .single()
-                    console.log('📋 Booking data:', bk)
-                    console.log('❌ Booking error:', bkErr)
 
                     if (!bk) { addToast(t('bookingCompleted'), 'success'); setDetailBooking(null); fetchBookings(selectedDay); return }
 
@@ -1085,11 +1083,11 @@ function getDemoForVehicle(vName:string):any[] {
                     const discount = Number(bk.discount) || 0
                     const tax   = Number(((subtotal - discount) * 0.05).toFixed(2))
                     const total = Number((subtotal - discount + tax).toFixed(2))
-                    console.log('💰 Invoice:', { invoiceNo, subtotal, tax, total })
 
                     // Paso 4: insertar factura
                     const { data: inv, error: invError } = await sb.from('invoices')
                       .insert({
+                        user_id: user.id,
                         booking_id: bookingId,
                         contact_id: bk.contact_id,
                         invoice_no: invoiceNo,
@@ -1100,21 +1098,20 @@ function getDemoForVehicle(vName:string):any[] {
                       })
                       .select()
                       .single()
-                    console.log('✅ Invoice creado:', inv)
-                    console.log('❌ Invoice error:', invError)
 
                     if (inv) {
                       await sb.from('notifications').insert({
+                        user_id: user.id,
                         type: 'payment',
                         title: 'Factura generada',
                         message: `${invoiceNo} · ${bk.contacts?.name ?? '—'} · AED ${total}`,
                         read: false,
                       })
-                      alert(`✅ Factura ${invoiceNo} generada · AED ${total}`)
+                      addToast(`Factura ${invoiceNo} generada · AED ${total}`, 'success')
                       setCompletedInvoice(inv)
                       setShowInvoiceModal(true)
                     } else {
-                      alert(`❌ Error: ${invError?.message}`)
+                      addToast(invError?.message ?? 'Error al generar factura', 'error')
                     }
 
                     setDetailBooking(null)
