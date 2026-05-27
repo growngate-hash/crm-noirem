@@ -15,7 +15,6 @@ const COUNTRIES = [
 
 export default function RegisterPage() {
   const router = useRouter()
-  const [step, setStep] = useState<1 | 2>(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -25,8 +24,6 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   })
-
-  const selectedCountry = COUNTRIES.find(c => c.code === form.country) ?? COUNTRIES[0]
 
   function update(field: string, value: string) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -62,63 +59,25 @@ export default function RegisterPage() {
       if (!authData.user) { setError('Error al crear la cuenta'); setLoading(false); return }
 
       const userId = authData.user.id
-      const slug = form.businessName.trim().toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-+|-+$/g, '')
 
-      // 2. Crear tenant con trial de 10 días
-      const { data: plan } = await supabase
-        .from('plans')
-        .select('id')
-        .eq('name', 'Trial')
-        .single()
-
-      const { error: tenantError } = await supabase
-        .from('tenants')
-        .insert({
-          owner_id:      userId,
-          name:          form.businessName.trim(),
-          slug:          slug,
-          plan_id:       plan?.id ?? null,
-          status:        'trial',
-          trial_ends_at: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-          country:       form.country,
-          timezone:      selectedCountry.timezone,
-          currency:      selectedCountry.currency,
-        })
-
-      if (tenantError) { setError('Error al configurar tu cuenta: ' + tenantError.message); setLoading(false); return }
-
-      // 3. Crear business_settings con timezone y moneda del país
-      await supabase.from('business_settings').insert({
-        user_id:  userId,
-        timezone: selectedCountry.timezone,
-        currency: selectedCountry.currency,
+      // 2. Configurar tenant via API (usa service role para evitar restricciones RLS)
+      const setupRes = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId:       userId,
+          businessName: form.businessName.trim(),
+          country:      form.country,
+          email:        form.email.trim(),
+        }),
       })
 
-      // 4. Crear company_settings básicos
-      await supabase.from('company_settings').insert([
-        { user_id: userId, key: 'company_name',     value: form.businessName.trim() },
-        { user_id: userId, key: 'company_subtitle', value: 'CAR WASH & DETAILING' },
-      ])
-
-      // 5. Crear user_permissions para el owner (Admin con acceso total)
-      await supabase.from('user_permissions').upsert({
-        user_id:     userId,
-        role:        'admin',
-        permissions: {
-          dashboard: { view: true },
-          contacts:  { view: true, create: true, edit: true, delete: true },
-          services:  { view: true, create: true, edit: true, delete: true },
-          vehicles:  { view: true, create: true, edit: true, delete: true },
-          bookings:  { view: true, create: true, edit: true, delete: true },
-          finance:   { view: true, create: true, edit: true, delete: true },
-          reports:   { view: true },
-          settings:  { view: true, create: true, edit: true, delete: true },
-          _email:    form.email.trim(),
-        },
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' })
+      const setupData = await setupRes.json()
+      if (!setupRes.ok) {
+        setError('Error al configurar tu cuenta: ' + setupData.error)
+        setLoading(false)
+        return
+      }
 
       // Registro exitoso
       router.push('/')
