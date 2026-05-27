@@ -79,6 +79,7 @@ export async function POST(request: Request) {
       },
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id' }),
+    createDefaultChartOfAccounts(supabase, userId),
   ])
 
   if (tenantResult.error) {
@@ -86,4 +87,44 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ success: true })
+}
+
+async function createDefaultChartOfAccounts(supabase: any, userId: string) {
+  const accounts = [
+    { code: '1000', name: 'Activos',                    type: 'asset',     level: 1 },
+    { code: '1100', name: 'Caja y Bancos',              type: 'asset',     level: 1 },
+    { code: '1110', name: 'Caja',                       type: 'asset',     level: 1 },
+    { code: '1120', name: 'Banco Principal',            type: 'asset',     level: 1 },
+    { code: '1200', name: 'Cuentas por Cobrar',         type: 'asset',     level: 1 },
+    { code: '1210', name: 'Facturas por Cobrar',        type: 'asset',     level: 1 },
+    { code: '1300', name: 'Inventario',                 type: 'asset',     level: 1 },
+    { code: '1400', name: 'IVA Acreditable',            type: 'asset',     level: 1 },
+    { code: '2000', name: 'Pasivos',                    type: 'liability', level: 1 },
+    { code: '2100', name: 'Cuentas por Pagar',          type: 'liability', level: 1 },
+    { code: '2200', name: 'IVA por Pagar',              type: 'vat',       level: 1 },
+    { code: '2300', name: 'Ingresos Diferidos',         type: 'liability', level: 1 },
+    { code: '3000', name: 'Patrimonio',                 type: 'equity',    level: 1 },
+    { code: '3100', name: 'Capital Social',             type: 'equity',    level: 1 },
+    { code: '3200', name: 'Utilidades Retenidas',       type: 'equity',    level: 1 },
+    { code: '4000', name: 'Ingresos',                   type: 'revenue',   level: 1 },
+    { code: '4100', name: 'Ingresos por Servicios',     type: 'revenue',   level: 1 },
+    { code: '4110', name: 'Detailing Básico',           type: 'revenue',   level: 1 },
+    { code: '4120', name: 'Detailing Premium',          type: 'revenue',   level: 1 },
+    { code: '4200', name: 'Otros Ingresos',             type: 'revenue',   level: 1 },
+    { code: '5000', name: 'Gastos',                     type: 'expense',   level: 1 },
+    { code: '5100', name: 'Costo de Servicios',         type: 'expense',   level: 1 },
+    { code: '5110', name: 'Productos Químicos',         type: 'expense',   level: 1 },
+    { code: '5111', name: 'Materiales Consumibles',     type: 'expense',   level: 1 },
+    { code: '5120', name: 'Mano de Obra',               type: 'expense',   level: 1 },
+    { code: '5200', name: 'Gastos Operativos',          type: 'expense',   level: 1 },
+    { code: '5210', name: 'Alquiler',                   type: 'expense',   level: 1 },
+    { code: '5211', name: 'Combustible Vehículos',      type: 'expense',   level: 1 },
+    { code: '5220', name: 'Servicios Públicos',         type: 'expense',   level: 1 },
+    { code: '5230', name: 'Marketing',                  type: 'expense',   level: 1 },
+    { code: '5300', name: 'Gastos Administrativos',     type: 'expense',   level: 1 },
+  ]
+
+  await supabase.from('chart_of_accounts').insert(
+    accounts.map(a => ({ ...a, user_id: userId, is_active: true }))
+  )
 }
