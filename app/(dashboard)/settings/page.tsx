@@ -1207,8 +1207,21 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const { t } = useLanguage()
-  const [enabled,     setEnabled]     = useState<Record<string, boolean>>({ whatsapp: true, stripe: false, gcal: true, gmail: false, zapier: false })
+  const [enabled,     setEnabled]     = useState<Record<string, boolean>>({ whatsapp: false, stripe: false, gcal: true, gmail: false, zapier: false })
   const [showWAPanel, setShowWAPanel] = useState(false)
+  const [waConnected, setWaConnected] = useState(false)
+
+  useEffect(() => {
+    createClient()
+      .from('whatsapp_configs')
+      .select('connected')
+      .eq('connected', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        setWaConnected(!!data)
+      })
+  }, [])
+
   return (
     <div>
       <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>{t('integrations')}</div>
@@ -1232,12 +1245,26 @@ function IntegrationsSection() {
                 <div style={{ position:'absolute', top:3, left:enabled[int.key]?22:3, width:16, height:16, borderRadius:'50%', background:enabled[int.key]?'#000':'var(--text2)', transition:'left 0.2s' }}/>
               </button>
             ) : (
-              <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:99, background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', color:'#22c55e', whiteSpace:'nowrap' }}>ACTIVO</span>
+              <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:99, whiteSpace:'nowrap',
+                background: waConnected ? 'rgba(34,197,94,0.15)' : 'rgba(136,133,128,0.12)',
+                border: `1px solid ${waConnected ? 'rgba(34,197,94,0.3)' : 'rgba(136,133,128,0.2)'}`,
+                color: waConnected ? '#22c55e' : '#888580' }}>
+                {waConnected ? 'ACTIVO' : 'INACTIVO'}
+              </span>
             )}
           </div>
         ))}
       </div>
-      {showWAPanel && <WhatsAppConfigPanel onClose={() => setShowWAPanel(false)} />}
+      {showWAPanel && <WhatsAppConfigPanel onClose={() => {
+        setShowWAPanel(false)
+        // Refrescar estado de conexión al cerrar el panel
+        createClient()
+          .from('whatsapp_configs')
+          .select('connected')
+          .eq('connected', true)
+          .maybeSingle()
+          .then(({ data }) => setWaConnected(!!data))
+      }} />}
     </div>
   )
 }

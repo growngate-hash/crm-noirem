@@ -521,6 +521,37 @@ async function handleFBResponse(code: string) {
 }
 ```
 
+**Badge ACTIVO/INACTIVO en `IntegrationsSection`:**
+
+El badge que aparece en la card de WhatsApp en la lista de integraciones lee el estado real desde `whatsapp_configs`:
+
+```typescript
+// Al montar: consulta si existe alguna fila con connected = true
+useEffect(() => {
+  createClient()
+    .from('whatsapp_configs')
+    .select('connected')
+    .eq('connected', true)
+    .maybeSingle()
+    .then(({ data }) => setWaConnected(!!data))
+}, [])
+
+// Al cerrar el panel: refresca para reflejar cambios del signup
+onClose={() => {
+  setShowWAPanel(false)
+  createClient()
+    .from('whatsapp_configs')
+    .select('connected')
+    .eq('connected', true)
+    .maybeSingle()
+    .then(({ data }) => setWaConnected(!!data))
+}}
+```
+
+- Si `connected = true` existe en la tabla → badge verde **ACTIVO**
+- Si no → badge gris **INACTIVO**
+- El badge se refresca automáticamente al cerrar el panel de configuración
+
 > **Por qué `handleFBResponse` separado:** `FB.login()` no acepta callbacks async
 > (`async (response) => {}` es inválido). La lógica async debe estar en una función
 > separada que se llama desde el callback síncrono.
@@ -591,7 +622,12 @@ automáticamente — el staff debe reconectar cuando expire.
    query de `whatsapp_messages`. Tener en cuenta que más contexto = más tokens = mayor
    latencia y coste en OpenAI.
 
-10. **El bot no verifica que la WABA configurada en Supabase coincida con el número
+10. **El badge ACTIVO/INACTIVO refleja el campo `connected` en `whatsapp_configs`, no
+    la validez del token.** Si el token expira pero `connected` sigue siendo `true`,
+    el badge seguirá mostrando ACTIVO aunque el bot no pueda enviar mensajes.
+    Combinar con la fecha `token_expires_at` si se necesita un indicador más preciso.
+
+11. **El bot no verifica que la WABA configurada en Supabase coincida con el número
     al que llega el webhook.** `WHATSAPP_PHONE_NUMBER_ID` es un secret fijo de la
     Edge Function — si hay múltiples WABAs (multi-tenant), la arquitectura actual
     no lo soporta.
