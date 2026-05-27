@@ -324,7 +324,7 @@ const INTEGRATIONS = [
 function ProfileSection() {
   const { t } = useLanguage()
   const { logoUrl, setLogoUrl, setCompanyName: setCtxName, setCompanySubtitle: setCtxSub } = useCompany()
-  const [form, setForm] = useState({ businessName:'SAFFI', companySubtitle:'LUXURY DETAILING', country:'UAE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
+  const [form, setForm] = useState({ businessName:'SAFFI', companySubtitle:'LUXURY DETAILING', country:'AE', currency:'AED', timezone:'Asia/Dubai', language:'EN' })
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
@@ -528,7 +528,15 @@ function ProfileSection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
           <div>
             <label className="label">{t('country')}</label>
-            <select className="inp" value={form.country} onChange={e => setForm({...form, country: e.target.value})}>
+            <select className="inp" value={form.country} onChange={e => {
+              const selected = COUNTRIES.find(c => c.code === e.target.value)
+              setForm({
+                ...form,
+                country: e.target.value,
+                timezone: selected?.timezone ?? form.timezone,
+                currency: selected?.currency ?? form.currency,
+              })
+            }}>
               <option value="">Selecciona un país</option>
               {COUNTRIES.map(c => (
                 <option key={c.code} value={c.code}>{c.name}</option>
@@ -538,17 +546,17 @@ function ProfileSection() {
           <div>
             <label className="label">{t('currency')}</label>
             <select className="inp" value={form.currency} onChange={e => setForm({...form, currency: e.target.value})}>
-              <option value="AED">AED — UAE Dirham</option>
-              <option value="SAR">SAR — Saudi Riyal</option>
-              <option value="USD">USD — US Dollar</option>
+              {Array.from(new Set(COUNTRIES.map(c => c.currency))).map(cur => (
+                <option key={cur} value={cur}>{cur}</option>
+              ))}
             </select>
           </div>
           <div>
             <label className="label">{t('timezone')}</label>
             <select className="inp" value={form.timezone} onChange={e => setForm({...form, timezone: e.target.value})}>
-              <option value="Asia/Dubai">Asia/Dubai (UTC+4)</option>
-              <option value="Asia/Riyadh">Asia/Riyadh (UTC+3)</option>
-              <option value="Europe/London">Europe/London (UTC+0)</option>
+              {Array.from(new Set(COUNTRIES.map(c => c.timezone))).map(tz => (
+                <option key={tz} value={tz}>{tz}</option>
+              ))}
             </select>
           </div>
           <div>
