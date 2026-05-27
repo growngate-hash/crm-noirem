@@ -326,11 +326,15 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   }
 
   async function fetchInvoices() {
-    const { data } = await createClient()
+    const sb = createClient()
+    const { data: { user } } = await sb.auth.getUser()
+    console.log('[fetchInvoices] user:', user?.id, user?.email)
+    const { data } = await sb
       .from('invoices')
       .select('id, invoice_no, subtotal, discount, tax, total, status, issued_at, due_at, paid_at, transaction_id, void_reason, voided_at, contact_id, contacts(name, email, phone)')
       .order('created_at', { ascending: false })
       .limit(20)
+    console.log('[fetchInvoices] facturas recibidas:', data?.length)
     setInvoices(data ?? [])
   }
 
