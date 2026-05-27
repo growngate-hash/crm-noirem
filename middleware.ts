@@ -26,20 +26,56 @@ export async function middleware(request: NextRequest) {
   // Refresca la sesión — no agregar lógica entre createServerClient y getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isLoginPage = request.nextUrl.pathname.startsWith('/login')
+  const path = request.nextUrl.pathname
+  const isLoginPage    = path.startsWith('/login')
+  const isRegisterPage = path.startsWith('/register')
+  const isUpgradePage  = path.startsWith('/upgrade')
+  const isSuspendedPage = path.startsWith('/suspended')
+  const isPublicPage   = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage
 
-  // Autenticado en /login → redirigir al dashboard
-  if (user && isLoginPage) {
+  // No autenticado → solo puede ver páginas públicas
+  if (!user && !isPublicPage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  // Autenticado en login/register → redirigir al dashboard
+  if (user && (isLoginPage || isRegisterPage)) {
     const url = request.nextUrl.clone()
     url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
-  // No autenticado fuera del login → redirigir al login
-  if (!user && !isLoginPage) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+  // Autenticado — verificar estado del tenant
+  if (user && !isPublicPage) {
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('status, trial_ends_at')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+
+    // Si no tiene tenant todavía (Noirem legacy o error) — dejar pasar
+    if (tenant) {
+      const now = new Date()
+      const trialExpired = tenant.status === 'trial' && new Date(tenant.trial_ends_at) < now
+      const isSuspended  = tenant.status === 'suspended'
+      const isExpired    = tenant.status === 'expired' || trialExpired
+
+      // Trial expirado → upgrade
+      if (isExpired && !isUpgradePage) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/upgrade'
+        return NextResponse.redirect(url)
+      }
+
+      // Suspendido → suspended
+      if (isSuspended && !isSuspendedPage) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/suspended'
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   return supabaseResponse
@@ -47,17 +83,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Aplica el middleware a todas las rutas EXCEPTO:
-     * - _next/static, _next/image  (assets de Next.js)
-     * - favicon.ico
-     * - api/availability            (pública — la usa /booking sin auth)
-     * - api/whatsapp/webhook        (pública — Meta llama sin auth)
-     * - booking                     (página pública de reservas para clientes)
-     * - auth                        (callbacks de OAuth)
-     * - archivos de imagen
-     * /login SÍ está incluido para poder redirigir usuarios ya autenticados al dashboard
-     */
     '/((?!_next/static|_next/image|favicon\\.ico|api/availability|api/whatsapp/webhook|booking|auth|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
