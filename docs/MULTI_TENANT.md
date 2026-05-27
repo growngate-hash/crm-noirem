@@ -155,6 +155,17 @@ Al registrarse un nuevo usuario, `app/api/register/route.ts` crea en paralelo co
 
 El frontend (`app/(auth)/register/page.tsx`) llama a esta API después de `supabase.auth.signUp()`. Si el usuario ya existe en producción sin tenant (legacy Noirem), el middleware lo deja pasar sin redirigir.
 
+### Fuente de países: `lib/countries.ts`
+
+`lib/countries.ts` es la única fuente de verdad para la lista de países con sus `timezone` y `currency`. Es consumida por:
+
+- `app/(auth)/register/page.tsx` — selector de país en el registro (reemplaza array local eliminado)
+- `app/(dashboard)/settings/page.tsx` — selector de país en ajustes de empresa; al cambiar el país, `timezone` y `currency` se auto-completan desde este archivo
+
+Los códigos de país usan **ISO 3166-1 alpha-2** (`AE`, `SA`, `CO`, etc.). El código no estándar `UAE` que existía en `settings/page.tsx` fue corregido a `AE`.
+
+Los selectores de `timezone` y `currency` en Settings son dinámicos — se generan deduplicando los valores del array `COUNTRIES` (via `new Set`), por lo que agregar un país al archivo actualiza automáticamente los tres selectores.
+
 ---
 
 ## Tabla `tenants`

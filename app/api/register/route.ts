@@ -11,6 +11,15 @@ const COUNTRIES: Record<string, { timezone: string; currency: string }> = {
   GB: { timezone: 'Europe/London',       currency: 'GBP' },
 }
 
+function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .trim()
+}
+
 export async function POST(request: Request) {
   const { userId, businessName, country, email } = await request.json()
 
@@ -55,9 +64,11 @@ export async function POST(request: Request) {
       currency:      countryData.currency,
     }),
     supabase.from('business_settings').insert({
-      user_id:  userId,
-      timezone: countryData.timezone,
-      currency: countryData.currency,
+      user_id:       userId,
+      business_name: businessName,
+      timezone:      countryData.timezone,
+      currency:      countryData.currency,
+      slug:          generateSlug(businessName),
     }),
     supabase.from('company_settings').insert([
       { user_id: userId, key: 'company_name',     value: businessName.trim() },
