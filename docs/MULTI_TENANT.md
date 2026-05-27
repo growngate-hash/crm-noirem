@@ -258,6 +258,17 @@ Las siguientes tablas fueron creadas antes de la arquitectura multi-tenant y req
 ### Contactos con `user_id = NULL`
 Los contactos creados por el trigger de reservas públicas (`/booking`) tienen `user_id = NULL`. La política `auth_see_unowned_contacts` permite que el staff autenticado los vea. Ver `docs/BOOKING_CONTACTS_LOGIC.md §6`.
 
+### Vehículos de clientes con `user_id = NULL`
+Los vehículos creados por el trigger `sync_booking_request_to_bookings` (vehículos del cliente, no de la empresa) tienen `user_id = NULL`, igual que los contactos del trigger. La política `team_access_vehicles` filtraba solo por `user_id = get_owner_id()`, dejando fuera estos registros y causando que la columna VEHÍCULOS en Contactos mostrara `—`. Fix aplicado en `20260527_fix_vehicles_rls.sql`:
+
+```sql
+CREATE POLICY "auth_see_unowned_vehicles"
+  ON vehicles FOR SELECT TO authenticated
+  USING (user_id IS NULL);
+```
+
+Ver `docs/BOOKING_CONTACTS_LOGIC.md §4`.
+
 ### `whatsapp_configs` sin RLS
 Esta tabla tiene RLS **desactivada** por diseño — las credenciales de WhatsApp se gestionan con service role desde la Edge Function. Ver `docs/WHATSAPP_INTEGRATION.md §3`.
 
@@ -278,3 +289,4 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | `20260527_fix_get_owner_id.sql` | Reescritura de `get_owner_id()` con patrón CASE/EXISTS — fix error 21000 |
 | `20260527_fix_journal_trigger.sql` | Documentación del fix a `generate_journal_entry_for_invoice()` aplicado directamente en BD |
 | `20260527_fix_purchase_journal_triggers.sql` | Documentación del fix a `generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()` aplicado directamente en BD |
+| `20260527_fix_vehicles_rls.sql` | Policy `auth_see_unowned_vehicles` — permite ver vehículos de clientes con `user_id = NULL` |

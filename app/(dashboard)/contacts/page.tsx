@@ -269,11 +269,7 @@ export default function ContactsPage() {
     let q = sb.from('contacts').select('id,name,email,phone,address,notes,tier,tipo,vehicle_type,license_plate,supplier_type,user_id,company_id,created_at,updated_at,vehicles(id,make,model,license_plate),bookings(id,price,address,scheduled_at)').order('created_at', { ascending: false })
     if (curTab === 'clients')    q = q.eq('tipo', 'cliente')
     if (curTab === 'suppliers') q = q.eq('tipo', 'proveedor')
-    const { data, error, status, statusText } = await q
-    console.log('[contacts] tab:', curTab)
-    console.log('[contacts] data:', data)
-    console.log('[contacts] error:', error)
-    console.log('[contacts] status:', status, statusText)
+    const { data } = await q
     setContacts(data ?? [])
     setLoading(false)
   }

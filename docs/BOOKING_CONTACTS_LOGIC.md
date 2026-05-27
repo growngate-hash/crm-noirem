@@ -190,8 +190,21 @@ contact_id = <uuid del cliente>
 El carro del cliente que va a ser lavado.
 - Creados automáticamente por el trigger al procesar un booking.
 - Vinculados al contacto mediante `contact_id`.
+- Tienen `user_id = NULL` — creados por el trigger con `SECURITY DEFINER`, no pertenecen a ningún usuario del staff.
 - Aparecen en la tabla de **Contactos** → columna VEHÍCULOS.
 - **NO aparecen en el Gantt** (filtrado por `.is('contact_id', null)`).
+
+### RLS en `vehicles`
+
+La policy principal `team_access_vehicles` filtra por `user_id = get_owner_id()`. Esto excluye los vehículos de clientes (`user_id = NULL`), causando que la columna VEHÍCULOS en Contactos muestre `—`. Se requiere una policy adicional (aplicada en `20260527_fix_vehicles_rls.sql`):
+
+```sql
+CREATE POLICY "auth_see_unowned_vehicles"
+  ON vehicles FOR SELECT TO authenticated
+  USING (user_id IS NULL);
+```
+
+Patrón idéntico a `auth_see_unowned_contacts` para contactos del trigger. Ver `docs/MULTI_TENANT.md § Casos especiales`.
 
 ### Columnas relevantes
 
@@ -384,7 +397,7 @@ async function saveEdit() {
 
 5. **No confundir los dos `vehicle_id`.** El trigger guarda el vehículo del cliente en `vehicles` para historial, pero el `bookings.vehicle_id` apunta al vehículo de **empresa**. Son diferentes registros.
 
-6. **`user_id IS NULL` en contacts.** Los contactos del trigger no tienen `user_id`. La política RLS `auth_see_unowned_contacts` permite que el staff los vea. Si se modifica la RLS de `contacts`, verificar que esta política sigue activa.
+6. **`user_id IS NULL` en contacts y vehicles del trigger.** Tanto los contactos como los vehículos de clientes creados por el trigger tienen `user_id = NULL`. Las políticas `auth_see_unowned_contacts` y `auth_see_unowned_vehicles` permiten que el staff autenticado los vea. Si se modifica la RLS de cualquiera de estas tablas, verificar que ambas políticas siguen activas. Sin `auth_see_unowned_vehicles`, la columna VEHÍCULOS en Contactos muestra `—` aunque los registros existan en la BD.
 
 7. **`NEXT_PUBLIC_SUPABASE_ANON_KEY` vs `SUPABASE_SERVICE_ROLE_KEY`.** El flujo de `/booking` solo necesita la anon key (política RLS pública). La service role key se necesita solo para operaciones admin. Actualmente `SUPABASE_SERVICE_ROLE_KEY` está vacío en `.env.local` — no es un problema para el flujo de booking.
 
