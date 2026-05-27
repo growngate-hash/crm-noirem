@@ -1,16 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-
-const COUNTRIES = [
-  { code: 'AE', name: 'United Arab Emirates', timezone: 'Asia/Dubai',    currency: 'AED' },
-  { code: 'CO', name: 'Colombia',             timezone: 'America/Bogota', currency: 'COP' },
-  { code: 'US', name: 'United States',        timezone: 'America/New_York', currency: 'USD' },
-  { code: 'SA', name: 'Saudi Arabia',         timezone: 'Asia/Riyadh',   currency: 'SAR' },
-  { code: 'MX', name: 'Mexico',               timezone: 'America/Mexico_City', currency: 'MXN' },
-  { code: 'ES', name: 'Spain',                timezone: 'Europe/Madrid', currency: 'EUR' },
-  { code: 'GB', name: 'United Kingdom',       timezone: 'Europe/London', currency: 'GBP' },
-]
+import { COUNTRIES } from '@/lib/countries'
 
 export default function RegisterPage() {
   const [step, setStep] = useState<1 | 2>(1)

@@ -216,7 +216,30 @@ CREATE TABLE team_members (
 );
 ```
 
-Al invitar un staff (`/api/invite`), se inserta una fila en `team_members` y se crea su registro en `user_permissions`. A partir de ese momento, `get_owner_id()` retorna el `owner_id` del staff, y RLS le da acceso automático a los datos de la empresa — sin ningún cambio en el frontend.
+### `/api/invite` — flujo de invitación
+
+Al invitar un staff, la API:
+
+1. Comprueba si el email ya existe en Supabase Auth via `auth.admin.listUsers()`.
+   - **Usuario existente**: usa su `id` directamente, sin enviar email de invitación.
+   - **Usuario nuevo**: llama a `auth.admin.inviteUserByEmail()` y envía el email.
+2. Hace upsert en `user_permissions` con el rol y permisos base.
+3. Hace upsert en `team_members` con `{ owner_id, member_id }` para que `get_owner_id()` retorne el `owner_id` del staff y RLS le dé acceso automático a los datos de la empresa.
+
+El `owner_id` del invitante se obtiene desde las cookies de sesión (via `@supabase/ssr`), no desde el header `Authorization` — el frontend no lo enviaba.
+
+### `/api/team` — listado del equipo
+
+`GET /api/team` devuelve todos los miembros del tenant autenticado:
+
+```typescript
+// 1. Lee team_members filtrando por owner_id = auth.uid() (anon client, RLS activa)
+// 2. Construye allIds = [owner, ...miembros]
+// 3. Lee user_permissions con supabaseAdmin (service role — bypasea RLS para leer permisos de todos)
+// 4. Resuelve emails via auth.admin.getUserById() por cada id
+```
+
+**Crítico**: la query a `user_permissions` usa `supabaseAdmin` (service role), no el cliente anon. La tabla `user_permissions` tiene RLS que filtra por `user_id = auth.uid()`, lo que haría invisible los permisos de los miembros staff al owner si se usara el cliente anon.
 
 ---
 

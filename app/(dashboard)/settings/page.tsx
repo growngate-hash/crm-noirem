@@ -12,6 +12,7 @@ import {
   Save, Plus, Trash2, Check, X, Upload, Trash, Printer,
 } from 'lucide-react'
 import { PrintTemplatesSection } from '@/components/settings/PrintTemplatesSection'
+import { COUNTRIES } from '@/lib/countries'
 
 type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing' | 'print-templates'
 
@@ -528,9 +529,10 @@ function ProfileSection() {
           <div>
             <label className="label">{t('country')}</label>
             <select className="inp" value={form.country} onChange={e => setForm({...form, country: e.target.value})}>
-              <option value="UAE">United Arab Emirates</option>
-              <option value="SA">Saudi Arabia</option>
-              <option value="KW">Kuwait</option>
+              <option value="">Selecciona un país</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
             </select>
           </div>
           <div>
