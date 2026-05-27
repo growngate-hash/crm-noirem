@@ -94,6 +94,7 @@ export default function AccountingPage() {
     if (!manualEntry.description.trim()) { alert('Agrega una descripción'); return }
 
     const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
 
     const { data: period } = await supabase
       .from('fiscal_periods').select('id').eq('status', 'open').single()
@@ -106,6 +107,7 @@ export default function AccountingPage() {
     const { data: entry, error } = await supabase
       .from('journal_entries')
       .insert({
+        user_id:         user?.id,
         entry_number:    entryNumber,
         entry_date:      manualEntry.entry_date,
         description:     manualEntry.description,
@@ -158,8 +160,10 @@ export default function AccountingPage() {
     if (existing) { alert(`El código ${newAccount.code} ya existe`); return }
 
     setSavingAccount(true)
+    const { data: { user } } = await supabase.auth.getUser()
     const normalBalance = ['asset', 'expense'].includes(newAccount.type) ? 'debit' : 'credit'
     const { error } = await supabase.from('chart_of_accounts').insert({
+      user_id:        user?.id,
       code:           newAccount.code.trim(),
       name:           newAccount.name.trim(),
       type:           newAccount.type,
