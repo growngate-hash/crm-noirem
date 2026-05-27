@@ -206,11 +206,12 @@ interface CompanyContextType {
   companyName:     string
   companySubtitle: string
   logoUrl:         string | null
-  timezone:        string          // ← nuevo campo
+  timezone:        string          // ← IANA timezone de la empresa
+  loaded:          boolean         // ← true una vez que business_settings fue leído
   setCompanyName:     (name: string) => void
   setCompanySubtitle: (sub: string) => void
   setLogoUrl:         (url: string | null) => void
-  setTimezone:        (tz: string) => void  // ← nuevo setter
+  setTimezone:        (tz: string) => void
 }
 ```
 
@@ -230,11 +231,13 @@ sb.from('business_settings')
   .maybeSingle()
   .then(({ data }) => {
     if (data?.timezone) setTimezone(data.timezone)
+    setLoaded(true)   // siempre se llama; Supabase resuelve con { data, error }
   })
 ```
 
 El valor por defecto mientras carga (y si no existe la fila) es `'Asia/Dubai'`,
 garantizando que el sistema funcione correctamente para Noirem sin configuración extra.
+`loaded` pasa a `true` en cuanto el fetch resuelve (con o sin datos).
 
 ### Cómo consumirlo directamente
 
@@ -274,13 +277,26 @@ function BookingRow({ booking }) {
 ```typescript
 const tz = useTimezone()
 
-tz.timezone          // string — 'Asia/Dubai' (la zona activa)
+tz.ready                            // boolean — true una vez que business_settings cargó
+tz.timezone                         // string — 'Asia/Dubai' (la zona activa)
 tz.toLocalTime(utcDate)             // → Date con valores locales de la empresa
 tz.formatHora(utcDate | null)       // → "HH:MM" o "—"
 tz.getHoraDecimal(utcDate)          // → number (9.5 = 09:30)
 tz.localToUTC(fecha, hora)          // → UTC ISO string para guardar en BD
 tz.getToday()                       // → Date de hoy en hora de la empresa
 tz.dayRange(date)                   // → { start: string, end: string } UTC
+```
+
+`tz.ready` es útil para inicializar estado que depende del timezone correcto:
+
+```typescript
+// Inicializar fechas solo cuando el timezone esté disponible
+useEffect(() => {
+  if (!tz.ready) return
+  const today = tz.getToday()
+  setSelectedDay(today)
+  setWeekRef(today)
+}, [tz.ready])
 ```
 
 ### Restricción: solo en Client Components
@@ -636,11 +652,9 @@ new Date(row.issue_date + 'T00:00:00+04:00')  // sigue siendo correcto para Duba
    el contexto inmediatamente para todos los componentes, sin necesidad de recargar la
    página.
 
-8. **Los archivos del dashboard aún usan funciones legacy (`@deprecated`).** Los archivos
-   `app/(dashboard)/bookings/page.tsx`, `finance/page.tsx`, `page.tsx` y `vehicles/page.tsx`
-   usan `toDubaiTime`, `getDubaiToday`, `dubaiDayRange` — que funcionan correctamente
-   para Dubai pero ignorarán el timezone configurado si un cliente usa otra zona horaria.
-   La migración completa a `useTimezone` es la Fase 3 pendiente.
+8. **Todos los archivos del dashboard han sido migrados a `useTimezone`.** La Fase 3 está
+   completa: `bookings/page.tsx`, `finance/page.tsx`, `page.tsx` y `vehicles/page.tsx`
+   usan el hook dinámico y respetan el timezone configurado en `business_settings`.
 
 9. **`AVAILABILITY_LOGIC.md` §4 documenta la función `dubaiMinutes()` antigua.** Esa
    sección quedó desactualizada tras este refactor. La función activa ahora es
@@ -651,15 +665,15 @@ new Date(row.issue_date + 'T00:00:00+04:00')  // sigue siendo correcto para Duba
 
 ## 12. FASE 3 — MIGRACIÓN PENDIENTE
 
-Los componentes del dashboard aún no usan `useTimezone`. Para hacer el sistema 100%
-configurable por cliente, estos archivos deben migrarse:
+Los componentes del dashboard deben migrar de funciones legacy a `useTimezone` para que
+el sistema sea 100% configurable por cliente. Estado actual:
 
-| Archivo | Funciones a reemplazar |
-|---------|----------------------|
-| [app/(dashboard)/bookings/page.tsx](../app/(dashboard)/bookings/page.tsx) | `toDubaiTime`, `formatHoraDubai`, `getHoraDecimalDubai`, `dubaiToUTC`, `getDubaiToday`, `dubaiDayRange` |
-| [app/(dashboard)/finance/page.tsx](../app/(dashboard)/finance/page.tsx) | `getDubaiToday`, `dubaiDayRange` |
-| [app/(dashboard)/page.tsx](../app/(dashboard)/page.tsx) | `getDubaiToday`, `dubaiDayRange` |
-| [app/(dashboard)/vehicles/page.tsx](../app/(dashboard)/vehicles/page.tsx) | `getDubaiToday`, `dubaiDayRange`, `formatHoraDubai`, `toDubaiTime` |
+| Archivo | Estado | Funciones pendientes |
+|---------|--------|----------------------|
+| [app/(dashboard)/bookings/page.tsx](../app/(dashboard)/bookings/page.tsx) | ✅ **Completado** | — |
+| [app/(dashboard)/finance/page.tsx](../app/(dashboard)/finance/page.tsx) | ✅ **Completado** | — |
+| [app/(dashboard)/page.tsx](../app/(dashboard)/page.tsx) | ✅ **Completado** | — |
+| [app/(dashboard)/vehicles/page.tsx](../app/(dashboard)/vehicles/page.tsx) | ✅ **Completado** | — |
 
 Patrón de migración por componente:
 

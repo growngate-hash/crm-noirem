@@ -214,6 +214,7 @@ async function processMessage(phone: string, text: string): Promise<void> {
     { data: settings },
     { data: historyDesc },
     { data: activeBookings },
+    { data: bizSettings },
   ] = await Promise.all([
     supabase
       .from('services')
@@ -252,7 +253,15 @@ async function processMessage(phone: string, text: string): Promise<void> {
       .eq('customer_phone', phone)
       .in('status', ['pending', 'confirmed'])
       .order('scheduled_at', { ascending: true }),
+
+    supabase
+      .from('business_settings')
+      .select('timezone, currency')
+      .maybeSingle(),
   ])
+
+  const timezone = bizSettings?.timezone ?? 'Asia/Dubai'
+  const currency = bizSettings?.currency ?? 'AED'
 
   // Construir objeto empresa desde company_settings
   const co: Record<string, string> = {}
@@ -281,8 +290,8 @@ async function processMessage(phone: string, text: string): Promise<void> {
   const bookingsSection = (activeBookings ?? []).length > 0
     ? `\nRESERVAS ACTIVAS DEL CLIENTE:\n${(activeBookings ?? []).map((b: any) => {
         const d = new Date(b.scheduled_at)
-        const dateStr = d.toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai', day: '2-digit', month: 'short', year: 'numeric' })
-        const timeStr = d.toLocaleTimeString('en-AE', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit', hour12: true })
+        const dateStr = d.toLocaleDateString('en-US', { timeZone: timezone, day: '2-digit', month: 'short', year: 'numeric' })
+        const timeStr = d.toLocaleTimeString('en-US', { timeZone: timezone, hour: '2-digit', minute: '2-digit', hour12: true })
         return `  • ID: ${b.id} | ${b.service_name} | ${dateStr} ${timeStr} | ${b.status}`
       }).join('\n')}`
     : '\nRESERVAS ACTIVAS DEL CLIENTE: Ninguna'
@@ -357,8 +366,8 @@ INSTRUCCIONES DE COMPORTAMIENTO:
 - Siempre pide confirmación antes de cancelar o modificar
 - No inventes información que no esté en este contexto
 - Si el cliente pregunta por zona no cubierta, sé honesto
-- Los precios incluyen 5% VAT
-- Fechas y horas en formato local UAE (UTC+4)`
+- Los precios se muestran en ${currency}
+- Fechas y horas en formato local del negocio (timezone: ${timezone})`
 
   // ── 4. Llamar OpenAI ──────────────────────────────────────────────────────
   let reply: string

@@ -7,6 +7,7 @@ interface CompanyContextType {
   companySubtitle: string
   logoUrl: string | null
   timezone: string
+  loaded: boolean
   setCompanyName: (name: string) => void
   setCompanySubtitle: (sub: string) => void
   setLogoUrl: (url: string | null) => void
@@ -18,6 +19,7 @@ const CompanyContext = createContext<CompanyContextType>({
   companySubtitle: 'LUXURY DETAILING',
   logoUrl: null,
   timezone: 'Asia/Dubai',
+  loaded: false,
   setCompanyName: () => {},
   setCompanySubtitle: () => {},
   setLogoUrl: () => {},
@@ -29,6 +31,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [companySubtitle, setCompanySubtitle] = useState('LUXURY DETAILING')
   const [logoUrl,        setLogoUrl]        = useState<string | null>(null)
   const [timezone,       setTimezone]       = useState('Asia/Dubai')
+  const [loaded,         setLoaded]         = useState(false)
 
   useEffect(() => {
     const sb = createClient()
@@ -54,12 +57,13 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       .maybeSingle()
       .then(({ data }) => {
         if (data?.timezone) setTimezone(data.timezone)
+        setLoaded(true)
       })
   }, [])
 
   return (
     <CompanyContext.Provider value={{
-      companyName, companySubtitle, logoUrl, timezone,
+      companyName, companySubtitle, logoUrl, timezone, loaded,
       setCompanyName, setCompanySubtitle, setLogoUrl, setTimezone,
     }}>
       {children}

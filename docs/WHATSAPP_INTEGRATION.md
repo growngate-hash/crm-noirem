@@ -17,7 +17,8 @@ Cliente envía mensaje por WhatsApp
         │         ├── business_hours
         │         ├── company_settings (nombre, teléfono, email, dirección)
         │         ├── whatsapp_messages (últimos 10, historial de conversación)
-        │         └── booking_requests (pendientes/confirmadas del cliente)
+        │         ├── booking_requests (pendientes/confirmadas del cliente)
+        │         └── business_settings (timezone, currency)
         │
         ├─── 3. BUILD ───────────► system prompt (con contexto dinámico)
         │
@@ -257,9 +258,9 @@ await supabase.from('whatsapp_messages').insert({ phone, role: 'user', content: 
 ```
 Se guarda antes de llamar a OpenAI para que el mensaje quede en BD incluso si OpenAI falla.
 
-### Paso 2 — Obtener contexto (6 queries en paralelo)
+### Paso 2 — Obtener contexto (7 queries en paralelo)
 ```typescript
-const [services, zones, hours, settings, historyDesc, activeBookings] = await Promise.all([
+const [services, zones, hours, settings, historyDesc, activeBookings, bizSettings] = await Promise.all([
   supabase.from('services').select('name, description, base_price, duration_hrs, category')
     .eq('is_active', true).order('category').order('name'),
 
@@ -280,7 +281,12 @@ const [services, zones, hours, settings, historyDesc, activeBookings] = await Pr
   supabase.from('booking_requests').select('id, service_name, scheduled_at, status')
     .eq('customer_phone', phone).in('status', ['pending', 'confirmed'])
     .order('scheduled_at', { ascending: true }),
+
+  supabase.from('business_settings').select('timezone, currency').maybeSingle(),
 ])
+
+const timezone = bizSettings?.timezone ?? 'Asia/Dubai'
+const currency = bizSettings?.currency ?? 'AED'
 ```
 
 El historial se invierte después para orden cronológico. El último mensaje (recién insertado)
@@ -289,14 +295,18 @@ se excluye con `.slice(0, -1)` porque ya se añade como el mensaje `'user'` fina
 Las reservas activas se inyectan en el system prompt para que el bot pueda
 referirse a ellas al gestionar cancelaciones/modificaciones.
 
+`timezone` y `currency` se usan en el paso 3: las fechas de las reservas activas
+se formatean en la zona horaria de la empresa, y la instrucción de moneda del system
+prompt es dinámica (`Los precios se muestran en ${currency}`).
+
 ### Paso 3 — Construir system prompt
 El system prompt se construye dinámicamente concatenando:
 - **Datos del negocio** (de `company_settings`)
 - **Lista de servicios** (de `services`)
 - **Zonas de cobertura** (de `coverage_zones`)
 - **Horarios** (de `business_hours`)
-- **Reservas activas del cliente** (de `booking_requests`)
-- **Instrucciones de comportamiento** (hardcoded)
+- **Reservas activas del cliente** (de `booking_requests`), formateadas en el `timezone` de la empresa
+- **Instrucciones de comportamiento**: incluyen la moneda (`currency`) y el timezone dinámicos
 
 Ver sección 8 para el detalle completo del system prompt.
 

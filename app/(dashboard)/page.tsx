@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getDubaiToday, dubaiDayRange } from '@/utils/timezone'
+import { useTimezone } from '@/hooks/useTimezone'
 import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -194,6 +194,7 @@ const dropdownStyle: React.CSSProperties = {
 // ─── main page ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { t } = useLanguage()
+  const tz = useTimezone()
 
   // ── KPI state ──
   const [kpis, setKpis] = useState({
@@ -225,14 +226,14 @@ export default function DashboardPage() {
   async function fetchDashboardData() {
     const supabase = createClient()
     // Month boundaries anchored to the Dubai calendar (UTC+4)
-    const ahoraDubai = getDubaiToday()
-    const y  = ahoraDubai.getFullYear()
-    const m  = ahoraDubai.getMonth()        // 0-indexed
+    const ahoraLocal = tz.getToday()
+    const y  = ahoraLocal.getFullYear()
+    const m  = ahoraLocal.getMonth()        // 0-indexed
     const mm = String(m + 1).padStart(2, '0')
 
     const lastDayMes         = new Date(y, m + 1, 0).getDate()
-    const { start: inicioMesUTC } = dubaiDayRange(new Date(y, m, 1))
-    const { end:   finMesUTC }    = dubaiDayRange(new Date(y, m, lastDayMes))
+    const { start: inicioMesUTC } = tz.dayRange(new Date(y, m, 1))
+    const { end:   finMesUTC }    = tz.dayRange(new Date(y, m, lastDayMes))
     const inicioMesStr = `${y}-${mm}-01`
     const finMesStr    = `${y}-${mm}-${String(lastDayMes).padStart(2, '0')}`
 
@@ -240,8 +241,8 @@ export default function DashboardPage() {
     const yAnt  = m === 0 ? y - 1 : y
     const mmAnt = String(mAnt + 1).padStart(2, '0')
     const lastDayAnt = new Date(yAnt, mAnt + 1, 0).getDate()
-    const { start: inicioMesAnteriorUTC } = dubaiDayRange(new Date(yAnt, mAnt, 1))
-    const { end:   finMesAnteriorUTC }    = dubaiDayRange(new Date(yAnt, mAnt, lastDayAnt))
+    const { start: inicioMesAnteriorUTC } = tz.dayRange(new Date(yAnt, mAnt, 1))
+    const { end:   finMesAnteriorUTC }    = tz.dayRange(new Date(yAnt, mAnt, lastDayAnt))
 
     // ── Invoice KPIs (critical — isolated so bookings errors never block these) ──
     const [
@@ -374,10 +375,14 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!tz.ready) return
     fetchDashboardData()
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [tz.ready])
 
   // ── close dropdowns on outside click ──
   useEffect(() => {

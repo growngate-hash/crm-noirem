@@ -1,7 +1,7 @@
 ﻿'use client'
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { getDubaiToday, dubaiDayRange } from '@/utils/timezone'
+import { useTimezone } from '@/hooks/useTimezone'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
@@ -87,6 +87,7 @@ const EMPTY_EXP = { description: '', category: 'Fixed', subcat: '', amount: '', 
 function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const { t, lang } = useLanguage()
   const isMobile = useIsMobile()
+  const tz = useTimezone()
   const [expenses,         setExpenses]         = useState<any[]>([])
   const [loading,          setLoading]          = useState(true)
   const [expFilter,        setExpFilter]        = useState('All')
@@ -256,13 +257,13 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   async function fetchFinanceKPIs() {
     const supabase = createClient()
     // Month boundaries anchored to the Dubai calendar (UTC+4)
-    const ahoraDubai = getDubaiToday()
-    const y  = ahoraDubai.getFullYear()
-    const m  = ahoraDubai.getMonth()
+    const ahoraLocal = tz.getToday()
+    const y  = ahoraLocal.getFullYear()
+    const m  = ahoraLocal.getMonth()
     const mm = String(m + 1).padStart(2, '0')
     const lastDayMes = new Date(y, m + 1, 0).getDate()
-    const { start: inicioMesUTC } = dubaiDayRange(new Date(y, m, 1))
-    const { end:   finMesUTC }    = dubaiDayRange(new Date(y, m, lastDayMes))
+    const { start: inicioMesUTC } = tz.dayRange(new Date(y, m, 1))
+    const { end:   finMesUTC }    = tz.dayRange(new Date(y, m, lastDayMes))
     const inicioMesStr = `${y}-${mm}-01`
     const finMesStr    = `${y}-${mm}-${String(lastDayMes).padStart(2, '0')}`
 
@@ -2227,6 +2228,7 @@ function ComprasTab() {
 
 export default function FinancePage() {
   const { t } = useLanguage()
+  const tz = useTimezone()
   const [activeTab, setActiveTab] = useState('Costs & Expenses')
   const TAB_LABELS: Record<string, string> = {
     'Costs & Expenses': t('costsExpenses'),
@@ -2241,7 +2243,7 @@ export default function FinancePage() {
       <div style={{ marginBottom: 22 }}>
         <div style={{ fontSize: 22, fontWeight: 700, color: '#f0ede8' }}>{t('finance')}</div>
         <div style={{ fontSize: 12, color: '#888580', marginTop: 3 }}>
-          {new Date().toLocaleDateString('en-AE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          {tz.getToday().toLocaleDateString('en-AE', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </div>
       </div>
 

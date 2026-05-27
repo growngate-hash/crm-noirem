@@ -18,10 +18,15 @@ import {
  *   tz.getToday()                         // → today's Date in company timezone
  *   tz.dayRange(tz.getToday())            // → { start, end } UTC ISO strings
  */
+export type UseTimezoneReturn = ReturnType<typeof useTimezone>
+
 export function useTimezone() {
-  const { timezone } = useCompany()
+  const { timezone, loaded } = useCompany()
 
   return {
+    /** True once the timezone has been fetched from business_settings. */
+    ready: loaded,
+
     /** The raw IANA timezone string, e.g. 'Asia/Dubai'. */
     timezone,
 

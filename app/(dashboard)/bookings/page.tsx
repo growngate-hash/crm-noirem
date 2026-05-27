@@ -6,10 +6,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
-import {
-  toDubaiTime, formatHoraDubai, getHoraDecimalDubai,
-  dubaiToUTC, getDubaiToday, dubaiDayRange,
-} from '@/utils/timezone'
+import { useTimezone } from '@/hooks/useTimezone'
 
 // ── shared UI ─────────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
@@ -102,28 +99,7 @@ const HOURS        = Array.from({length:TOTAL_HORAS},(_,i)=>HORA_INICIO+i) // [7
 
 const DAYS_ABBR = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB']
 
-// ── Gantt position helpers (Dubai UTC+4) ─────────────────────────────────────
-function calcLeft(scheduled_at: string): string {
-  const h = getHoraDecimalDubai(scheduled_at)
-  const pct = ((h - HORA_INICIO) / TOTAL_HORAS) * 100
-  return `${Math.max(0, pct).toFixed(3)}%`
-}
-function calcWidth(scheduled_at: string, end_at: string | null, duration_minutes?: number | null): string {
-  const sh = getHoraDecimalDubai(scheduled_at)
-  let eh: number
-  if (end_at) {
-    eh = getHoraDecimalDubai(end_at)
-  } else if (duration_minutes && duration_minutes > 0) {
-    eh = sh + duration_minutes / 60
-  } else {
-    eh = sh + 1 // fallback: 1 hour minimum
-  }
-  const pct = ((eh - sh) / TOTAL_HORAS) * 100
-  return `${Math.max(0.5, pct).toFixed(3)}%`
-}
-function formatHora(iso: string | null): string {
-  return formatHoraDubai(iso)
-}
+// ── Gantt position helpers (defined inside BookingsPage to access tz hook) ────
 
 // ── Demo data (shown when DB has no bookings) ─────────────────────────────────
 const DEMO_BOOKINGS = [
@@ -200,15 +176,25 @@ type Toast={id:number;msg:string;type:'success'|'error'|'warn'}
 export default function BookingsPage() {
   const { t, lang } = useLanguage()
   const router = useRouter()
+  const tz = useTimezone()
   const [bookings,    setBookings]    = useState<any[]>([])
   const [contacts,    setContacts]    = useState<any[]>([])
   const [vehicles,    setVehicles]    = useState<any[]>([])
   const [services,    setServices]    = useState<any[]>([])
   const [loadingB,    setLoadingB]    = useState(true)
   const [loadingV,    setLoadingV]    = useState(true)
-  const [nowDate,     setNowDate]     = useState(()=>getDubaiToday())
-  const [selectedDay, setSelectedDay] = useState<Date>(()=>getDubaiToday())
-  const [weekRef,     setWeekRef]     = useState<Date>(()=>getDubaiToday())
+  const [nowDate,     setNowDate]     = useState<Date>(new Date())
+  const [selectedDay, setSelectedDay] = useState<Date>(new Date())
+  const [weekRef,     setWeekRef]     = useState<Date>(new Date())
+
+  // Inicializar fechas con timezone correcto una vez que el hook cargue
+  useEffect(() => {
+    if (!tz.ready) return
+    const today = tz.getToday()
+    setNowDate(today)
+    setSelectedDay(today)
+    setWeekRef(today)
+  }, [tz.ready])
 
   const [showNew,         setShowNew]         = useState(false)
   const [editId,          setEditId]          = useState<string|null>(null)
@@ -259,12 +245,35 @@ export default function BookingsPage() {
     setTimeout(()=>setToasts(p=>p.filter(t=>t.id!==id)),3500)
   }
 
+  // ── Gantt position helpers ────────────────────────────────────────────────
+  function calcLeft(scheduled_at: string): string {
+    const h = tz.getHoraDecimal(scheduled_at)
+    const pct = ((h - HORA_INICIO) / TOTAL_HORAS) * 100
+    return `${Math.max(0, pct).toFixed(3)}%`
+  }
+  function calcWidth(scheduled_at: string, end_at: string | null, duration_minutes?: number | null): string {
+    const sh = tz.getHoraDecimal(scheduled_at)
+    let eh: number
+    if (end_at) {
+      eh = tz.getHoraDecimal(end_at)
+    } else if (duration_minutes && duration_minutes > 0) {
+      eh = sh + duration_minutes / 60
+    } else {
+      eh = sh + 1 // fallback: 1 hour minimum
+    }
+    const pct = ((eh - sh) / TOTAL_HORAS) * 100
+    return `${Math.max(0.5, pct).toFixed(3)}%`
+  }
+  function formatHora(iso: string | null): string {
+    return tz.formatHora(iso)
+  }
+
   // ── fetch bookings filtered by selected day ────────────────────────────────
   const fetchBookings = useCallback(async (day:Date) => {
     setLoadingB(true)
     const sb = createClient()
 
-    const { start: startISO, end: endISO } = dubaiDayRange(day)
+    const { start: startISO, end: endISO } = tz.dayRange(day)
 
     const [activeRes, cancelledRes] = await Promise.all([
       sb.from('bookings')
@@ -343,9 +352,9 @@ export default function BookingsPage() {
   // ── global new-booking monitor (booking_requests, any day) ────────────────
   useEffect(()=>{
     function formatDubaiDate(isoDate: string): string {
-      const d   = toDubaiTime(isoDate)
+      const d   = tz.toLocalTime(isoDate)
       const day   = d.getDate()
-      const month = d.toLocaleString('es-AE', { month: 'short', timeZone: 'Asia/Dubai' })
+      const month = d.toLocaleString('es-AE', { month: 'short' })
       const hh    = d.getHours().toString().padStart(2, '0')
       const mm    = d.getMinutes().toString().padStart(2, '0')
       return `${day} ${month} · ${hh}:${mm}`
@@ -450,7 +459,7 @@ export default function BookingsPage() {
   },[showNew, newForm.date, newForm.start_time, newForm.service_id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── clock ─────────────────────────────────────────────────────────────────
-  useEffect(()=>{const t=setInterval(()=>setNowDate(getDubaiToday()),60000);return()=>clearInterval(t)},[])
+  useEffect(()=>{const t=setInterval(()=>setNowDate(tz.getToday()),60000);return()=>clearInterval(t)},[tz.ready])
 
   // ── week nav ───────────────────────────────────────────────────────────────
   const weekDays = getWeekDays(weekRef)
@@ -482,8 +491,8 @@ function getDemoForVehicle(vName:string):any[] {
     if(!newForm.contact_id||!newForm.date||!newForm.start_time) return
     setSaving(true)
     // Input times are Dubai local — store as UTC using +04:00 offset
-    const scheduled_at = dubaiToUTC(newForm.date, newForm.start_time)
-    const end_at       = newForm.end_time ? dubaiToUTC(newForm.date, newForm.end_time) : null
+    const scheduled_at = tz.localToUTC(newForm.date, newForm.start_time)
+    const end_at       = newForm.end_time ? tz.localToUTC(newForm.date, newForm.end_time) : null
     const payload:any={
       contact_id:newForm.contact_id,scheduled_at,end_at,
       technician:newTechs.join(', '),
@@ -519,8 +528,8 @@ function getDemoForVehicle(vName:string):any[] {
 
   function openEdit(b:any){
     // Convert stored UTC times back to Dubai local for the form inputs
-    const s=b.scheduled_at?toDubaiTime(b.scheduled_at):null
-    const e=b.end_at?toDubaiTime(b.end_at):null
+    const s=b.scheduled_at?tz.toLocalTime(b.scheduled_at):null
+    const e=b.end_at?tz.toLocalTime(b.end_at):null
     setNewForm({
       contact_id:b.contact_id??'',vehicle_id:b.vehicle_id??'',service_id:b.service_id??'',
       date:s?toDateStr(s):'',start_time:s?toTimeStr(s):'09:00',end_time:e?toTimeStr(e):'11:00',
@@ -555,7 +564,7 @@ function getDemoForVehicle(vName:string):any[] {
 
 
   const loading = loadingB||loadingV
-  const todayStr = getDubaiToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
+  const todayStr = tz.getToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -609,7 +618,7 @@ function getDemoForVehicle(vName:string):any[] {
           justifyContent:'center',flexShrink:0}}><ChevronLeft size={14}/></button>
         <div style={{display:'flex',gap:6,flex:1,justifyContent:'center'}}>
           {weekDays.map(d=>{
-            const active=sameDay(d,selectedDay), isNow=sameDay(d,getDubaiToday())
+            const active=sameDay(d,selectedDay), isNow=sameDay(d,tz.getToday())
             return (
               <button key={d.toISOString()} onClick={()=>setSelectedDay(d)}
                 style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'10px 14px',
@@ -789,14 +798,14 @@ function getDemoForVehicle(vName:string):any[] {
                       <td style={{padding:'10px 14px',fontSize:13,color:'#f0ede8'}}>{b.contacts?.name??'—'}</td>
                       <td style={{padding:'10px 14px',fontSize:13,color:'#888580'}}>{b.services?.name??'—'}</td>
                       <td style={{padding:'10px 14px',fontSize:13,color:'#888580',fontVariantNumeric:'tabular-nums'}}>
-                        {formatHoraDubai(b.scheduled_at)}
+                        {tz.formatHora(b.scheduled_at)}
                       </td>
                       <td style={{padding:'10px 14px',fontSize:12,color:'#ff4f4f',maxWidth:220,
                         overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                         {b.cancellation_reason??'—'}
                       </td>
                       <td style={{padding:'10px 14px',fontSize:12,color:'#888580',whiteSpace:'nowrap'}}>
-                        {b.cancelled_at ? formatHoraDubai(b.cancelled_at) : '—'}
+                        {b.cancelled_at ? tz.formatHora(b.cancelled_at) : '—'}
                       </td>
                     </tr>
                   ))}
@@ -820,7 +829,7 @@ function getDemoForVehicle(vName:string):any[] {
                 Cancelar reserva
               </div>
               <div style={{fontSize:13,color:'#888580'}}>
-                {cancelTarget.contacts?.name ?? '—'} · {formatHoraDubai(cancelTarget.scheduled_at)}
+                {cancelTarget.contacts?.name ?? '—'} · {tz.formatHora(cancelTarget.scheduled_at)}
               </div>
             </div>
             <div style={{marginBottom:16}}>
@@ -1003,8 +1012,8 @@ function getDemoForVehicle(vName:string):any[] {
               {detailBooking.scheduled_at&&(
                 <DetailRow label={t('schedule')}>
                   {(()=>{
-                    const ds=toDubaiTime(detailBooking.scheduled_at).toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
-                    return <span style={{textTransform:'capitalize'}}>{ds} · {formatHoraDubai(detailBooking.scheduled_at)}{detailBooking.end_at?` — ${formatHoraDubai(detailBooking.end_at)}`:''}</span>
+                    const ds=tz.toLocalTime(detailBooking.scheduled_at).toLocaleDateString('es-AE',{weekday:'long',day:'numeric',month:'long'})
+                    return <span style={{textTransform:'capitalize'}}>{ds} · {tz.formatHora(detailBooking.scheduled_at)}{detailBooking.end_at?` — ${tz.formatHora(detailBooking.end_at)}`:''}</span>
                   })()}
                 </DetailRow>
               )}

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Package } from 'lucide-react'
-import { getDubaiToday, dubaiDayRange, formatHoraDubai, toDubaiTime } from '@/utils/timezone'
+import { useTimezone, UseTimezoneReturn } from '@/hooks/useTimezone'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { useLanguage } from '@/contexts/LanguageContext'
 
@@ -193,15 +193,15 @@ const STATUS_DOT: Record<string, string> = {
   pending:     '#888580',
 }
 
-function VehicleAgenda({ bookings }: { bookings: any[] }) {
+function VehicleAgenda({ bookings, tz }: { bookings: any[]; tz: UseTimezoneReturn }) {
   if (!bookings.length) return null
 
-  const hoyDubai    = getDubaiToday()
-  const mananaDubai = new Date(hoyDubai)
+  const hoyLocal    = tz.getToday()
+  const mananaDubai = new Date(hoyLocal)
   mananaDubai.setDate(mananaDubai.getDate() + 1)
 
-  const { start: startHoy,    end: endHoy    } = dubaiDayRange(hoyDubai)
-  const { start: startManana, end: endManana } = dubaiDayRange(mananaDubai)
+  const { start: startHoy,    end: endHoy    } = tz.dayRange(hoyLocal)
+  const { start: startManana, end: endManana } = tz.dayRange(mananaDubai)
 
   const serviciosHoy    = bookings.filter(b => b.scheduled_at && b.scheduled_at >= startHoy    && b.scheduled_at <= endHoy)
   const serviciosManana = bookings.filter(b => b.scheduled_at && b.scheduled_at >= startManana && b.scheduled_at <= endManana)
@@ -214,7 +214,7 @@ function VehicleAgenda({ bookings }: { bookings: any[] }) {
       <div style={{display:'flex',gap:8,alignItems:'center',padding:'6px 8px',
         borderRadius:7,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.05)'}}>
         <span style={{fontSize:11,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
-          {formatHoraDubai(b.scheduled_at)}
+          {tz.formatHora(b.scheduled_at)}
         </span>
         <div style={{minWidth:0,flex:1}}>
           <div style={{fontSize:11,fontWeight:600,color:'#f0ede8',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
@@ -265,8 +265,8 @@ function VehicleAgenda({ bookings }: { bookings: any[] }) {
 }
 
 // ─── vehicle card ─────────────────────────────────────────────────────────────
-function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInventory, onProgressUpdate, onToggleStatus }: {
-  v: any; alertCount: number; agenda: any[];
+function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onInventory, onProgressUpdate, onToggleStatus }: {
+  v: any; alertCount: number; agenda: any[]; tz: UseTimezoneReturn;
   onEdit: ()=>void; onClear: ()=>void; onAssign: ()=>void; onInventory: ()=>void;
   onProgressUpdate: (bookingId: string, pct: number) => void;
   onToggleStatus: ()=>void;
@@ -408,7 +408,7 @@ function VehicleCard({ v, alertCount, agenda, onEdit, onClear, onAssign, onInven
       )}
 
       {/* Agenda: hoy + mañana */}
-      <VehicleAgenda bookings={agenda}/>
+      <VehicleAgenda bookings={agenda} tz={tz}/>
 
       {/* Botón inventario */}
       <div style={{position:'relative',marginTop:8}}>
@@ -465,6 +465,7 @@ const BTN_GHOST:    React.CSSProperties = { padding:'8px 16px', borderRadius:8, 
 
 export default function VehiclesPage() {
   const { t } = useLanguage()
+  const tz = useTimezone()
   const [vehicles,  setVehicles]  = useState<any[]>([])
   const [contacts,  setContacts]  = useState<any[]>([])
   const [services,  setServices]  = useState<any[]>([])
@@ -549,10 +550,10 @@ export default function VehiclesPage() {
 
   async function fetchVehicleBookings() {
     // Fetch today + tomorrow in Dubai time
-    const today    = getDubaiToday()
+    const today    = tz.getToday()
     const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1)
-    const { start } = dubaiDayRange(today)
-    const { end }   = dubaiDayRange(tomorrow)
+    const { start } = tz.dayRange(today)
+    const { end }   = tz.dayRange(tomorrow)
 
     const { data } = await createClient()
       .from('bookings')
@@ -574,7 +575,7 @@ export default function VehiclesPage() {
 
   useEffect(()=>{
     fetchVehicles()
-    fetchVehicleBookings()
+    if (tz.ready) fetchVehicleBookings()
     const sb = createClient()
     sb.from('contacts').select('id, name').then(({data})=>setContacts(data??[]))
     sb.from('services').select('id, name').then(({data})=>setServices(data??[]))
@@ -599,7 +600,7 @@ export default function VehiclesPage() {
       })
       .subscribe()
     return ()=>{ sb.removeChannel(channel) }
-  },[])
+  },[tz.ready])
 
   useEffect(()=>{
     function onKey(e: KeyboardEvent) {
@@ -797,7 +798,7 @@ export default function VehiclesPage() {
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
         <div>
           <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('vehicles')} — Home Service</div>
-          <div style={{fontSize:12,color:'#888580',marginTop:3}}>{new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+          <div style={{fontSize:12,color:'#888580',marginTop:3}}>{tz.getToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         </div>
         <button style={BTN_GOLD} onClick={()=>setShowAdd(true)}>+ {t('addVehicle')}</button>
       </div>
@@ -828,6 +829,7 @@ export default function VehiclesPage() {
             <VehicleCard key={v.id} v={v}
               alertCount={v.lowStockCount ?? vehAlerts[v.id] ?? 0}
               agenda={vehBookings[v.id]??[]}
+              tz={tz}
               onEdit={()=>openEdit(v)}
               onClear={()=>clearVehicle(v)}
               onAssign={()=>{ setAssignVeh(v); setAssignForm({...EMPTY_ASSIGN}) }}
