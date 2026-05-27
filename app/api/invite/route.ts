@@ -23,7 +23,7 @@ export async function POST(request: Request) {
   )
 
   const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim(), {
-    redirectTo: 'https://crm-noirem.vercel.app/accept-invite',
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://crm-noirem.vercel.app'}/accept-invite`,
     data: { role: (role ?? 'technician').toLowerCase() },
   })
 
