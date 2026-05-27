@@ -28,8 +28,5 @@ export async function GET() {
       return { id, email, name: data.user?.user_metadata?.name || email.split('@')[0], role: perm?.role ?? 'admin', permissions: perm?.permissions ?? null }
     })
   )
-  console.log('[api/team] allIds:', allIds)
-  console.log('[api/team] perms:', perms)
-  console.log('[api/team] team:', team)
   return NextResponse.json({ team })
 }
