@@ -22,17 +22,30 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim(), {
-    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://crm-noirem.vercel.app'}/accept-invite`,
-    data: { role: (role ?? 'technician').toLowerCase() },
-  })
+  // Verificar si el usuario ya existe en Auth
+  const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+  const existingUser = existingUsers?.users?.find(u => u.email === email.trim())
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
+  let userId: string | undefined
+
+  if (existingUser) {
+    // Usuario ya existe — solo agregar al equipo sin reinvitar
+    userId = existingUser.id
+  } else {
+    // Usuario nuevo — enviar invitación por email
+    const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim(), {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://crm-noirem.vercel.app'}/accept-invite`,
+      data: { role: (role ?? 'technician').toLowerCase() },
+    })
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+
+    userId = data.user?.id
   }
 
   // Pre-create user_permissions so the role is set when they accept the invite
-  const userId = data.user?.id
   if (userId) {
     const perms = buildDefaultPermissions(role ?? 'Technician')
 
