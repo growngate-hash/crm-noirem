@@ -14,12 +14,12 @@ export async function GET() {
   const { data: members } = await supabase.from('team_members').select('member_id').eq('owner_id', user.id)
   const memberIds = members?.map(m => m.member_id) ?? []
   const allIds = [user.id, ...memberIds]
-  const { data: perms } = await supabase.from('user_permissions').select('user_id, role, permissions').in('user_id', allIds)
   const supabaseAdmin = (await import('@supabase/supabase-js')).createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
+  const { data: perms } = await supabaseAdmin.from('user_permissions').select('user_id, role, permissions').in('user_id', allIds)
   const team = await Promise.all(
     allIds.map(async (id) => {
       const { data } = await supabaseAdmin.auth.admin.getUserById(id)
