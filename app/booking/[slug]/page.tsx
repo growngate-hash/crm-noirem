@@ -428,7 +428,12 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   useEffect(() => {
     async function loadTenant() {
       console.log('[loadTenant] slug:', slug)
-      const { data, error } = await createClient()
+      const { createClient: createSupabaseClient } = await import('@supabase/supabase-js')
+      const publicClient = createSupabaseClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      )
+      const { data, error } = await publicClient
         .from('business_settings')
         .select('user_id, business_name, timezone, currency')
         .eq('slug', slug)
