@@ -240,13 +240,14 @@ Las siguientes tablas fueron creadas antes de la arquitectura multi-tenant y req
 | Tabla | Migración de fix | Estado |
 |---|---|---|
 | `services` | `20260527_services_rls.sql` | Migración creada, **pendiente aplicar** |
-| `invoices` | `20260527_finance_rls.sql` | Migración creada, **pendiente aplicar** |
+| `invoices` | `20260527_finance_rls.sql` | RLS aplicada — frontend corregido (user_id en inserts) |
 | `expenses` | `20260527_finance_rls.sql` | Migración creada, **pendiente aplicar** |
-| `purchase_invoices` | `20260527_finance_rls.sql` | Migración creada, **pendiente aplicar** |
+| `purchase_invoices` | `20260527_finance_rls.sql` | RLS aplicada — frontend corregido (user_id en inserts) |
+| `purchase_invoice_lines` | `20260527_finance_rls.sql` | RLS aplicada — frontend corregido (user_id en inserts) |
 | `bank_accounts` | `20260527_finance_rls.sql` | Migración creada, **pendiente aplicar** |
 | `bookings` | — | RLS activa con `USING (true)` — **requiere nueva migración** |
 | `journal_entries` | — | Sin RLS definida — **requiere nueva migración** |
-| `chart_of_accounts` | — | Sin RLS definida — **requiere nueva migración** |
+| `chart_of_accounts` | — | Sin RLS definida — queries del frontend ya filtran por `user_id` |
 
 > Antes de aplicar cualquier migración de RLS en producción, ejecutar el backfill con el owner_id de Noirem (`afe5c9b1-d3b4-4617-80c0-73743cf92b33`) para no perder datos existentes.
 
@@ -276,3 +277,4 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | `20260527_finance_rls.sql` | RLS para `invoices`, `expenses`, `purchase_invoices`, `bank_accounts` |
 | `20260527_fix_get_owner_id.sql` | Reescritura de `get_owner_id()` con patrón CASE/EXISTS — fix error 21000 |
 | `20260527_fix_journal_trigger.sql` | Documentación del fix a `generate_journal_entry_for_invoice()` aplicado directamente en BD |
+| `20260527_fix_purchase_journal_triggers.sql` | Documentación del fix a `generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()` aplicado directamente en BD |

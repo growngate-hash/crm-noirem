@@ -184,7 +184,85 @@ async function confirmPayment() {
 
 ---
 
-## 5. ANULACIÓN DE FACTURAS
+## 5. FACTURAS DE COMPRA (`purchase_invoices`)
+
+**Función:** `handleSavePurchase()` en `app/(dashboard)/finance/page.tsx` — tab "Compras".
+
+### Flujo del insert
+
+```typescript
+// 1. Autenticación — obligatorio para RLS
+const { data: { user } } = await supabase.auth.getUser()
+if (!user) { showToast('No autenticado', 'error'); setSaving(false); return }
+
+// 2. INSERT en purchase_invoices (user_id obligatorio)
+const { data: invoice, error } = await supabase
+  .from('purchase_invoices')
+  .insert({
+    user_id:        user.id,          // ← obligatorio para RLS
+    supplier_id:    purchaseForm.supplier_id || null,
+    supplier_name:  purchaseForm.supplier_name,
+    invoice_number: purchaseForm.invoice_number,
+    issue_date:     purchaseForm.issue_date,
+    due_date:       purchaseForm.due_date || null,
+    status:         'pendiente',
+    subtotal:       subtotalNeto,
+    discount:       parseFloat(purchaseForm.discount) || 0,
+    tax:            vat,
+    total:          total,
+    notes:          purchaseForm.notes,
+  })
+
+// 3. Obtener cuenta contable 1300 filtrando por user_id (evita error 21000)
+const { data: invAccount } = await supabase
+  .from('chart_of_accounts')
+  .select('id')
+  .eq('code', '1300')
+  .eq('user_id', user.id)    // ← obligatorio en multi-tenant
+  .single()
+
+// 4. INSERT de líneas (user_id obligatorio)
+await supabase.from('purchase_invoice_lines').insert({
+  user_id:             user.id,     // ← obligatorio para RLS
+  purchase_invoice_id: invoice.id,
+  inventory_item_id:   line.inventory_item_id || null,
+  account_id:          accountId || null,
+  description:         line.description,
+  quantity:            parseFloat(line.quantity) || 1,
+  unit_price:          parseFloat(line.unit_price) || 0,
+  discount:            parseFloat(line.discount) || 0,
+  subtotal:            lineSubtotal,
+  account_type:        line.inventory_item_id ? 'inventory' : 'expense',
+})
+```
+
+### Confirmación de pago de compra
+
+**Función:** `confirmPayPurchase()` — descuenta el total del balance bancario al pagar:
+
+```typescript
+await supabase.from('purchase_invoices').update({
+  status: 'pagada', payment_date, payment_reference, bank_account_id
+}).eq('id', payingPurchase.id)
+
+// Descuenta del balance (compra = salida de dinero)
+const newBalance = parseFloat(bank.current_balance) - parseFloat(payingPurchase.total)
+await supabase.from('bank_accounts').update({ current_balance: newBalance })
+```
+
+Misma advertencia de atomicidad que `confirmPayment()` — no hay rollback si falla el update de `bank_accounts`.
+
+### Triggers contables de compras
+
+Dos funciones en BD (aplicadas directamente, documentadas en `20260527_fix_purchase_journal_triggers.sql`):
+- `generate_journal_for_purchase()` — genera asiento al crear una `purchase_invoice`
+- `generate_journal_for_purchase_payment()` — genera asiento al marcarla como pagada
+
+Ambas usan `v_owner_id = COALESCE(NEW.user_id, auth.uid())` para filtrar `chart_of_accounts` y evitar el error 21000 multi-tenant.
+
+---
+
+## 7. ANULACIÓN DE FACTURAS
 
 **Función:** `handleVoidInvoice()` en `app/(dashboard)/finance/page.tsx`
 
@@ -219,7 +297,7 @@ CREATE POLICY "tenant_isolation" ON bank_accounts
 
 ---
 
-## 7. KPIs FINANCIEROS
+## 8. KPIs FINANCIEROS
 
 Calculados en `fetchFinanceKPIs()` (`app/(dashboard)/finance/page.tsx`). Siempre acotados al mes en curso en zona horaria Dubai (UTC+4) usando `useTimezone()`.
 
@@ -234,25 +312,30 @@ Calculados en `fetchFinanceKPIs()` (`app/(dashboard)/finance/page.tsx`). Siempre
 
 ---
 
-## 8. PUNTOS CRÍTICOS
+## 9. PUNTOS CRÍTICOS
 
-1. **`user_id` es obligatorio en todo INSERT a `invoices`.** La RLS filtra por `user_id = get_owner_id()`. Un insert sin `user_id` crea la fila pero hace invisible al owner — el frontend mostrará 0 facturas aunque existan en la BD.
+1. **`user_id` es obligatorio en todo INSERT a `invoices`, `purchase_invoices` y `purchase_invoice_lines`.** La RLS filtra por `user_id = get_owner_id()`. Un insert sin `user_id` crea la fila pero la hace invisible al owner — el frontend mostrará 0 registros aunque existan en la BD.
 
-2. **La tabla `invoices` no tiene migración de creación.** Fue creada en el Dashboard de Supabase. Si se necesita reproducir el esquema en otro entorno, debe hacerse manualmente o con `supabase db dump`.
+2. **Las tablas `invoices` y `bank_accounts` no tienen migración de creación.** Fueron creadas en el Dashboard de Supabase. Si se necesita reproducir el esquema en otro entorno, debe hacerse manualmente o con `supabase db dump`.
 
-3. **`generate_journal_entry_for_invoice()`** es un trigger en la BD (aplicado directamente, documentado en `20260527_fix_journal_trigger.sql`) que genera asientos contables al crear facturas. Debe filtrar por `user_id` en todos sus SELECTs a `chart_of_accounts`, de lo contrario falla con error 21000 en entornos multi-tenant.
+3. **`generate_journal_entry_for_invoice()`** — trigger en BD (documentado en `20260527_fix_journal_trigger.sql`) que genera asientos contables al crear facturas de venta. Filtra `chart_of_accounts` por `user_id` para evitar error 21000.
 
-4. **No hay trigger que actualice `bank_accounts` automáticamente.** El balance se ajusta manualmente desde `confirmPayment()`. Si la función falla a mitad, el estado queda inconsistente.
+4. **`generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()`** — triggers en BD (documentados en `20260527_fix_purchase_journal_triggers.sql`) para facturas de compra. Usan `v_owner_id = COALESCE(NEW.user_id, auth.uid())` como filtro en todos los SELECTs a `chart_of_accounts`.
 
-5. **El conteo para numeración de facturas no es atómico.** Dos inserts simultáneos en el mismo mes pueden generar el mismo `invoice_no`.
+5. **No hay transacciones atómicas en los pagos.** Tanto `confirmPayment()` (ventas) como `confirmPayPurchase()` (compras) hacen dos UPDATEs separados — si el segundo falla, el primero no se revierte. El balance bancario puede quedar inconsistente.
+
+6. **El conteo para numeración de facturas de venta no es atómico.** Dos inserts simultáneos en el mismo mes pueden generar el mismo `invoice_no`.
+
+7. **`handleMarkAsPaid` carga cuentas bancarias sin filtro `is_active`.** El modal de pago puede mostrar cuentas inactivas. `loadBankAccounts()` sí filtra — hay inconsistencia entre los dos tabs.
 
 ---
 
-## 9. MIGRACIONES RELEVANTES
+## 10. MIGRACIONES RELEVANTES
 
 | Archivo | Contenido |
 |---|---|
 | `20260527_finance_rls.sql` | RLS para `invoices`, `expenses`, `purchase_invoices`, `bank_accounts` |
-| `20260527_fix_get_owner_id.sql` | Fix de `get_owner_id()` que desbloquea los WITH CHECK de RLS en estas tablas |
+| `20260527_fix_get_owner_id.sql` | Fix de `get_owner_id()` — desbloquea los WITH CHECK de RLS en todas estas tablas |
 | `20260527_fix_journal_trigger.sql` | Documentación del fix a `generate_journal_entry_for_invoice()` |
-| `compras-setup.sql` | Agrega `bank_account_id` a `invoices` y crea `purchase_invoices` |
+| `20260527_fix_purchase_journal_triggers.sql` | Documentación del fix a `generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()` |
+| `compras-setup.sql` | Agrega `bank_account_id` a `invoices` y crea `purchase_invoices` + `purchase_invoice_lines` |

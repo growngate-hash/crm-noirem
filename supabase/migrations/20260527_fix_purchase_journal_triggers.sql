@@ -1,0 +1,7 @@
+-- Fix: generate_journal_for_purchase() y generate_journal_for_purchase_payment()
+-- Problema: funciones no filtraban por user_id en chart_of_accounts
+-- causando error 21000 en entornos multi-tenant.
+-- Fix: agregar v_owner_id = COALESCE(NEW.user_id, auth.uid()) y filtrar
+-- todos los SELECT y INSERT por ese owner_id.
+-- Aplicado directamente en Supabase SQL Editor el 2026-05-27.
+-- Este archivo es documentación — las funciones ya están actualizadas en BD.
