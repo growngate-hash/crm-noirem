@@ -8,13 +8,18 @@
   --gold-dim: rgba(245,181,68,0.12);
   --gold-b:   rgba(245,181,68,0.25);
   --cyan:     #3DD9D6;
+  --cyan-dim: rgba(61,217,214,0.08);
+  --cyan-b:   rgba(61,217,214,0.25);
   --red:      #D9533D;
   --text:     #0B2A4A;
   --text2:    #5A5852;
+  --text3:    #A8A6A0;
   --border:   #F0EFEA;
-  --shadow:   0 4px 12px rgba(11,42,74,0.08);
-  --font-display: var(--font-geist, 'Geist', -apple-system, sans-serif);
-  --font-mono: var(--font-geist-mono, 'JetBrains Mono', monospace);
+  --border-cyan: rgba(61,217,214,0.3);
+  --shadow:   0 4px 12px rgba(11,42,74,0.06);
+  --shadow-md: 0 8px 24px rgba(11,42,74,0.08);
+  --font-display: 'Geist', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; }

@@ -397,13 +397,13 @@ export default function DashboardPage() {
 
   // ── KPI row data ──
   const row1 = [
-    { key:'totalProfit',   label:t('totalProfit'),    color: kpis.totalProfit >= 0 ? 'var(--cyan)' : 'var(--red)', iconBg:'rgba(0,212,170,0.1)',   icon: kpis.totalProfit >= 0 ? TrendingUp : TrendingDown,
+    { key:'totalProfit',   label:t('totalProfit'),    color: kpis.totalProfit >= 0 ? '#1F8F5C' : '#D9533D', iconBg:'rgba(0,212,170,0.1)',   icon: kpis.totalProfit >= 0 ? TrendingUp : TrendingDown,
       value: formatAED(kpis.totalProfit), sub:`— ${formatAED(kpis.revenueMTD)} ingresos este mes` },
-    { key:'totalRevenue',  label:t('totalRevenue'),   color:'var(--cyan)', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,
+    { key:'totalRevenue',  label:t('totalRevenue'),   color:'#1F5A9B', iconBg:'rgba(0,212,170,0.1)',   icon:DollarSign,
       value: formatAED(kpis.totalRevenue),  sub:`sin VAT · ${formatAED(kpis.revenueMTD)} este mes` },
-    { key:'totalExpenses', label:t('totalExpenses'),  color:'var(--red)',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown,
+    { key:'totalExpenses', label:t('totalExpenses'),  color:'#D9533D',  iconBg:'rgba(255,79,79,0.1)',   icon:TrendingDown,
       value: formatAED(kpis.totalExpenses), sub:'— gastos acumulados' },
-    { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'rgba(201,168,76,0.12)', iconChar:'◆', value: String(kpis.lowStockAlerts), bigNum: true,
+    { key:'lowStock',      label:t('lowStockAlerts'), color:'var(--gold)', iconBg:'var(--gold-dim)', iconChar:'◆', value: String(kpis.lowStockAlerts), bigNum: true,
       sub: kpis.lowStockAlerts === 0 ? `— ${t('allInStock')}` : `— ${kpis.lowStockAlerts} items bajo mínimo` },
   ]
   const row2 = [
@@ -537,7 +537,7 @@ export default function DashboardPage() {
               return (
                 <div key="lowStock" style={{
                   background: hasAlerts ? 'rgba(239,68,68,0.08)' : 'var(--bg2)',
-                  border: `1px solid ${hasAlerts ? '#ef4444' : 'var(--border)'}`,
+                  border: `1px solid ${hasAlerts ? '#ef4444' : 'var(--border-cyan)'}`,
                   borderRadius: 12, padding: '18px 16px',
                   position: 'relative', overflow: 'hidden',
                   transition: 'all 0.3s ease',
@@ -570,7 +570,7 @@ export default function DashboardPage() {
               )
             }
             return (
-              <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px' }}>
+              <div key={card.key} style={{ background:'var(--bg2)', border:'1px solid var(--border-cyan)', borderRadius:12, padding:'18px 16px', boxShadow:'var(--shadow)' }}>
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
                   <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>{card.label}</div>
                   <div style={{ width:28, height:28, borderRadius:8, background:card.iconBg, display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -595,7 +595,7 @@ export default function DashboardPage() {
         {loading
           ? [0,1,2,3].map(i => <KpiSkeleton2 key={i} />)
           : row2.map(card => (
-            <div key={card.key} style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 16px' }}>
+            <div key={card.key} style={{ background:'var(--bg3)', border:'1px solid var(--border-cyan)', borderRadius:12, padding:'16px 16px', boxShadow:'var(--shadow)' }}>
               <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:8 }}>{card.label}</div>
               <div style={{ fontSize:22, fontWeight:800, color:'var(--text)', marginBottom:6 }}>{card.value}</div>
               <div style={{ display:'flex', gap:5, alignItems:'center' }}>
@@ -618,7 +618,7 @@ export default function DashboardPage() {
       <div className="bottom-grid">
 
         {/* Recent Bookings */}
-        <div className="glass" style={{ overflow:'hidden' }}>
+        <div className="glass" style={{ overflow:'hidden', border:'1px solid var(--border-cyan)', boxShadow:'var(--shadow)' }}>
           <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div style={{ fontSize:13, fontWeight:700 }}>{t('recentBookings')}</div>
             <span style={{ fontSize:11, color:'var(--text2)' }}>{t('last10')}</span>
@@ -671,7 +671,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Productos Bajos de Stock */}
-        <div className="glass" style={{ display:'flex', flexDirection:'column', overflow:'hidden', border: kpis.lowStockAlerts > 0 ? '1px solid rgba(239,68,68,0.3)' : undefined }}>
+        <div className="glass" style={{ display:'flex', flexDirection:'column', overflow:'hidden', border: kpis.lowStockAlerts > 0 ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border-cyan)', boxShadow:'var(--shadow)' }}>
           <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', flexShrink:0, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:13, fontWeight:700 }}>Productos Bajos de Stock</div>
