@@ -87,26 +87,3 @@ export function dayRangeWithTz(date: Date, timezone: string): { start: string; e
     end:   localToUTCWithTz(`${y}-${mo}-${d}`, '23:59:59', timezone),
   }
 }
-
-// ─── legacy exports (Dubai-hardcoded) — kept for backward compatibility ───────
-// @deprecated Use the *WithTz equivalents and pass timezone from CompanyContext.
-
-const DUBAI = 'Asia/Dubai'
-
-/** @deprecated Use toLocalTimeWithTz(utcDate, timezone) */
-export const toDubaiTime = (utcDate: string) => toLocalTimeWithTz(utcDate, DUBAI)
-
-/** @deprecated Use formatHoraWithTz(utcDate, timezone) */
-export const formatHoraDubai = (utcDate: string | null) => formatHoraWithTz(utcDate, DUBAI)
-
-/** @deprecated Use getHoraDecimalWithTz(utcDate, timezone) */
-export const getHoraDecimalDubai = (utcDate: string) => getHoraDecimalWithTz(utcDate, DUBAI)
-
-/** @deprecated Use localToUTCWithTz(fecha, hora, timezone) */
-export const dubaiToUTC = (fecha: string, hora: string) => localToUTCWithTz(fecha, hora, DUBAI)
-
-/** @deprecated Use getTodayWithTz(timezone) */
-export const getDubaiToday = () => getTodayWithTz(DUBAI)
-
-/** @deprecated Use dayRangeWithTz(date, timezone) */
-export const dubaiDayRange = (date: Date) => dayRangeWithTz(date, DUBAI)
