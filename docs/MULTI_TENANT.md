@@ -183,7 +183,8 @@ CREATE TABLE tenants (
   trial_ends_at timestamptz DEFAULT now() + INTERVAL '10 days',
   country       text,
   timezone      text,
-  currency      text
+  currency      text,
+  is_superadmin boolean NOT NULL DEFAULT false  -- agregado en 20260527_admin_panel.sql
 );
 ```
 
@@ -211,6 +212,28 @@ const { data: tenant } = await supabaseAdmin
   .eq('owner_id', user.id)
   .maybeSingle()
 ```
+
+### Protección de rutas `/admin`
+
+Las rutas `/admin/**` tienen un bloque de guardia propio que se evalúa **antes** de la lógica general de tenants. Retorna early para no interferir con el resto del middleware:
+
+```typescript
+if (path.startsWith('/admin')) {
+  if (!user) redirect('/login')
+
+  const supabaseAdmin = createClient(URL, SUPABASE_SERVICE_ROLE_KEY)
+  const { data: adminTenant } = await supabaseAdmin
+    .from('tenants')
+    .select('is_superadmin')
+    .eq('owner_id', user.id)
+    .maybeSingle()
+
+  if (!adminTenant?.is_superadmin) redirect('/dashboard')
+  return supabaseResponse  // superadmin → dejar pasar
+}
+```
+
+El layout `app/admin/layout.tsx` hace una segunda verificación de sesión vía `createClient()` (cookie-based), pero **no** verifica `is_superadmin` — esa responsabilidad recae en el middleware.
 
 Rutas excluidas del matcher (no pasan por middleware):
 `_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/register`, `booking`, `auth`, imágenes.
@@ -342,3 +365,4 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | `20260527_fix_journal_trigger.sql` | Documentación del fix a `generate_journal_entry_for_invoice()` aplicado directamente en BD |
 | `20260527_fix_purchase_journal_triggers.sql` | Documentación del fix a `generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()` aplicado directamente en BD |
 | `20260527_fix_vehicles_rls.sql` | Policy `auth_see_unowned_vehicles` — permite ver vehículos de clientes con `user_id = NULL` |
+| `20260527_admin_panel.sql` | Columna `is_superadmin` en `tenants` + tabla `admin_audit_log` con RLS para superadmins |
