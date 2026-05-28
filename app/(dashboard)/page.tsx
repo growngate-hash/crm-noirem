@@ -37,9 +37,9 @@ function initials(n: string) {
 
 // ─── constants ───────────────────────────────────────────────────────────────
 const TIER_GRAD: Record<string, string> = {
-  'Ultra-VIP': 'linear-gradient(135deg,#00d4aa,#00a87e)',
-  VIP: 'linear-gradient(135deg,#c9a84c,#a07830)',
-  Standard: 'linear-gradient(135deg,#555,#333)',
+  'Ultra-VIP': 'linear-gradient(135deg,#3DD9D6,#2BB8B5)',
+  VIP: 'linear-gradient(135deg,#F5B544,#D4952A)',
+  Standard: 'linear-gradient(135deg,#888,#666)',
 }
 const DOT_COLOR: Record<string, string> = {
   completed: '#22c55e', in_progress: '#818cf8', confirmed: '#00d4aa',
@@ -61,7 +61,7 @@ const PERIOD_OPTIONS = [
   { key: 'thisQuarter',  label: 'Este Trimestre' },
   { key: 'thisYear',     label: 'Este Año' },
 ]
-const GOLD = '#c9a84c'
+const GOLD = '#F5B544'
 const CHART_COLORS = [GOLD, '#00d4aa', '#ff4f4f', '#818cf8', '#ffa800']
 
 // ─── demo chart data ──────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ const DEMO_EXPENSES = [{name:'Materiales',value:35},{name:'Mano de obra',value:4
 const DEMO_PRODUCTS = [{name:'Ceramic Coating',v:85000},{name:'Full Detail',v:62000},{name:'PPF',v:54000},{name:'Corrección',v:38000},{name:'Tintado',v:22000}]
 const DEMO_CLIENTS  = [{name:'Khalid Al Mansoori',v:45000},{name:'Mohammed Al Maktoum',v:38000},{name:'Sara Al Rashid',v:29000},{name:'Ahmed Hassan',v:24000},{name:'Fatima Al Zaabi',v:18000}]
 
-const tooltipStyle = { background:'#141416', border:'1px solid rgba(201,168,76,0.25)', borderRadius:8, fontSize:11, color:'#f0ede8' }
+const tooltipStyle = { background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, fontSize:11, color:'#0B2A4A' }
 
 // ─── chart widget ─────────────────────────────────────────────────────────────
 function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
@@ -187,9 +187,10 @@ function KpiSkeleton2() {
 // ─── dropdown shared style ───────────────────────────────────────────────────
 const dropdownStyle: React.CSSProperties = {
   position:'absolute', top:'110%', right:0, zIndex:300,
-  background:'#141416', border:'1px solid rgba(201,168,76,0.25)',
+  background:'#FFFFFF', border:'1px solid #F0EFEA',
   borderRadius:10, minWidth:200,
-  boxShadow:'0 12px 32px rgba(0,0,0,0.5)',
+  boxShadow:'0 8px 24px rgba(11,42,74,0.08)',
+  color:'#0B2A4A',
 }
 
 // ─── main page ────────────────────────────────────────────────────────────────
@@ -420,8 +421,8 @@ export default function DashboardPage() {
     return {
       display:'block', width:'100%', textAlign:'left', border:'none', cursor:'pointer',
       padding:'10px 16px', fontSize:13, fontFamily:'Outfit,sans-serif',
-      background: active ? 'rgba(201,168,76,0.12)' : 'transparent',
-      color: active ? GOLD : '#888580',
+      background: active ? 'rgba(245,181,68,0.12)' : 'transparent',
+      color: active ? GOLD : '#5A5852',
       borderLeft: active ? `2px solid ${GOLD}` : '2px solid transparent',
       transition:'all 0.12s',
     }
@@ -459,15 +460,15 @@ export default function DashboardPage() {
                   {PERIOD_OPTIONS.map(p => (
                     <button key={p.key} onClick={() => selectPeriod(p.key, p.label)}
                       style={optStyle(period === p.key)}
-                      onMouseEnter={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
-                      onMouseLeave={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
+                      onMouseEnter={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = '#FAFAF7'; (e.currentTarget as HTMLElement).style.color = '#0B2A4A' } }}
+                      onMouseLeave={e => { if (period !== p.key) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#5A5852' } }}>
                       {p.label}
                     </button>
                   ))}
                   <div style={{ height:1, background:'rgba(255,255,255,0.06)', margin:'4px 0' }} />
                   <button onClick={() => setPeriodView('custom')} style={optStyle(period === 'custom')}
-                    onMouseEnter={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
-                    onMouseLeave={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
+                    onMouseEnter={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = '#FAFAF7'; (e.currentTarget as HTMLElement).style.color = '#0B2A4A' } }}
+                    onMouseLeave={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#5A5852' } }}>
                     Rango Personalizado
                   </button>
                 </div>
@@ -477,12 +478,12 @@ export default function DashboardPage() {
                   <div>
                     <label style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Desde</label>
                     <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
+                      style={{ width:'100%', background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, padding:'8px 12px', color:'#0B2A4A', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
                   </div>
                   <div>
                     <label style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', display:'block', marginBottom:5 }}>Hasta</label>
                     <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-                      style={{ width:'100%', background:'#1a1a1e', border:`1px solid ${GOLD}40`, borderRadius:8, padding:'8px 12px', color:'#f0ede8', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
+                      style={{ width:'100%', background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, padding:'8px 12px', color:'#0B2A4A', fontSize:12, fontFamily:'Outfit,sans-serif', outline:'none' }} />
                   </div>
                   <div style={{ display:'flex', gap:8, marginTop:4 }}>
                     <button onClick={applyCustom} disabled={!customFrom || !customTo}
@@ -512,8 +513,8 @@ export default function DashboardPage() {
                 {CHART_OPTIONS.map(opt => (
                   <button key={opt.id} onClick={() => addChart(opt.id)}
                     style={{ ...optStyle(activeCharts.includes(opt.id)), display:'flex', alignItems:'center', gap:10 }}
-                    onMouseEnter={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = '#1a1a1e'; (e.currentTarget as HTMLElement).style.color = '#f0ede8' } }}
-                    onMouseLeave={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#888580' } }}>
+                    onMouseEnter={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = '#FAFAF7'; (e.currentTarget as HTMLElement).style.color = '#0B2A4A' } }}
+                    onMouseLeave={e => { if (!activeCharts.includes(opt.id)) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#5A5852' } }}>
                     <span style={{ fontSize:15 }}>{opt.emoji}</span>
                     <span>{opt.label}</span>
                     {activeCharts.includes(opt.id) && <span style={{ marginLeft:'auto', fontSize:10, color:GOLD }}>✓</span>}
@@ -582,7 +583,7 @@ export default function DashboardPage() {
                   ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
                   : <div style={{ fontSize:22, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</div>
                 }
-                <div style={{ fontSize:10, color:'#3a3836', marginTop:6 }}>{card.sub}</div>
+                <div style={{ fontSize:10, color:'#5A5852', marginTop:6 }}>{card.sub}</div>
               </div>
             )
           })
