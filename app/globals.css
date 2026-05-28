@@ -1,17 +1,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #0d0d0f;
-  --bg2:      #141416;
-  --bg3:      #1a1a1e;
-  --gold:     #c9a84c;
-  --gold-dim: rgba(201,168,76,0.12);
-  --gold-b:   rgba(201,168,76,0.25);
-  --cyan:     #00d4aa;
-  --red:      #ff4f4f;
-  --text:     #f0ede8;
-  --text2:    #888580;
-  --border:   rgba(255,255,255,0.06);
+  --bg:       #f5f4ef;
+  --bg2:      #FFFFFF;
+  --bg3:      #FAFAF7;
+  --gold:     #F5B544;
+  --gold-dim: rgba(245,181,68,0.12);
+  --gold-b:   rgba(245,181,68,0.25);
+  --cyan:     #3DD9D6;
+  --red:      #D9533D;
+  --text:     #0B2A4A;
+  --text2:    #5A5852;
+  --border:   #F0EFEA;
+  --shadow:   0 4px 12px rgba(11,42,74,0.08);
+  --font-display: var(--font-geist, 'Geist', -apple-system, sans-serif);
+  --font-mono: var(--font-geist-mono, 'JetBrains Mono', monospace);
 }
 
 html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; }
