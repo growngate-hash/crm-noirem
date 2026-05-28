@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
+import { useTimezone } from '@/hooks/useTimezone'
 import { PayrollLine, Employee } from '@/types'
 import { Plus, Trash2, CheckCircle } from 'lucide-react'
 
@@ -28,6 +29,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
   const supabase = createClient()
   const router = useRouter()
   const { currency } = useCompany()
+  const tz = useTimezone()
 
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -199,7 +201,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         .insert({
           user_id: userId,
           entry_number: entryNumber,
-          entry_date: now.toISOString().split('T')[0],
+          entry_date: tz.getToday(),
           description: `Pago de nómina — ${periodName}`,
           reference_type: 'payroll',
           reference_id: periodId,
