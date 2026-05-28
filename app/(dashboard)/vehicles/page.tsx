@@ -745,13 +745,19 @@ export default function VehiclesPage() {
   async function saveEdit() {
     if (!editVeh || !editForm.name.trim()) return
     setSaving(true)
-    const assignedEmployee = techEmployees.find(e => editTechs.includes(e.full_name))
+    const assignedEmployeeIds = techEmployees
+      .filter(e => editTechs.includes(e.full_name))
+      .map(e => e.id)
     const {error} = await createClient().from('vehicles').update({
-      name:editForm.name, license_plate:editForm.license_plate, make:editForm.make,
-      model:editForm.model, year:editForm.year?Number(editForm.year):null,
-      color:editForm.color,
-      technician:editTechs.join(', '), technicians:editTechs,
-      employee_id: assignedEmployee?.id ?? null,
+      name: editForm.name,
+      license_plate: editForm.license_plate,
+      make: editForm.make,
+      model: editForm.model,
+      year: editForm.year ? Number(editForm.year) : null,
+      color: editForm.color,
+      technician: editTechs.join(', '),
+      technicians: editTechs,
+      employee_ids: assignedEmployeeIds,
     }).eq('id', editVeh.id)
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
