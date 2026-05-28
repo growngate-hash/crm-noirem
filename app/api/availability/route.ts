@@ -203,13 +203,13 @@ export async function GET(req: NextRequest) {
     const slotEnd   = slotStart + requestedDurMin
 
     // El servicio solicitado debe caber íntegro antes del cierre
-    if (slotStart + requestedDurMin > CLOSE_MIN) {
+    if (slotStart + requestedDurMin >= CLOSE_MIN) {
       blocked.push({ slot, reason: `Fuera de horario (cierre ${businessHour.end_time})` })
       continue
     }
 
     if (!effectiveIds) {
-      available.push(slot)
+      blocked.push({ slot, reason: 'Sin vehículos disponibles' })
       continue
     }
 
