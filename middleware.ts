@@ -28,11 +28,36 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isLoginPage    = path.startsWith('/login')
-  const isRegisterPage = path.startsWith('/register')
-  const isUpgradePage  = path.startsWith('/upgrade')
+
+  // ── Rutas /admin — requieren is_superadmin = true ─────────────────────────
+  if (path.startsWith('/admin')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    const supabaseAdmin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    )
+    const { data: adminTenant } = await supabaseAdmin
+      .from('tenants')
+      .select('is_superadmin')
+      .eq('owner_id', user.id)
+      .maybeSingle()
+    if (!adminTenant?.is_superadmin) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
+  const isLoginPage     = path.startsWith('/login')
+  const isRegisterPage  = path.startsWith('/register')
+  const isUpgradePage   = path.startsWith('/upgrade')
   const isSuspendedPage = path.startsWith('/suspended')
-  const isPublicPage   = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage
+  const isPublicPage    = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage
 
   // No autenticado → solo puede ver páginas públicas
   if (!user && !isPublicPage) {
@@ -50,7 +75,6 @@ export async function middleware(request: NextRequest) {
 
   // Autenticado — verificar estado del tenant
   if (user && !isPublicPage) {
-    // Usar service role para evitar restricciones RLS en middleware
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -60,10 +84,6 @@ export async function middleware(request: NextRequest) {
       .select('status, trial_ends_at')
       .eq('owner_id', user.id)
       .maybeSingle()
-
-    // DEBUG — eliminar después
-    console.log('[middleware] user.id:', user.id)
-    console.log('[middleware] tenant:', JSON.stringify(tenant))
 
     // Si no tiene tenant todavía (Noirem legacy o error) — dejar pasar
     if (tenant) {

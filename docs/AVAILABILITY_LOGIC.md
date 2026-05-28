@@ -175,17 +175,44 @@ for (let min = OPEN_MIN; min < CLOSE_MIN; min += 30) {
 
 ### Generación de slots (UI — booking page)
 
+La UI usa `available[]` de la API como fuente primaria de slots. `generateTimeSlots()` actúa solo como fallback antes de que llegue la primera respuesta o si la API falla.
+
 ```typescript
-// app/booking/page.tsx — generateTimeSlots()
-for (let hour = 8; hour < 18; hour += 0.5) {
-  slots.push({ start: hour, startLabel: formatHour(hour), endLabel: formatHour(hour + 0.5) })
+// app/booking/[slug]/page.tsx — estado
+const [availableSlots, setAvailableSlots] = useState<string[]>([])
+
+// Tras el fetch a /api/availability:
+.then(({ available, blocked, timezone: tz }) => {
+  if (tz) setTimezone(tz)
+  if (available) setAvailableSlots(available as string[])
+  const m: Record<string, string> = {}
+  for (const b of (blocked ?? [])) m[b.slot] = b.reason
+  setBlockedMap(m)
+})
+
+// Construcción de timeSlots para el render:
+const timeSlots = availableSlots.length > 0
+  ? availableSlots.map(s => {
+      const [h, m] = s.split(':').map(Number)
+      const start = h + m / 60
+      return { start, startLabel: formatHour(start), endLabel: formatHour(start + 0.5) }
+    })
+  : generateTimeSlots(selService)  // fallback hardcodeado 8:00–17:30
+```
+
+**Función fallback** (solo se usa si `availableSlots` está vacío):
+```typescript
+function generateTimeSlots(_svc: Service | null): TimeSlot[] {
+  const slots: TimeSlot[] = []
+  for (let hour = 8; hour < 18; hour += 0.5) {
+    slots.push({ start: hour, startLabel: formatHour(hour), endLabel: formatHour(hour + 0.5) })
+  }
+  return slots
 }
 // formatHour convierte a 12h: 8 → "8:00 AM", 8.5 → "8:30 AM", 13.5 → "1:30 PM"
 ```
 
-La UI genera siempre los mismos 20 slots (8:00–17:30) y los marca según la respuesta
-de la API. La API genera los slots dinámicamente desde `business_hours`, por lo que
-pueden diferir si el horario configurado no es 8:00–18:00.
+Con este cambio, los slots que muestra la UI coinciden exactamente con los que genera la API desde `business_hours` — si el negocio abre a las 9:00 y cierra a las 20:00, la UI mostrará esos slots y no los fijos 8:00–17:30.
 
 ### slotKey — clave de coincidencia UI ↔ API
 
