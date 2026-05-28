@@ -27,7 +27,7 @@ export default function EmployeeAttendance({ employeeId, userId }: Props) {
   const [loading, setLoading] = useState(true)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({
-    date: tz.getToday(),
+    date: tz.getToday().toISOString().split('T')[0],
     status: 'present' as AttendanceStatus,
     check_in: '',
     check_out: '',
@@ -50,7 +50,7 @@ export default function EmployeeAttendance({ employeeId, userId }: Props) {
     setLoading(false)
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.BaseSyntheticEvent) {
     e.preventDefault()
     const { error } = await supabase
       .from('attendance')
@@ -66,7 +66,7 @@ export default function EmployeeAttendance({ employeeId, userId }: Props) {
 
     if (!error) {
       setAdding(false)
-      setForm({ date: tz.getToday(), status: 'present', check_in: '', check_out: '', notes: '' })
+      setForm({ date: tz.getToday().toISOString().split('T')[0], status: 'present', check_in: '', check_out: '', notes: '' })
       fetchAttendance()
     }
   }
