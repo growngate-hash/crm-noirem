@@ -136,6 +136,9 @@ export async function GET(req: NextRequest) {
 
   const timezone = tzSetting?.timezone ?? FALLBACK_TZ
 
+  console.log('[availability] date:', date, 'dayOfWeek:', dayOfWeek)
+  console.log('[availability] businessHour:', JSON.stringify(businessHour))
+
   // ── Día cerrado según business_hours ──────────────────────────────────────
   if (!businessHour?.is_open) {
     return noCache({ available: [], blocked: [], closed: true })
