@@ -1117,6 +1117,49 @@ function getDemoForVehicle(vName:string):any[] {
                       addToast(invError?.message ?? 'Error al generar factura', 'error')
                     }
 
+                    // Paso 6 — Calcular comisiones de técnicos asignados al vehículo
+                    if (bk?.vehicle_id) {
+                      const { data: vehicle } = await sb
+                        .from('vehicles')
+                        .select('employee_ids')
+                        .eq('id', bk.vehicle_id)
+                        .maybeSingle()
+
+                      if (vehicle?.employee_ids?.length) {
+                        const { data: techEmployees } = await sb
+                          .from('employees')
+                          .select('id, commission_type, commission_value')
+                          .in('id', vehicle.employee_ids)
+
+                        if (techEmployees?.length) {
+                          const serviceAmount = Number(bk.price ?? 0)
+
+                          const commissions = techEmployees
+                            .filter(e => e.commission_type !== 'none')
+                            .map(e => {
+                              const commissionAmount = e.commission_type === 'percentage'
+                                ? (serviceAmount * e.commission_value) / 100
+                                : e.commission_value
+
+                              return {
+                                user_id,
+                                employee_id: e.id,
+                                booking_id: bookingId,
+                                service_amount: serviceAmount,
+                                commission_type: e.commission_type,
+                                commission_value: e.commission_value,
+                                commission_amount: commissionAmount,
+                                status: 'pending',
+                              }
+                            })
+
+                          if (commissions.length > 0) {
+                            await sb.from('booking_commissions').insert(commissions)
+                          }
+                        }
+                      }
+                    }
+
                     setDetailBooking(null)
                     fetchBookings(selectedDay)
                   }}
