@@ -3,13 +3,13 @@
 ## 1. RESUMEN DEL SISTEMA
 
 ```
-Cliente en /booking
+Cliente en /booking/[slug]
        │
        ▼
 Selecciona fecha + servicio
        │
        ▼
-GET /api/availability?date=YYYY-MM-DD&service_id=uuid
+GET /api/availability?date=YYYY-MM-DD&service_id=uuid&owner_id=uuid
        │
        ├─── business_hours      → ¿está abierto ese día? ¿de qué hora a qué hora?
        ├─── company_settings    → ¿cuánto tiempo de traslado entre servicios?
@@ -30,14 +30,14 @@ UI /booking muestra slots en verde (disponible) o gris (bloqueado)
 
 **Archivos principales:**
 - API: [app/api/availability/route.ts](../app/api/availability/route.ts)
-- UI: [app/booking/page.tsx](../app/booking/page.tsx) — funciones `generateTimeSlots`, `slotKey`
+- UI: [app/booking/[slug]/page.tsx](../app/booking/[slug]/page.tsx) — funciones `generateTimeSlots`, `slotKey`
 - Acceso público: [middleware.ts](../middleware.ts) — excluye `/api/availability` del guard de auth
 
 ---
 
 ## 2. API /api/availability
 
-**Endpoint:** `GET /api/availability?date=YYYY-MM-DD&service_id=uuid`
+**Endpoint:** `GET /api/availability?date=YYYY-MM-DD&service_id=uuid&owner_id=uuid`
 
 **Autenticación:** Ninguna. La ruta está excluida del middleware de autenticación (ver §10).
 
@@ -47,6 +47,11 @@ UI /booking muestra slots en verde (disponible) o gris (bloqueado)
 |--------------|--------|-----------|------------------------------------------|
 | `date`       | string | Sí        | Fecha en formato `YYYY-MM-DD`            |
 | `service_id` | uuid   | No        | ID del servicio para obtener su duración |
+| `owner_id`   | uuid   | No        | `user_id` del tenant — filtra vehículos y bookings por empresa. Sin este parámetro devuelve datos de todos los tenants (comportamiento legacy) |
+
+Cuando `owner_id` está presente, las queries internas filtran:
+- `vehicles` → `.eq('user_id', ownerId)` — solo vehículos de empresa del tenant
+- `bookings` → `.eq('user_id', ownerId)` — solo reservas del tenant
 
 Si `date` no cumple el patrón `^\d{4}-\d{2}-\d{2}$` devuelve `400 { error: 'Invalid date' }`.
 

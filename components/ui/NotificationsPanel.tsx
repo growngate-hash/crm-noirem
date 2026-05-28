@@ -39,8 +39,6 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPanel() {
-  console.log('[NotificationsPanel] Montado')
-
   const [open, setOpen]                     = useState(false)
   const [notifications, setNotifications]   = useState<Notification[]>([])
   const panelRef = useRef<HTMLDivElement>(null)
@@ -48,14 +46,12 @@ export default function NotificationsPanel() {
   const unread = notifications.filter(n => !n.read).length
 
   async function fetchNotifications() {
-    console.log('[NotificationsPanel] Fetching...')
     const supabase = createClient()
-    const { data, error, count } = await supabase
+    const { data } = await supabase
       .from('notifications')
-      .select('*', { count: 'exact' })
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(20)
-    console.log('[NotificationsPanel] data:', data, 'error:', error, 'count:', count)
     if (data) setNotifications(data as Notification[])
   }
 
@@ -65,13 +61,10 @@ export default function NotificationsPanel() {
     const supabase = createClient()
     const channel = supabase
       .channel('notifications-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, (payload) => {
-        console.log('[NotificationsPanel] realtime evento recibido:', payload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
         fetchNotifications()
       })
-      .subscribe((status) => {
-        console.log('[NotificationsPanel] realtime status:', status)
-      })
+      .subscribe()
 
     return () => { supabase.removeChannel(channel) }
   }, [])

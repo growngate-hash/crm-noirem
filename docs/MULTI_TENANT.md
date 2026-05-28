@@ -280,6 +280,7 @@ Las siguientes tablas fueron creadas antes de la arquitectura multi-tenant y req
 | `purchase_invoice_lines` | `20260527_finance_rls.sql` | RLS aplicada — frontend corregido (user_id en inserts) |
 | `bank_accounts` | `20260527_finance_rls.sql` | Migración creada, **pendiente aplicar** |
 | `bookings` | — | RLS activa con `USING (true)` — **requiere nueva migración** |
+| `booking_requests` | — | Columna `owner_id` **pendiente de agregar** — sin ella el INSERT desde `/booking/[slug]` falla y el trigger no se dispara |
 | `journal_entries` | — | Sin RLS definida — **requiere nueva migración** |
 | `chart_of_accounts` | — | Sin RLS definida — queries del frontend ya filtran por `user_id` |
 
@@ -289,8 +290,25 @@ Las siguientes tablas fueron creadas antes de la arquitectura multi-tenant y req
 
 ## Casos especiales
 
+### Página pública de booking por tenant (`/booking/[slug]`)
+
+La ruta pública de reservas es ahora dinámica y por tenant:
+
+- **URL**: `/booking/[slug]` — el slug se resuelve contra `business_settings.slug`
+- **Slug generation**: función SQL `generate_slug(text)` + función TS `generateSlug()` en `app/api/register/route.ts` — ambas producen el mismo resultado (lowercase, sin especiales, guiones)
+- **Migración**: `20260527_booking_slug.sql` — agrega columna `slug TEXT UNIQUE` a `business_settings` y crea `generate_slug()`
+- **Redirect**: `app/booking/page.tsx` redirige permanentemente a `/booking/noirem` (temporal — Noirem es el único tenant activo)
+- **Aislamiento**: al montar, la página resuelve `ownerId` desde `business_settings.slug`. Todas las queries de servicios, categorías y disponibilidad filtran por `owner_id`. El INSERT a `booking_requests` incluye `owner_id`
+- **Detección de nuevas reservas** (`bookings/page.tsx`): el polling de 15 segundos a `booking_requests` filtra por `owner_id = auth.uid()` para que el sonido y las notificaciones solo se disparen para las reservas del tenant autenticado
+
+**Migración pendiente crítica**: `booking_requests` no tiene columna `owner_id` aún. Crear y aplicar:
+```sql
+ALTER TABLE public.booking_requests
+  ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES auth.users(id);
+```
+
 ### Contactos con `user_id = NULL`
-Los contactos creados por el trigger de reservas públicas (`/booking`) tienen `user_id = NULL`. La política `auth_see_unowned_contacts` permite que el staff autenticado los vea. Ver `docs/BOOKING_CONTACTS_LOGIC.md §6`.
+Los contactos creados por el trigger de reservas públicas (`/booking/[slug]`) tienen `user_id = NULL`. La política `auth_see_unowned_contacts` permite que el staff autenticado los vea. Ver `docs/BOOKING_CONTACTS_LOGIC.md §6`.
 
 ### Vehículos de clientes con `user_id = NULL`
 Los vehículos creados por el trigger `sync_booking_request_to_bookings` (vehículos del cliente, no de la empresa) tienen `user_id = NULL`, igual que los contactos del trigger. La política `team_access_vehicles` filtraba solo por `user_id = get_owner_id()`, dejando fuera estos registros y causando que la columna VEHÍCULOS en Contactos mostrara `—`. Fix aplicado en `20260527_fix_vehicles_rls.sql`:

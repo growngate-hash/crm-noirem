@@ -3,9 +3,9 @@
 ## 1. RESUMEN DEL FLUJO
 
 ```
-Usuario en /booking
-        │
-        │  INSERT (anon key, RLS permissive)
+Usuario en /booking/[slug]
+        │  (slug resuelve el tenant desde business_settings.slug)
+        │  INSERT (anon key, RLS permissive) con owner_id = tenant.user_id
         ▼
  booking_requests
         │
@@ -59,7 +59,10 @@ No es la reserva definitiva — el trigger la procesa y crea la reserva real en 
 | `vat` | numeric | IVA (5%) |
 | `total_amount` | numeric | Precio + IVA |
 | `payment_method` | text | `'cash'` o `'online'` |
+| `owner_id` | uuid | `user_id` del tenant — **pendiente de migración** (ver nota abajo) |
 | `status` | text | `'pending'`, `'confirmed'`, `'cancelled'` |
+
+> **Pendiente:** La columna `owner_id` aún no existe en la tabla en producción. Falta crear y aplicar `supabase/migrations/20260527_booking_requests_owner_id.sql` con `ALTER TABLE booking_requests ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES auth.users(id)`. Sin esta columna el INSERT desde `/booking/[slug]` falla y el trigger no se dispara.
 
 ### Política RLS
 ```sql
