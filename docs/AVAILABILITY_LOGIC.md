@@ -93,12 +93,12 @@ La API lanza **5 queries en paralelo** con `Promise.all`:
 
 ### `business_hours`
 ```sql
-SELECT is_open, start_time, end_time
+SELECT is_open, open_time, close_time
 FROM business_hours
 WHERE day_of_week = $dayOfWeek
 ```
 - Determina si el negocio está abierto ese día.
-- Define el rango horario (`start_time` → `end_time`) del que se generan los slots.
+- Define el rango horario (`open_time` → `close_time`) del que se generan los slots.
 - `day_of_week`: `0` = Lunes … `6` = Domingo (ver §4 para la conversión).
 
 ### `company_settings`
@@ -338,11 +338,11 @@ Si no hay ningún vehículo con `contact_id IS NULL` y `status != 'inactivo'`:
 const effectiveIds = vehicleIds.length > 0 ? vehicleIds : null
 // ...
 if (!effectiveIds) {
-  available.push(slot)  // fallback: todos los slots disponibles
+  blocked.push({ slot, reason: 'Sin vehículos disponibles' })
   continue
 }
 ```
-Todos los slots dentro del horario se devuelven como disponibles.
+Todos los slots se devuelven como bloqueados con razón `'Sin vehículos disponibles'`.
 
 ### Servicio no cabe antes del cierre
 Si `slotStart + requestedDurMin > CLOSE_MIN`:
@@ -385,8 +385,8 @@ Valores numéricos menores de 24 se interpretan como horas y se convierten a min
 | Columna      | Tipo    | Descripción                           |
 |--------------|---------|---------------------------------------|
 | `day_of_week`| integer | 0=Lunes … 6=Domingo                   |
-| `start_time` | time    | Hora de apertura, ej. `"08:00"`       |
-| `end_time`   | time    | Hora de cierre, ej. `"18:00"`         |
+| `open_time`  | time    | Hora de apertura, ej. `"08:00"`       |
+| `close_time` | time    | Hora de cierre, ej. `"18:00"`         |
 | `is_open`    | boolean | `false` → día cerrado                 |
 
 ### Zona horaria
