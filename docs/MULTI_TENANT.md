@@ -379,6 +379,20 @@ Las siguientes tablas aún no existen en Supabase — deben crearse con sus pol�
 | `payroll_periods` | **Pendiente de crear** |
 | `payroll_lines` | **Pendiente de crear** |
 
+### Columna pendiente en tabla existente
+
+`bank_accounts` necesita la columna `chart_account_id` para que el pago de nómina genere asiento contable:
+
+```sql
+ALTER TABLE bank_accounts
+  ADD COLUMN IF NOT EXISTS chart_account_id uuid REFERENCES chart_of_accounts(id);
+
+-- Actualizar cada cuenta con su cuenta contable:
+-- Banco → código 1120, Caja → código 1110, Tarjeta → código 2110
+```
+
+Sin esta columna los pagos de nómina se procesan (status + saldo bancario) pero no se genera el asiento. Ver [HR_MODULE.md — Requerimiento crítico](HR_MODULE.md).
+
 ---
 
 ## Tablas con problemas conocidos (pendiente de backfill)

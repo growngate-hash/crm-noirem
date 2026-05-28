@@ -376,3 +376,188 @@ Ambas traducciones son obligatorias simultáneamente — la clave `TranslationKe
 | `hr/payroll/[id]/PayrollActions.tsx` | Client | Formulario de líneas + botones de estado |
 
 Los Server Components usan `export const revalidate = 0` para no cachear — necesario porque los Client Components hijos llaman a `router.refresh()` tras mutaciones, lo que re-ejecuta el Server Component y actualiza los datos sin navegar.
+
+---
+
+## Pago de nómina — flujo completo (`PayrollActions.tsx`)
+
+Al hacer clic en "Marcar como pagado" (estado `approved`), **no se ejecuta la acción directamente**. Se abre un modal de confirmación donde el usuario selecciona la cuenta bancaria de pago. Solo entonces se ejecutan tres operaciones en secuencia:
+
+### Paso 1 — Marcar período como pagado
+
+```typescript
+await supabase.from('payroll_periods')
+  .update({ status: 'paid', paid_at: new Date().toISOString() })
+  .eq('id', periodId)
+```
+
+### Paso 2 — Descontar saldo de `bank_accounts`
+
+```typescript
+await supabase.from('bank_accounts')
+  .update({ current_balance: account.current_balance - totalNomina })
+  .eq('id', accountId)
+```
+
+`totalNomina` = suma de `lines[].total`. El saldo se descuenta directamente — no hay trigger en BD.
+
+### Paso 3 — Generar asiento contable (condicional)
+
+El asiento solo se genera si se cumplen **ambas** condiciones:
+1. `bank_accounts.chart_account_id` existe en la fila de la cuenta seleccionada
+2. Existe una cuenta con `code = '5120'` en `chart_of_accounts` para ese `user_id`
+
+Si alguna falta, el pago igual se registra (pasos 1 y 2) pero el asiento se omite silenciosamente.
+
+```typescript
+// Cabecera
+INSERT INTO journal_entries {
+  user_id, entry_number,          // JE-YYYYMM-NNNN
+  entry_date: tz.getToday(),      // fecha en timezone del tenant
+  description: `Pago de nómina — ${periodName}`,
+  reference_type: 'payroll',
+  reference_id: periodId,
+  fiscal_period_id,               // período fiscal abierto, puede ser null
+  status: 'posted',
+  total_debit: totalNomina,
+  total_credit: totalNomina,
+}
+
+// Línea DEBE — cuenta 5120 (Nómina)
+INSERT INTO journal_lines {
+  journal_entry_id, account_id: nominaAccount.id,
+  debit: totalNomina, credit: 0,
+  currency: currency ?? 'AED',    // de useCompany().currency
+  user_id,
+}
+
+// Línea HABER — cuenta contable del banco
+INSERT INTO journal_lines {
+  journal_entry_id, account_id: bankAccountData.chart_account_id,
+  debit: 0, credit: totalNomina,
+  currency: currency ?? 'AED',
+  user_id,
+}
+```
+
+**Error handling:** si el INSERT a `journal_lines` falla, se elimina automáticamente el `journal_entry` huérfano para mantener consistencia:
+
+```typescript
+if (jlError) {
+  console.error('[payroll] journal_lines error:', jlError)
+  await supabase.from('journal_entries').delete().eq('id', journalEntry.id)
+}
+```
+
+### Requerimiento crítico: `bank_accounts.chart_account_id`
+
+La tabla `bank_accounts` debe tener una columna `chart_account_id uuid` que apunte a la cuenta contable correspondiente en `chart_of_accounts`. Sin esta columna, los pagos de nómina no generarán asiento contable. Si no existe, agregar:
+
+```sql
+ALTER TABLE bank_accounts
+  ADD COLUMN IF NOT EXISTS chart_account_id uuid REFERENCES chart_of_accounts(id);
+```
+
+Luego actualizar cada cuenta bancaria con su cuenta contable correspondiente (ej. `1120` para banco, `1110` para caja).
+
+### Props de `PayrollActions` (actualizadas)
+
+```typescript
+interface Props {
+  periodId: string
+  userId: string
+  periodStatus: string
+  periodDays: number
+  periodName: string        // ← requerido para descripción del asiento
+  employees: Pick<Employee, 'id' | 'full_name' | 'salary_base' | 'salary_period' | 'role'>[]
+  lines: (PayrollLine & { employee: Employee })[]
+}
+```
+
+`periodName` se pasa desde `payroll/[id]/page.tsx` como `periodName={period.name}`.
+
+### Dependencias del componente
+
+`PayrollActions.tsx` usa tres hooks de contexto:
+- `createClient()` — queries Supabase
+- `useCompany().currency` — moneda del tenant para las líneas del asiento
+- `useTimezone().getToday()` — fecha del asiento en el timezone del tenant
+
+---
+
+## `CompanyContext` — campo `currency`
+
+`contexts/CompanyContext.tsx` expone `currency` después de la actualización que agrega el campo al contexto:
+
+```typescript
+interface CompanyContextType {
+  companyName: string
+  companySubtitle: string
+  logoUrl: string | null
+  timezone: string
+  currency: string     // ← agregado; default 'AED', leído de business_settings.currency
+  loaded: boolean
+  // ... setters
+}
+```
+
+El valor viene de `business_settings.currency` vía:
+
+```typescript
+sb.from('business_settings')
+  .select('timezone, currency')   // currency agregado al SELECT
+  .maybeSingle()
+  .then(({ data }) => {
+    if (data?.timezone) setTimezone(data.timezone)
+    if (data?.currency) setCurrency(data.currency)
+  })
+```
+
+El default `'AED'` se usa cuando `business_settings.currency` es null o la tabla no tiene el campo.
+
+**Nota:** `useCompany()` NO expone `company` como objeto ni `company.id`. Ver sección "Patrón de autenticación" arriba.
+
+---
+
+## Integración con Finance y Dashboard
+
+### Finance tab — "Gastos de Personal"
+
+`app/(dashboard)/finance/page.tsx`, dentro de `CostsTab`, incluye una sección "Gastos de Personal" debajo del Expense Register. Muestra únicamente nóminas con `status = 'paid'`, ordenadas por `paid_at` descendente.
+
+Query usada (`fetchPayroll()`):
+```typescript
+supabase.from('payroll_periods')
+  .select('id, name, start_date, end_date, total_amount, paid_at')
+  .eq('user_id', user.id)
+  .eq('status', 'paid')
+  .order('paid_at', { ascending: false })
+```
+
+La sección solo aparece en el tab "Costs & Expenses" — está dentro del bloque `{!invoicesOnly && <>}` por lo que no se renderiza en el tab "Facturas".
+
+### Dashboard KPI — `totalExpenses` incluye nómina
+
+`app/(dashboard)/page.tsx` calcula `totalExpenses` usando `getMonthlyExpenses()` (ver siguiente sección), que suma gastos operativos + facturas de compra + nómina pagada del mes.
+
+### `utils/getMonthlyExpenses.ts` — utilidad centralizada
+
+Centraliza el cálculo de gastos mensuales para evitar duplicación entre `page.tsx` y `finance/page.tsx`. Recibe un cliente Supabase y las fechas ISO del mes, devuelve los tres componentes del gasto:
+
+```typescript
+import { getMonthlyExpenses } from '@/utils/getMonthlyExpenses'
+
+const { expensesAmt, comprasAmt, nominaAmt, total: totalExpenses } =
+  await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
+// inicioMesStr: 'YYYY-MM-01'
+// finMesStr:    'YYYY-MM-DD' (último día del mes)
+```
+
+| Campo retornado | Fuente | Filtro |
+|---|---|---|
+| `expensesAmt` | `expenses.amount` | `date` entre inicio y fin del mes |
+| `comprasAmt` | `purchase_invoices.subtotal` | `status='pagada'` + `payment_date` del mes |
+| `nominaAmt` | `payroll_periods.total_amount` | `status='paid'` + `paid_at` del mes |
+| `total` | suma de los tres | — |
+
+**Regla:** cualquier página que muestre "gastos totales del mes" debe usar esta función para mantener consistencia. No duplicar la lógica inline.

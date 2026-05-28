@@ -124,6 +124,8 @@ export interface Employee {
   end_date: string | null
   notes: string | null
   avatar_url: string | null
+  commission_type: CommissionType
+  commission_value: number
   created_at: string
   updated_at: string
 }
@@ -167,4 +169,25 @@ export interface PayrollLine {
   notes: string | null
   created_at: string
   employee?: Employee
+}
+
+// ─── Comisiones ───────────────────────────────────────────
+
+export type CommissionType = 'none' | 'percentage' | 'fixed'
+export type CommissionStatus = 'pending' | 'included' | 'paid'
+
+export interface BookingCommission {
+  id: string
+  user_id: string
+  employee_id: string
+  booking_id: string
+  payroll_period_id: string | null
+  service_amount: number
+  commission_type: CommissionType
+  commission_value: number
+  commission_amount: number
+  status: CommissionStatus
+  created_at: string
+  employee?: Employee
+  booking?: Booking
 }
