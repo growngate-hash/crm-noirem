@@ -82,7 +82,33 @@ export default function EmployeeDetailPage() {
   async function handleToggleStatus() {
     if (!employee) return
     const newStatus = employee.status === 'active' ? 'inactive' : 'active'
-    await supabase.from('employees').update({ status: newStatus }).eq('id', id)
+
+    // 1. Actualizar status del empleado
+    await supabase
+      .from('employees')
+      .update({ status: newStatus })
+      .eq('id', id)
+
+    // 2. Actualizar employee_ids en vehículos
+    if (newStatus === 'inactive') {
+      const { data: vehicles } = await supabase
+        .from('vehicles')
+        .select('id, employee_ids')
+        .contains('employee_ids', [id])
+
+      if (vehicles?.length) {
+        for (const vehicle of vehicles) {
+          const updatedIds = (vehicle.employee_ids ?? [])
+            .filter((eid: string) => eid !== id)
+          await supabase
+            .from('vehicles')
+            .update({ employee_ids: updatedIds })
+            .eq('id', vehicle.id)
+        }
+      }
+    }
+
+    // 3. Actualizar estado local
     setEmployee(prev => prev ? { ...prev, status: newStatus } : prev)
   }
 
