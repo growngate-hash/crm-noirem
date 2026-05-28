@@ -57,19 +57,19 @@ export default function NewEmployeePage() {
     const active = focused === name
     return {
       width: '100%', padding: withIcon ? '11px 14px 11px 42px' : '11px 14px',
-      background: active ? 'rgba(245,181,68,0.05)' : 'var(--color-input)',
-      border: `1px solid ${active ? AMBER : 'var(--color-border)'}`,
-      borderRadius: 8, color: 'var(--color-text-primary)',
+      background: '#FFFFFF',
+      border: `1.5px solid ${active ? AMBER : '#D1D5DB'}`,
+      borderRadius: 8, color: '#111827',
       fontSize: 14, boxSizing: 'border-box' as const,
-      outline: 'none', transition: 'border-color 0.18s, background 0.18s',
+      outline: 'none', transition: 'border-color 0.18s, box-shadow 0.18s',
       fontFamily: 'inherit',
+      boxShadow: active ? '0 0 0 3px rgba(245,181,68,0.15)' : 'none',
     }
   }
 
   const LABEL: React.CSSProperties = {
-    display: 'block', fontSize: 11, fontWeight: 700,
-    color: 'var(--color-text-secondary)', marginBottom: 7,
-    textTransform: 'uppercase', letterSpacing: '0.6px',
+    display: 'block', fontSize: 13, fontWeight: 600,
+    color: '#374151', marginBottom: 7,
   }
 
   const ICON_BASE: React.CSSProperties = {
@@ -82,7 +82,7 @@ export default function NewEmployeePage() {
       <div style={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 12, overflow: 'hidden' }}>
         <div style={{ padding: '14px 24px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(255,255,255,0.01)' }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: AMBER, flexShrink: 0 }} />
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: AMBER, textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
         </div>
         <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 18 }}>{children}</div>
       </div>
@@ -91,6 +91,7 @@ export default function NewEmployeePage() {
 
   return (
     <div style={{ padding: '32px 32px 64px', maxWidth: 700, margin: '0 auto' }}>
+      <style>{`.hr-input::placeholder { color: #9CA3AF }`}</style>
 
       {/* Header */}
       <div style={{ marginBottom: 36 }}>
@@ -117,23 +118,23 @@ export default function NewEmployeePage() {
           <div>
             <label style={LABEL}>Nombre completo *</label>
             <div style={{ position: 'relative' }}>
-              <User size={15} color={focused === 'full_name' ? AMBER : 'var(--color-text-secondary)'} style={ICON_BASE} />
-              <input name="full_name" value={form.full_name} onChange={handleChange} required placeholder="ej. Juan Pérez" {...foc('full_name')} style={fieldStyle('full_name')} />
+              <User size={15} color={focused === 'full_name' ? AMBER : '#9CA3AF'} style={ICON_BASE} />
+              <input className="hr-input" name="full_name" value={form.full_name} onChange={handleChange} required placeholder="ej. Juan Pérez" {...foc('full_name')} style={fieldStyle('full_name')} />
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
               <label style={LABEL}>Email</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={15} color={focused === 'email' ? AMBER : 'var(--color-text-secondary)'} style={ICON_BASE} />
-                <input name="email" value={form.email} onChange={handleChange} type="email" placeholder="juan@empresa.com" {...foc('email')} style={fieldStyle('email')} />
+                <Mail size={15} color={focused === 'email' ? AMBER : '#9CA3AF'} style={ICON_BASE} />
+                <input className="hr-input" name="email" value={form.email} onChange={handleChange} type="email" placeholder="juan@empresa.com" {...foc('email')} style={fieldStyle('email')} />
               </div>
             </div>
             <div>
               <label style={LABEL}>Teléfono</label>
               <div style={{ position: 'relative' }}>
-                <Phone size={15} color={focused === 'phone' ? AMBER : 'var(--color-text-secondary)'} style={ICON_BASE} />
-                <input name="phone" value={form.phone} onChange={handleChange} placeholder="+57 300 000 0000" {...foc('phone')} style={fieldStyle('phone')} />
+                <Phone size={15} color={focused === 'phone' ? AMBER : '#9CA3AF'} style={ICON_BASE} />
+                <input className="hr-input" name="phone" value={form.phone} onChange={handleChange} placeholder="+57 300 000 0000" {...foc('phone')} style={fieldStyle('phone')} />
               </div>
             </div>
           </div>
@@ -144,8 +145,8 @@ export default function NewEmployeePage() {
           <div>
             <label style={LABEL}>Rol *</label>
             <div style={{ position: 'relative' }}>
-              <Briefcase size={15} color={focused === 'role' ? AMBER : 'var(--color-text-secondary)'} style={{ ...ICON_BASE, zIndex: 1 }} />
-              <ChevronDown size={14} color="var(--color-text-secondary)" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <Briefcase size={15} color={focused === 'role' ? AMBER : '#9CA3AF'} style={{ ...ICON_BASE, zIndex: 1 }} />
+              <ChevronDown size={14} color="#9CA3AF" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               <select name="role" value={form.role} onChange={handleChange} {...foc('role')} style={{ ...fieldStyle('role'), appearance: 'none', cursor: 'pointer' }}>
                 <option value="technician">Técnico</option>
                 <option value="supervisor">Supervisor</option>
@@ -157,14 +158,14 @@ export default function NewEmployeePage() {
             <div>
               <label style={LABEL}>Salario base *</label>
               <div style={{ position: 'relative' }}>
-                <DollarSign size={15} color={focused === 'salary_base' ? AMBER : 'var(--color-text-secondary)'} style={ICON_BASE} />
-                <input name="salary_base" value={form.salary_base} onChange={handleChange} type="number" min="0" step="0.01" required placeholder="0.00" {...foc('salary_base')} style={fieldStyle('salary_base')} />
+                <DollarSign size={15} color={focused === 'salary_base' ? AMBER : '#9CA3AF'} style={ICON_BASE} />
+                <input className="hr-input" name="salary_base" value={form.salary_base} onChange={handleChange} type="number" min="0" step="0.01" required placeholder="0.00" {...foc('salary_base')} style={fieldStyle('salary_base')} />
               </div>
             </div>
             <div>
               <label style={LABEL}>Período</label>
               <div style={{ position: 'relative' }}>
-                <ChevronDown size={14} color="var(--color-text-secondary)" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                <ChevronDown size={14} color="#9CA3AF" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                 <select name="salary_period" value={form.salary_period} onChange={handleChange} {...foc('salary_period')} style={{ ...fieldStyle('salary_period', false), appearance: 'none', cursor: 'pointer' }}>
                   <option value="monthly">Mensual</option>
                   <option value="weekly">Semanal</option>
@@ -175,8 +176,8 @@ export default function NewEmployeePage() {
           <div>
             <label style={LABEL}>Fecha de ingreso *</label>
             <div style={{ position: 'relative' }}>
-              <Calendar size={15} color={focused === 'start_date' ? AMBER : 'var(--color-text-secondary)'} style={ICON_BASE} />
-              <input name="start_date" value={form.start_date} onChange={handleChange} type="date" required {...foc('start_date')} style={fieldStyle('start_date')} />
+              <Calendar size={15} color={focused === 'start_date' ? AMBER : '#9CA3AF'} style={ICON_BASE} />
+              <input className="hr-input" name="start_date" value={form.start_date} onChange={handleChange} type="date" required {...foc('start_date')} style={fieldStyle('start_date')} />
             </div>
           </div>
         </Section>
@@ -184,8 +185,8 @@ export default function NewEmployeePage() {
         {/* Notas */}
         <Section title="Notas">
           <div style={{ position: 'relative' }}>
-            <FileText size={15} color={focused === 'notes' ? AMBER : 'var(--color-text-secondary)'} style={{ position: 'absolute', left: 14, top: 13, transition: 'color 0.18s', pointerEvents: 'none' }} />
-            <textarea name="notes" value={form.notes} onChange={handleChange} placeholder="Información adicional sobre el empleado..." rows={4} {...foc('notes')} style={{ ...fieldStyle('notes'), paddingTop: 12, paddingBottom: 12, resize: 'vertical', minHeight: 100 }} />
+            <FileText size={15} color={focused === 'notes' ? AMBER : '#9CA3AF'} style={{ position: 'absolute', left: 14, top: 13, transition: 'color 0.18s', pointerEvents: 'none' }} />
+            <textarea className="hr-input" name="notes" value={form.notes} onChange={handleChange} placeholder="Información adicional sobre el empleado..." rows={4} {...foc('notes')} style={{ ...fieldStyle('notes'), paddingTop: 12, paddingBottom: 12, resize: 'vertical', minHeight: 100 }} />
           </div>
         </Section>
 
@@ -198,10 +199,10 @@ export default function NewEmployeePage() {
 
         {/* Acciones */}
         <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <Link href="/hr" style={{ padding: '11px 22px', borderRadius: 8, fontSize: 14, fontWeight: 500, color: 'var(--color-text-secondary)', textDecoration: 'none', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center' }}>
+          <Link href="/hr" style={{ padding: '11px 22px', borderRadius: 8, fontSize: 14, fontWeight: 500, color: '#374151', textDecoration: 'none', border: '1.5px solid #D1D5DB', display: 'flex', alignItems: 'center' }}>
             Cancelar
           </Link>
-          <button type="submit" disabled={loading} style={{ padding: '11px 28px', borderRadius: 8, fontSize: 14, fontWeight: 700, background: loading ? 'rgba(245,181,68,0.5)' : AMBER, color: '#0d0d0f', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 14px rgba(245,181,68,0.3)', transition: 'background 0.15s, box-shadow 0.15s', letterSpacing: '0.2px' }}>
+          <button type="submit" disabled={loading} style={{ padding: '12px 32px', borderRadius: 8, fontSize: 14, fontWeight: 700, background: loading ? 'rgba(245,181,68,0.5)' : AMBER, color: '#000', border: 'none', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: loading ? 'none' : '0 4px 14px rgba(245,181,68,0.3)', transition: 'background 0.15s, box-shadow 0.15s', letterSpacing: '0.2px' }}>
             {loading ? 'Guardando...' : 'Guardar empleado'}
           </button>
         </div>
