@@ -98,3 +98,7 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, processed, errors })
 }
+
+export async function GET(req: NextRequest) {
+  return POST(req)
+}
