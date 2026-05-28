@@ -5,6 +5,7 @@ import { useTimezone } from '@/hooks/useTimezone'
 import { X, Eye, Pencil, BarChart2, Droplets, Settings } from 'lucide-react'
 import { useLanguage } from '@/contexts/LanguageContext'
 import { createNotification } from '@/utils/createNotification'
+import { getMonthlyExpenses } from '@/utils/getMonthlyExpenses'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { InvoiceViewer } from '@/components/finance/InvoiceViewer'
@@ -294,11 +295,8 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       .filter(p => (p.created_at ?? '') >= inicioMesStr)
       .reduce((sum, p) => sum + Number(p.tax ?? 0), 0)
     const vatNetoMTD = vatMTD - vatPagadoMTD
-    const expensesAmt  = (gastos ?? []).reduce((sum, e) => sum + (e.amount ?? 0), 0)
-    const comprasAmt   = (todasLasCompras ?? [])
-      .filter(p => p.status === 'pagada' && (p.payment_date ?? '') >= inicioMesStr && (p.payment_date ?? '') <= finMesStr)
-      .reduce((sum, p) => sum + Number(p.subtotal ?? 0), 0)
-    const totalExpenses = expensesAmt + comprasAmt
+    const { expensesAmt, comprasAmt, nominaAmt, total: totalExpenses } =
+      await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
     const netProfit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0
       ? ((netProfit / totalRevenue) * 100).toFixed(1) : '0.0'

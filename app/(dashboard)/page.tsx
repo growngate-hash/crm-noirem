@@ -10,6 +10,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { DollarSign, TrendingUp, TrendingDown, ChevronDown, Plus, X } from 'lucide-react'
+import { getMonthlyExpenses } from '@/utils/getMonthlyExpenses'
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 function formatAED(value: number): string {
@@ -276,29 +277,7 @@ export default function DashboardPage() {
       bookingsRecientes = data ?? []
     } catch { /* bookings schema may differ */ }
 
-    let totalExpenses = 0
-    {
-      const [{ data: gastosMes, error: errMes }, { data: comprasMes }, { data: nominaMes }] = await Promise.all([
-        supabase.from('expenses').select('amount').gte('date', inicioMesStr).lte('date', finMesStr),
-        supabase.from('purchase_invoices').select('subtotal').eq('status', 'pagada')
-          .gte('payment_date', inicioMesStr).lte('payment_date', finMesStr),
-        supabase.from('payroll_periods')
-          .select('total_amount')
-          .eq('status', 'paid')
-          .gte('paid_at', inicioMesStr)
-          .lte('paid_at', finMesStr + 'T23:59:59'),
-      ])
-      let expensesAmt = 0
-      if (!errMes && gastosMes && gastosMes.length > 0) {
-        expensesAmt = gastosMes.reduce((s, e) => s + (Number(e.amount) || 0), 0)
-      } else {
-        const { data: gastosAll } = await supabase.from('expenses').select('amount')
-        expensesAmt = (gastosAll ?? []).reduce((s, e) => s + (Number(e.amount) || 0), 0)
-      }
-      const comprasAmt = (comprasMes ?? []).reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
-      const nominaAmt  = (nominaMes  ?? []).reduce((s, p) => s + (Number(p.total_amount) || 0), 0)
-      totalExpenses = expensesAmt + comprasAmt + nominaAmt
-    }
+    const { total: totalExpenses } = await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
 
     const calcRevenue = (rows: any[]) =>
       (rows ?? []).reduce((sum, inv) => sum + Number(inv.subtotal ?? 0), 0)
