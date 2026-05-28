@@ -379,19 +379,53 @@ Las siguientes tablas aún no existen en Supabase — deben crearse con sus pol�
 | `payroll_periods` | **Pendiente de crear** |
 | `payroll_lines` | **Pendiente de crear** |
 
-### Columna pendiente en tabla existente
+### Columnas y tablas pendientes en BD (módulo HR + comisiones)
 
-`bank_accounts` necesita la columna `chart_account_id` para que el pago de nómina genere asiento contable:
-
+**`bank_accounts`** — columna para asiento contable de nómina:
 ```sql
 ALTER TABLE bank_accounts
   ADD COLUMN IF NOT EXISTS chart_account_id uuid REFERENCES chart_of_accounts(id);
-
--- Actualizar cada cuenta con su cuenta contable:
--- Banco → código 1120, Caja → código 1110, Tarjeta → código 2110
+-- Banco → 1120, Caja → 1110, Tarjeta → 2110
 ```
 
-Sin esta columna los pagos de nómina se procesan (status + saldo bancario) pero no se genera el asiento. Ver [HR_MODULE.md — Requerimiento crítico](HR_MODULE.md).
+**`employees`** — columnas de comisión:
+```sql
+ALTER TABLE employees
+  ADD COLUMN IF NOT EXISTS commission_type  text DEFAULT 'none'
+    CHECK (commission_type IN ('none', 'percentage', 'fixed')),
+  ADD COLUMN IF NOT EXISTS commission_value numeric(10,2) DEFAULT 0;
+```
+
+**`vehicles`** — columna de vínculo con empleados HR:
+```sql
+ALTER TABLE vehicles
+  ADD COLUMN IF NOT EXISTS employee_ids uuid[] DEFAULT '{}';
+```
+
+**`booking_commissions`** — tabla nueva (requiere RLS):
+```sql
+CREATE TABLE booking_commissions (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  employee_id       uuid REFERENCES employees(id) ON DELETE CASCADE,
+  booking_id        uuid REFERENCES bookings(id) ON DELETE CASCADE,
+  payroll_period_id uuid REFERENCES payroll_periods(id) ON DELETE SET NULL,
+  service_amount    numeric(12,2) NOT NULL DEFAULT 0,
+  commission_type   text CHECK (commission_type IN ('percentage', 'fixed')),
+  commission_value  numeric(10,2) NOT NULL DEFAULT 0,
+  commission_amount numeric(12,2) NOT NULL DEFAULT 0,
+  status            text CHECK (status IN ('pending','included','paid')) DEFAULT 'pending',
+  created_at        timestamptz DEFAULT now()
+);
+ALTER TABLE booking_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_commissions FORCE ROW LEVEL SECURITY;
+CREATE POLICY "tenant_isolation" ON booking_commissions
+  FOR ALL TO authenticated
+  USING (user_id = public.get_owner_id())
+  WITH CHECK (user_id = public.get_owner_id());
+```
+
+Sin `bank_accounts.chart_account_id` los pagos de nómina se procesan pero no generan asiento. Sin `employees.commission_type/value` ni `vehicles.employee_ids` ni `booking_commissions`, el sistema de comisiones no funciona. Ver [HR_MODULE.md — Sistema de Comisiones](HR_MODULE.md).
 
 ---
 

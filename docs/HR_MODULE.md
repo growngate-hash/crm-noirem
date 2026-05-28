@@ -561,3 +561,180 @@ const { expensesAmt, comprasAmt, nominaAmt, total: totalExpenses } =
 | `total` | suma de los tres | — |
 
 **Regla:** cualquier página que muestre "gastos totales del mes" debe usar esta función para mantener consistencia. No duplicar la lógica inline.
+
+---
+
+## Sistema de Comisiones
+
+### Concepto
+
+Cada empleado técnico puede tener configurada una comisión por servicio (`commission_type` + `commission_value`). Cuando un booking se marca como completado, se calculan automáticamente las comisiones de los técnicos asignados al vehículo. Al agregar un empleado a un período de nómina, las comisiones pendientes se incluyen automáticamente como bonos.
+
+### Ciclo de vida de una comisión
+
+```
+pending → included → paid
+```
+
+| Estado | Cuándo ocurre |
+|---|---|
+| `pending` | Al completar un booking — se calcula y registra en `booking_commissions` |
+| `included` | Al agregar el empleado a un período de nómina en `PayrollActions` |
+| `paid` | Implícito cuando el período pasa a `paid` |
+
+### Tipos de comisión en `Employee`
+
+Dos campos agregados a la interfaz `Employee` y a la tabla `employees`:
+
+```typescript
+commission_type:  'none' | 'percentage' | 'fixed'
+commission_value: number  // porcentaje (ej. 10) o monto fijo (ej. 50)
+```
+
+Se configuran en el formulario de alta de empleado (`hr/employees/new/page.tsx`), sección "Comisión". Si `commission_type = 'none'`, no se generan comisiones para ese empleado.
+
+```sql
+ALTER TABLE employees
+  ADD COLUMN IF NOT EXISTS commission_type  text DEFAULT 'none'
+    CHECK (commission_type IN ('none', 'percentage', 'fixed')),
+  ADD COLUMN IF NOT EXISTS commission_value numeric(10,2) DEFAULT 0;
+```
+
+### Tabla `booking_commissions`
+
+```sql
+CREATE TABLE booking_commissions (
+  id                uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id           uuid REFERENCES auth.users(id) ON DELETE CASCADE,
+  employee_id       uuid REFERENCES employees(id) ON DELETE CASCADE,
+  booking_id        uuid REFERENCES bookings(id) ON DELETE CASCADE,
+  payroll_period_id uuid REFERENCES payroll_periods(id) ON DELETE SET NULL,
+  service_amount    numeric(12,2) NOT NULL DEFAULT 0,
+  commission_type   text CHECK (commission_type IN ('percentage', 'fixed')),
+  commission_value  numeric(10,2) NOT NULL DEFAULT 0,
+  commission_amount numeric(12,2) NOT NULL DEFAULT 0,
+  status            text CHECK (status IN ('pending', 'included', 'paid')) DEFAULT 'pending',
+  created_at        timestamptz DEFAULT now()
+);
+
+ALTER TABLE booking_commissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE booking_commissions FORCE ROW LEVEL SECURITY;
+CREATE POLICY "tenant_isolation" ON booking_commissions
+  FOR ALL TO authenticated
+  USING (user_id = public.get_owner_id())
+  WITH CHECK (user_id = public.get_owner_id());
+```
+
+### Paso 6 — Cálculo automático al completar booking (`bookings/page.tsx`)
+
+Al hacer clic en "✓ Marcar completado" en el panel de detalle del booking, después de crear la factura y la notificación, se ejecuta el Paso 6:
+
+```typescript
+// Solo si el booking tiene vehículo asignado
+if (bk?.vehicle_id) {
+  // 1. Leer employee_ids del vehículo
+  const { data: vehicle } = await sb.from('vehicles')
+    .select('employee_ids').eq('id', bk.vehicle_id).maybeSingle()
+
+  // 2. Leer commission_type y commission_value de esos empleados
+  const { data: techEmployees } = await sb.from('employees')
+    .select('id, commission_type, commission_value')
+    .in('id', vehicle.employee_ids)
+
+  // 3. Calcular y registrar comisiones
+  const commissions = techEmployees
+    .filter(e => e.commission_type !== 'none')
+    .map(e => ({
+      commission_amount: e.commission_type === 'percentage'
+        ? (serviceAmount * e.commission_value) / 100
+        : e.commission_value,
+      status: 'pending',
+      ...
+    }))
+
+  await sb.from('booking_commissions').insert(commissions)
+}
+```
+
+El paso se omite silenciosamente si: el booking no tiene `vehicle_id`, el vehículo no tiene `employee_ids`, o ningún empleado tiene comisión configurada.
+
+### Vínculo vehículo → empleados HR (`vehicles.employee_ids`)
+
+La tabla `vehicles` tiene la columna `employee_ids uuid[]` que almacena los UUIDs de los empleados del módulo HR asignados al vehículo. Se guarda en `saveEdit()` de `vehicles/page.tsx`:
+
+```typescript
+const assignedEmployeeIds = techEmployees
+  .filter(e => editTechs.includes(e.full_name))
+  .map(e => e.id)
+
+await createClient().from('vehicles').update({
+  technician:   editTechs.join(', '),   // string legacy
+  technicians:  editTechs,              // array de nombres legacy
+  employee_ids: assignedEmployeeIds,    // array de UUIDs → HR module
+}).eq('id', editVeh.id)
+```
+
+El `TechPicker` del modal de edición ahora usa `techEmployees` (empleados con `role='technician'` y `status='active'` del módulo HR) en lugar de contactos:
+
+```typescript
+// Fetch en useEffect inicial de VehiclesPage
+sb.auth.getUser().then(({ data: { user } }) => {
+  sb.from('employees').select('id, full_name')
+    .eq('user_id', user.id)
+    .eq('role', 'technician')
+    .eq('status', 'active')
+    .order('full_name')
+    .then(({ data }) => setTechEmployees(data ?? []))
+})
+```
+
+SQL necesario en Supabase:
+
+```sql
+ALTER TABLE vehicles
+  ADD COLUMN IF NOT EXISTS employee_ids uuid[] DEFAULT '{}';
+```
+
+### Inclusión de comisiones en nómina (`PayrollActions.tsx`)
+
+Al agregar un empleado a un período de nómina (`handleAddLine`), las comisiones pendientes se incluyen automáticamente:
+
+```typescript
+// 1. Fetch de comisiones pendientes del empleado
+const { data: pendingCommissions } = await supabase
+  .from('booking_commissions')
+  .select('id, commission_amount')
+  .eq('employee_id', form.employee_id)
+  .eq('status', 'pending')
+
+// 2. Sumar a los bonos manuales
+const totalBonuses = Number(form.bonuses) + commissionsAmt
+
+// 3. Insertar línea con bonos ya sumados
+await supabase.from('payroll_lines').insert({ bonuses: totalBonuses, ... })
+
+// 4. Marcar comisiones como incluidas
+await supabase.from('booking_commissions')
+  .update({ status: 'included', payroll_period_id: periodId })
+  .in('id', pendingCommissions.map(c => c.id))
+```
+
+El preview del formulario muestra el desglose en tiempo real:
+```
+Salario diario: X.XX · Comisiones: Y.YY · Total calculado: Z.ZZ
+```
+
+`commissionsTotal` se carga vía `useEffect` al seleccionar un empleado:
+
+```typescript
+useEffect(() => {
+  if (!form.employee_id) { setCommissionsTotal(0); return }
+  supabase.from('booking_commissions')
+    .select('commission_amount')
+    .eq('employee_id', form.employee_id)
+    .eq('status', 'pending')
+    .then(({ data }) => setCommissionsTotal(
+      (data ?? []).reduce((sum, c) => sum + Number(c.commission_amount), 0)
+    ))
+}, [form.employee_id])
+```
