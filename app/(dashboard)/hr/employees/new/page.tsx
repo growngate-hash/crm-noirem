@@ -44,6 +44,7 @@ export default function NewEmployeePage() {
     full_name: '', email: '', phone: '', role: 'technician',
     salary_base: '', salary_period: 'monthly',
     start_date: new Date().toISOString().split('T')[0], notes: '',
+    commission_type: 'none', commission_value: '',
   })
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -67,6 +68,8 @@ export default function NewEmployeePage() {
       start_date: form.start_date,
       notes: form.notes.trim() || null,
       status: 'active',
+      commission_type: form.commission_type,
+      commission_value: parseFloat(form.commission_value) || 0,
     })
     if (error) { setError(error.message); setLoading(false); return }
     router.push('/hr')
@@ -185,6 +188,40 @@ export default function NewEmployeePage() {
               <input className="saffi-input" name="start_date" value={form.start_date} onChange={handleChange} type="date" required {...foc('start_date')} style={fieldStyle('start_date')} />
             </div>
           </div>
+        </Section>
+
+        <Section title="Comisión">
+          <div>
+            <label style={LABEL}>Tipo de comisión</label>
+            <div style={{ position: 'relative' }}>
+              <ChevronDown size={14} color="#A8A6A0" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <select name="commission_type" value={form.commission_type} onChange={handleChange} {...foc('commission_type')} style={{ ...fieldStyle('commission_type', false), appearance: 'none', cursor: 'pointer' }}>
+                <option value="none">Sin comisión</option>
+                <option value="percentage">Porcentaje del servicio</option>
+                <option value="fixed">Monto fijo por servicio</option>
+              </select>
+            </div>
+          </div>
+          {form.commission_type !== 'none' && (
+            <div>
+              <label style={LABEL}>{form.commission_type === 'percentage' ? 'Porcentaje (%)' : 'Monto fijo'}</label>
+              <div style={{ position: 'relative' }}>
+                <DollarSign size={15} color={focused === 'commission_value' ? CYAN : '#A8A6A0'} style={ICON_BASE} />
+                <input
+                  className="saffi-input"
+                  name="commission_value"
+                  value={form.commission_value}
+                  onChange={handleChange}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder={form.commission_type === 'percentage' ? 'ej. 10' : 'ej. 50'}
+                  {...foc('commission_value')}
+                  style={fieldStyle('commission_value')}
+                />
+              </div>
+            </div>
+          )}
         </Section>
 
         <Section title="Notas">
