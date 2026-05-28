@@ -91,13 +91,25 @@ export default function EmployeeDetailPage() {
 
     // 2. Actualizar employee_ids en vehículos
     if (newStatus === 'inactive') {
-      const { data: vehicles } = await supabase
+      // Buscar vehículos que tengan al empleado por ID o por nombre
+      const { data: vehiclesByIds } = await supabase
         .from('vehicles')
         .select('id, employee_ids, technicians')
         .contains('employee_ids', [id])
 
-      if (vehicles?.length) {
-        for (const vehicle of vehicles) {
+      const { data: vehiclesByName } = await supabase
+        .from('vehicles')
+        .select('id, employee_ids, technicians')
+        .contains('technicians', [employee.full_name])
+
+      // Combinar y deduplicar
+      const allVehicles = [
+        ...(vehiclesByIds ?? []),
+        ...(vehiclesByName ?? []),
+      ].filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
+
+      if (allVehicles.length) {
+        for (const vehicle of allVehicles) {
           const updatedIds = (vehicle.employee_ids ?? [])
             .filter((eid: string) => eid !== id)
           const updatedTechnicians = (vehicle.technicians ?? [])
