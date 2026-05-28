@@ -1142,7 +1142,7 @@ function getDemoForVehicle(vName:string):any[] {
                                 : e.commission_value
 
                               return {
-                                user_id,
+                                user_id: user.id,
                                 employee_id: e.id,
                                 booking_id: bookingId,
                                 service_amount: serviceAmount,
