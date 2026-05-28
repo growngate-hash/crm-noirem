@@ -11,7 +11,7 @@ async function getAdminData() {
 
   const { data: tenants } = await supabaseAdmin
     .from('tenants')
-    .select('id, owner_id, business_name, country, status, trial_ends_at, created_at, is_superadmin')
+    .select('id, owner_id, name, country, status, trial_ends_at, created_at, is_superadmin')
     .order('created_at', { ascending: false })
 
   const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
@@ -134,7 +134,7 @@ export default async function AdminPage() {
                 borderBottom: i < total - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
               }}>
                 <td style={{ padding: '14px 16px', fontSize: 13, fontWeight: 500, color: '#FAFAF7' }}>
-                  {t.business_name ?? '—'}
+                  {t.name ?? '—'}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: 12, color: '#B8D4ED', fontFamily: 'monospace' }}>
                   {ownerEmail[t.owner_id] ?? t.owner_id}
