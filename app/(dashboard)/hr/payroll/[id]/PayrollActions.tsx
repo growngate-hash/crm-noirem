@@ -214,7 +214,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         .single()
 
       if (journalEntry?.id) {
-        await supabase.from('journal_lines').insert([
+        const { error: jlError } = await supabase.from('journal_lines').insert([
           {
             journal_entry_id: journalEntry.id,
             account_id: nominaAccount.id,
@@ -234,6 +234,14 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             user_id: userId,
           },
         ])
+
+        if (jlError) {
+          console.error('[payroll] journal_lines error:', jlError)
+          await supabase
+            .from('journal_entries')
+            .delete()
+            .eq('id', journalEntry.id)
+        }
       }
     }
 
