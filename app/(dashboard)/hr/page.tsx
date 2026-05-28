@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Employee } from '@/types'
-import { Users2, UserCheck, UserX, Plus, ChevronRight } from 'lucide-react'
+import { Users2, UserCheck, UserX, Plus, ChevronRight, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -66,14 +66,26 @@ export default function HRPage() {
             Equipo
           </h1>
         </div>
-        <Link href="/hr/employees/new" style={{
-          display: 'flex', alignItems: 'center', gap: 8,
-          background: 'var(--color-accent)', color: '#000',
-          padding: '10px 20px', borderRadius: 8,
-          fontSize: 14, fontWeight: 600, textDecoration: 'none',
-        }}>
-          <Plus size={16} /> Nuevo empleado
-        </Link>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <Link href="/hr/payroll" style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'transparent',
+            border: '1.5px solid var(--color-border)',
+            color: 'var(--color-text-primary)',
+            padding: '10px 20px', borderRadius: 8,
+            fontSize: 14, fontWeight: 600, textDecoration: 'none',
+          }}>
+            <DollarSign size={16} /> Nómina
+          </Link>
+          <Link href="/hr/employees/new" style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'var(--color-accent)', color: '#000',
+            padding: '10px 20px', borderRadius: 8,
+            fontSize: 14, fontWeight: 600, textDecoration: 'none',
+          }}>
+            <Plus size={16} /> Nuevo empleado
+          </Link>
+        </div>
       </div>
 
       {/* KPIs */}
