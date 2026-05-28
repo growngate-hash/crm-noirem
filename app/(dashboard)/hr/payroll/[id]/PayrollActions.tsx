@@ -174,6 +174,12 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
       .eq('status', 'open')
       .maybeSingle()
 
+    console.log('[payroll] bankAccountData:', JSON.stringify(bankAccountData))
+    console.log('[payroll] nominaAccount:', JSON.stringify(nominaAccount))
+    console.log('[payroll] fiscalPeriod:', JSON.stringify(fiscalPeriod))
+    console.log('[payroll] totalNomina:', totalNomina)
+    console.log('[payroll] userId:', userId)
+
     if (bankAccountData?.chart_account_id && nominaAccount?.id) {
       const now = new Date()
       const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
