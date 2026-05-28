@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
@@ -40,6 +40,8 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
   const [bankAccounts, setBankAccounts] = useState<{id: string, name: string, account_type: string, current_balance: number, currency: string}[]>([])
   const [loadingAccounts, setLoadingAccounts] = useState(false)
 
+  const [commissionsTotal, setCommissionsTotal] = useState(0)
+
   const [form, setForm] = useState({
     employee_id: '',
     days_worked: String(periodDays),
@@ -49,6 +51,20 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     notes: '',
   })
 
+  useEffect(() => {
+    if (!form.employee_id) { setCommissionsTotal(0); return }
+    supabase
+      .from('booking_commissions')
+      .select('commission_amount')
+      .eq('employee_id', form.employee_id)
+      .eq('status', 'pending')
+      .then(({ data }) => {
+        setCommissionsTotal(
+          (data ?? []).reduce((sum, c) => sum + Number(c.commission_amount), 0)
+        )
+      })
+  }, [form.employee_id])
+
   const availableEmployees = employees.filter(e => !lines.find(l => l.employee_id === e.id))
 
   const selectedEmployee = employees.find(e => e.id === form.employee_id)
@@ -57,10 +73,6 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
       ? selectedEmployee.salary_base / 30
       : selectedEmployee.salary_base / 7
     : 0
-  const calculatedTotal = dailySalary * Number(form.days_worked)
-    + Number(form.bonuses)
-    - Number(form.deductions)
-
   async function loadBankAccounts() {
     setLoadingAccounts(true)
     const supabaseClient = createClient()
@@ -80,7 +92,21 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     setSaving(true)
     setMessage(null)
 
-    const total = Math.max(0, calculatedTotal)
+    // Obtener comisiones pendientes del empleado
+    const { data: pendingCommissions } = await supabase
+      .from('booking_commissions')
+      .select('id, commission_amount')
+      .eq('employee_id', form.employee_id)
+      .eq('status', 'pending')
+
+    const commissionsAmt = (pendingCommissions ?? [])
+      .reduce((sum, c) => sum + Number(c.commission_amount), 0)
+
+    // Sumar comisiones a los bonos manuales
+    const totalBonuses = Number(form.bonuses) + commissionsAmt
+    const total = Math.max(0,
+      dailySalary * Number(form.days_worked) + totalBonuses - Number(form.deductions)
+    )
 
     const { error } = await supabase
       .from('payroll_lines')
@@ -91,12 +117,24 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         days_worked: Number(form.days_worked),
         days_absent: Number(form.days_absent),
         salary_base: selectedEmployee?.salary_base ?? 0,
-        bonuses: Number(form.bonuses),
+        bonuses: totalBonuses,
         deductions: Number(form.deductions),
         total,
       })
 
     if (!error) {
+      // Marcar comisiones como incluidas en este período
+      if (pendingCommissions?.length) {
+        await supabase
+          .from('booking_commissions')
+          .update({
+            status: 'included',
+            payroll_period_id: periodId,
+          })
+          .in('id', pendingCommissions.map(c => c.id))
+      }
+
+      // Actualizar total del período
       const newTotal = lines.reduce((sum, l) => sum + l.total, 0) + total
       await supabase
         .from('payroll_periods')
@@ -104,7 +142,14 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         .eq('id', periodId)
 
       setShowAdd(false)
-      setForm({ employee_id: '', days_worked: String(periodDays), days_absent: '0', bonuses: '0', deductions: '0', notes: '' })
+      setForm({
+        employee_id: '',
+        days_worked: String(periodDays),
+        days_absent: '0',
+        bonuses: '0',
+        deductions: '0',
+        notes: '',
+      })
       router.refresh()
     } else {
       setMessage({ type: 'error', text: error.message })
@@ -334,7 +379,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
 
           {selectedEmployee && (
             <div style={{ fontSize: 12, color: '#5A5852', marginBottom: 12, fontFamily: 'JetBrains Mono, monospace' }}>
-              Salario diario: {dailySalary.toFixed(2)} · Total calculado: <strong style={{ color: '#0B2A4A' }}>{Math.max(0, calculatedTotal).toLocaleString('es', { minimumFractionDigits: 2 })}</strong>
+              Salario diario: {dailySalary.toFixed(2)} · Comisiones: {commissionsTotal.toFixed(2)} · Total calculado: <strong style={{ color: '#0B2A4A' }}>{Math.max(0, dailySalary * Number(form.days_worked) + (Number(form.bonuses) + commissionsTotal) - Number(form.deductions)).toLocaleString('es', { minimumFractionDigits: 2 })}</strong>
             </div>
           )}
 
