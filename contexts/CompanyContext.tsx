@@ -7,6 +7,7 @@ interface CompanyContextType {
   companySubtitle: string
   logoUrl: string | null
   timezone: string
+  currency: string
   loaded: boolean
   setCompanyName: (name: string) => void
   setCompanySubtitle: (sub: string) => void
@@ -19,6 +20,7 @@ const CompanyContext = createContext<CompanyContextType>({
   companySubtitle: 'LUXURY DETAILING',
   logoUrl: null,
   timezone: 'Asia/Dubai',
+  currency: 'AED',
   loaded: false,
   setCompanyName: () => {},
   setCompanySubtitle: () => {},
@@ -31,6 +33,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
   const [companySubtitle, setCompanySubtitle] = useState('LUXURY DETAILING')
   const [logoUrl,        setLogoUrl]        = useState<string | null>(null)
   const [timezone,       setTimezone]       = useState('Asia/Dubai')
+  const [currency,       setCurrency]       = useState('AED')
   const [loaded,         setLoaded]         = useState(false)
 
   useEffect(() => {
@@ -59,10 +62,11 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
       // business_settings — RLS ya filtra por auth.uid() correctamente
       sb.from('business_settings')
-        .select('timezone')
+        .select('timezone, currency')
         .maybeSingle()
         .then(({ data }) => {
           if (data?.timezone) setTimezone(data.timezone)
+          if (data?.currency) setCurrency(data.currency)
           setLoaded(true)
         })
     }
@@ -72,7 +76,7 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   return (
     <CompanyContext.Provider value={{
-      companyName, companySubtitle, logoUrl, timezone, loaded,
+      companyName, companySubtitle, logoUrl, timezone, currency, loaded,
       setCompanyName, setCompanySubtitle, setLogoUrl, setTimezone,
     }}>
       {children}

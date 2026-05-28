@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useCompany } from '@/contexts/CompanyContext'
 import { PayrollLine, Employee } from '@/types'
 import { Plus, Trash2, CheckCircle } from 'lucide-react'
 
@@ -26,6 +27,7 @@ const INPUT: React.CSSProperties = {
 export default function PayrollActions({ periodId, userId, periodStatus, periodDays, periodName, employees, lines }: Props) {
   const supabase = createClient()
   const router = useRouter()
+  const { currency } = useCompany()
 
   const [showAdd, setShowAdd] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -174,12 +176,6 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
       .eq('status', 'open')
       .maybeSingle()
 
-    console.log('[payroll] bankAccountData:', JSON.stringify(bankAccountData))
-    console.log('[payroll] nominaAccount:', JSON.stringify(nominaAccount))
-    console.log('[payroll] fiscalPeriod:', JSON.stringify(fiscalPeriod))
-    console.log('[payroll] totalNomina:', totalNomina)
-    console.log('[payroll] userId:', userId)
-
     if (bankAccountData?.chart_account_id && nominaAccount?.id) {
       const now = new Date()
       const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -223,6 +219,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             debit: totalNomina,
             credit: 0,
             description: `Gasto de nómina — ${periodName}`,
+            currency: currency ?? 'AED',
           },
           {
             journal_entry_id: journalEntry.id,
@@ -230,6 +227,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             debit: 0,
             credit: totalNomina,
             description: `Pago desde ${account?.name ?? 'cuenta'} — ${periodName}`,
+            currency: currency ?? 'AED',
           },
         ])
       }
