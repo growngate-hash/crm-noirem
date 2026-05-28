@@ -171,6 +171,35 @@ export interface PayrollLine {
   employee?: Employee
 }
 
+// ─── Bookings ─────────────────────────────────────────────
+
+export interface Booking {
+  id: string
+  user_id: string
+  contact_id: string | null
+  vehicle_id: string | null
+  service_id: string | null
+  status: string
+  scheduled_at: string
+  end_at: string | null
+  price: number
+  discount: number
+  address: string | null
+  notes: string | null
+  progress: number
+  payment_method: string | null
+  payment_status: string | null
+  vat_pct: number | null
+  cancellation_reason: string | null
+  cancelled_at: string | null
+  cancelled_by: string | null
+  completed_at: string | null
+  created_at: string
+  contacts?: { name: string }
+  vehicles?: { name: string; license_plate: string }
+  services?: { name: string; duration_minutes: number }
+}
+
 // ─── Comisiones ───────────────────────────────────────────
 
 export type CommissionType = 'none' | 'percentage' | 'fixed'
