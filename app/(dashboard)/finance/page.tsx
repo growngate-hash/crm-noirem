@@ -121,6 +121,14 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const [uploadingReceipt,   setUploadingReceipt]   = useState(false)
   const [bankAccounts,       setBankAccounts]       = useState<any[]>([])
   const [selectedBankAccount, setSelectedBankAccount] = useState('')
+  const [payrollPeriods, setPayrollPeriods] = useState<{
+    id: string
+    name: string
+    start_date: string
+    end_date: string
+    total_amount: number
+    paid_at: string
+  }[]>([])
 
   function addToast(msg: string, type: Toast['type'] = 'success') {
     const id = ++_toastId
@@ -326,11 +334,25 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
     setInvoices(data ?? [])
   }
 
+  async function fetchPayroll() {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const { data } = await supabase
+      .from('payroll_periods')
+      .select('id, name, start_date, end_date, total_amount, paid_at')
+      .eq('user_id', user.id)
+      .eq('status', 'paid')
+      .order('paid_at', { ascending: false })
+    setPayrollPeriods(data ?? [])
+  }
+
   useEffect(() => {
     fetchExpenses()
     fetchFinanceKPIs()
     fetchCuentasContables()
     fetchInvoices()
+    fetchPayroll()
     createClient()
       .from('chart_of_accounts')
       .select('id, code, name, type')
@@ -754,6 +776,104 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   <td colSpan={2} style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} />
                 </tr>
               </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ── Gastos de Personal ── */}
+      <div style={{ marginTop: 32 }}>
+        <div style={{
+          display: 'flex', justifyContent: 'space-between',
+          alignItems: 'center', marginBottom: 16
+        }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#888580',
+              textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+              Gastos de Personal
+            </div>
+            <div style={{ fontSize: 13, color: '#888580' }}>
+              Nómina pagada registrada en contabilidad
+            </div>
+          </div>
+          <div style={{
+            fontSize: 14, fontWeight: 700, color: '#c9a84c',
+            fontFamily: 'monospace'
+          }}>
+            Total: {payrollPeriods
+              .reduce((s, p) => s + p.total_amount, 0)
+              .toLocaleString('es', { minimumFractionDigits: 2 })}
+          </div>
+        </div>
+
+        {payrollPeriods.length === 0 ? (
+          <div style={{
+            padding: '32px', textAlign: 'center',
+            color: '#888580', fontSize: 13,
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)'
+          }}>
+            No hay nóminas pagadas registradas.
+          </div>
+        ) : (
+          <div style={{
+            background: 'rgba(255,255,255,0.02)',
+            borderRadius: 10,
+            border: '1px solid rgba(255,255,255,0.06)',
+            overflow: 'hidden'
+          }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  {['Período', 'Fechas', 'Fecha pago', 'Cuenta contable', 'Total'].map(h => (
+                    <th key={h} style={{
+                      padding: '10px 16px', textAlign: 'left',
+                      fontSize: 10, fontWeight: 600, color: '#888580',
+                      letterSpacing: '0.5px', textTransform: 'uppercase',
+                      fontFamily: 'monospace',
+                    }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {payrollPeriods.map((p, i) => (
+                  <tr key={p.id} style={{
+                    borderBottom: i < payrollPeriods.length - 1
+                      ? '1px solid rgba(255,255,255,0.04)' : 'none'
+                  }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13,
+                      fontWeight: 600, color: '#e8e6e0' }}>
+                      {p.name}
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: 12,
+                      color: '#888580', fontFamily: 'monospace' }}>
+                      {new Date(p.start_date + 'T12:00:00').toLocaleDateString('es',
+                        { day: '2-digit', month: 'short' })}
+                      {' → '}
+                      {new Date(p.end_date + 'T12:00:00').toLocaleDateString('es',
+                        { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: 12,
+                      color: '#888580', fontFamily: 'monospace' }}>
+                      {p.paid_at ? new Date(p.paid_at).toLocaleDateString('es',
+                        { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <span style={{
+                        background: 'rgba(201,168,76,0.1)', color: '#c9a84c',
+                        padding: '2px 8px', borderRadius: 4,
+                        fontSize: 11, fontWeight: 600, fontFamily: 'monospace'
+                      }}>
+                        5120 Nómina
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 16px', fontSize: 13,
+                      fontWeight: 700, color: '#e8e6e0', fontFamily: 'monospace' }}>
+                      {p.total_amount.toLocaleString('es', { minimumFractionDigits: 2 })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         )}
