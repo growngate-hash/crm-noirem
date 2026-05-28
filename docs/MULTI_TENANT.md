@@ -368,6 +368,19 @@ Si se recrean o modifican estas vistas, **siempre mantener este filtro**. Sin é
 
 ---
 
+## Tablas del módulo HR (requieren creación en BD)
+
+Las siguientes tablas aún no existen en Supabase — deben crearse con sus políticas RLS antes de usar el módulo HR en producción. Ver el SQL completo en [docs/HR_MODULE.md](HR_MODULE.md).
+
+| Tabla | Estado |
+|---|---|
+| `employees` | **Pendiente de crear** |
+| `attendance` | **Pendiente de crear** — requiere `UNIQUE(employee_id, date)` para el upsert de asistencia |
+| `payroll_periods` | **Pendiente de crear** |
+| `payroll_lines` | **Pendiente de crear** |
+
+---
+
 ## Tablas con problemas conocidos (pendiente de backfill)
 
 Las siguientes tablas fueron creadas antes de la arquitectura multi-tenant y requieren backfill y activación de RLS en producción:
