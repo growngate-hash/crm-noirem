@@ -235,6 +235,62 @@ if (path.startsWith('/admin')) {
 
 El layout `app/admin/layout.tsx` hace una segunda verificación de sesión vía `createClient()` (cookie-based), pero **no** verifica `is_superadmin` — esa responsabilidad recae en el middleware.
 
+---
+
+## Panel de administración (`/admin`)
+
+Accesible solo para `is_superadmin = true`. Permite a Noirem gestionar todos los tenants del sistema.
+
+### Archivos
+
+| Archivo | Descripción |
+|---|---|
+| `app/admin/layout.tsx` | Layout con topbar Saffi, logo y email del superadmin |
+| `app/admin/page.tsx` | Dashboard: KPIs + tabla de todos los tenants |
+| `app/admin/tenants/[id]/page.tsx` | Detalle de un tenant (en desarrollo) |
+
+### Patrón: resolver emails de `auth.users`
+
+Supabase no permite joins directos a `auth.users` desde el SDK cliente. El panel admin resuelve emails así:
+
+```typescript
+// 1. Fetch de tenants con service role
+const { data: tenants } = await supabaseAdmin
+  .from('tenants')
+  .select('id, owner_id, ...')
+
+// 2. Fetch de todos los usuarios de Auth
+const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+
+// 3. Map owner_id → email
+const ownerEmail: Record<string, string> = {}
+for (const u of users) {
+  if (u.email) ownerEmail[u.id] = u.email
+}
+
+// 4. En el render
+ownerEmail[t.owner_id] ?? t.owner_id  // fallback al UUID si no hay email
+```
+
+Este mismo patrón se usa en `/api/team` para resolver emails de miembros del equipo.
+
+### `admin_audit_log`
+
+Tabla para registrar acciones administrativas (activar, suspender, extender trial, notas). Solo accesible para superadmins vía RLS:
+
+```sql
+CREATE POLICY "superadmin_all" ON admin_audit_log
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM tenants
+      WHERE tenants.owner_id = auth.uid()
+      AND tenants.is_superadmin = true
+    )
+  );
+```
+
+Columnas: `performed_by`, `action`, `affected_tenant_id`, `payload (jsonb)`, `note`, `created_at`.
+
 Rutas excluidas del matcher (no pasan por middleware):
 `_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/register`, `booking`, `auth`, imágenes.
 

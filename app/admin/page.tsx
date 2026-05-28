@@ -14,7 +14,13 @@ async function getAdminData() {
     .select('id, owner_id, business_name, country, status, trial_ends_at, created_at, is_superadmin')
     .order('created_at', { ascending: false })
 
-  return tenants ?? []
+  const { data: { users } } = await supabaseAdmin.auth.admin.listUsers()
+  const ownerEmail: Record<string, string> = {}
+  for (const u of (users ?? [])) {
+    if (u.email) ownerEmail[u.id] = u.email
+  }
+
+  return { tenants: tenants ?? [], ownerEmail }
 }
 
 function StatusBadge({ status, trialEndsAt }: { status: string, trialEndsAt: string | null }) {
@@ -51,7 +57,7 @@ function daysRemaining(trialEndsAt: string | null): string {
 }
 
 export default async function AdminPage() {
-  const tenants = await getAdminData()
+  const { tenants, ownerEmail } = await getAdminData()
   const now = new Date()
 
   const total     = tenants.filter(t => !t.is_superadmin).length
@@ -131,7 +137,7 @@ export default async function AdminPage() {
                   {t.business_name ?? '—'}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: 12, color: '#B8D4ED', fontFamily: 'monospace' }}>
-                  {t.owner_id}
+                  {ownerEmail[t.owner_id] ?? t.owner_id}
                 </td>
                 <td style={{ padding: '14px 16px', fontSize: 13, color: '#FAFAF7' }}>
                   {t.country ?? '—'}
