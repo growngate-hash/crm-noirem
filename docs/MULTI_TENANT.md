@@ -245,9 +245,11 @@ Accesible solo para `is_superadmin = true`. Permite a Noirem gestionar todos los
 
 | Archivo | Descripción |
 |---|---|
-| `app/admin/layout.tsx` | Layout con topbar Saffi, logo y email del superadmin |
-| `app/admin/page.tsx` | Dashboard: KPIs + tabla de todos los tenants |
-| `app/admin/tenants/[id]/page.tsx` | Detalle de un tenant (en desarrollo) |
+| `app/admin/layout.tsx` | Layout con topbar Saffi, logo y email del superadmin. Verifica sesión con cookie-based client |
+| `app/admin/page.tsx` | Dashboard: KPIs + tabla de todos los tenants con emails resueltos |
+| `app/admin/tenants/[id]/page.tsx` | Detalle de tenant: info, acciones y audit log. Params como `Promise<{ id }>` (Next.js 15) |
+| `app/admin/tenants/[id]/TenantActions.tsx` | Client component con botones Activar, Suspender y Extender trial. Llama a `POST /api/admin/tenant` |
+| `app/api/admin/tenant/route.ts` | API de acciones administrativas. Verifica superadmin via cookies antes de ejecutar |
 
 ### Patrón: resolver emails de `auth.users`
 
@@ -273,6 +275,24 @@ ownerEmail[t.owner_id] ?? t.owner_id  // fallback al UUID si no hay email
 ```
 
 Este mismo patrón se usa en `/api/team` para resolver emails de miembros del equipo.
+
+### `POST /api/admin/tenant` — acciones administrativas
+
+Endpoint exclusivo para superadmins. `TenantActions.tsx` lo llama con `{ action, tenantId, payload }`.
+
+**Verificación:** `verifySuperAdmin(req)` lee las cookies de sesión via `createServerClient` de `@supabase/ssr` para obtener el usuario, luego confirma `is_superadmin = true` en `tenants` con service role. Devuelve el `user.id` del admin o `null`.
+
+**Acciones soportadas:**
+
+| `action` | Efecto en `tenants` | `payload` |
+|---|---|---|
+| `activate` | `status = 'active'` | — |
+| `suspend` | `status = 'suspended'` | — |
+| `extend_trial` | `status = 'trial'`, `trial_ends_at += days` | `{ days: number }` (default 7) |
+
+Tras cada acción exitosa inserta un registro en `admin_audit_log` con `performed_by`, `action`, `affected_tenant_id` y `payload`.
+
+**Seguridad:** La ruta no está excluida del middleware — el bloque `/admin` del middleware ya bloquea el acceso a no-superadmins antes de que llegue al handler. La API hace su propia verificación de forma independiente como segunda capa.
 
 ### `admin_audit_log`
 
