@@ -409,6 +409,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   const [categories,setCategories]   = useState<Category[]>([])
   const [services,setServices]       = useState<Service[]>([])
   const [blockedMap,setBlockedMap]   = useState<Record<string,string>>({})
+  const [availableSlots,setAvailableSlots] = useState<string[]>([])
   const [loadingSlots,setLoadingSlots] = useState(false)
   const [timezone,   setTimezone]      = useState('Asia/Dubai')
 
@@ -484,8 +485,9 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     setBlockedMap({});setLoadingSlots(true)
     fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}&owner_id=${ownerId ?? ''}`, { cache: 'no-store' })
       .then(r=>r.json())
-      .then(({blocked, timezone:tz})=>{
+      .then(({available, blocked, timezone:tz})=>{
         if(tz) setTimezone(tz)
+        if(available) setAvailableSlots(available as string[])
         const m:Record<string,string>={}
         for(const b of (blocked??[])) m[b.slot]=b.reason
         setBlockedMap(m)
@@ -532,7 +534,13 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   const filteredServices = services.filter(s=>s.category===selCategory?.name)
   const days             = getDays(weekOffset)
-  const timeSlots        = generateTimeSlots(selService)
+  const timeSlots        = availableSlots.length > 0
+    ? availableSlots.map(s => {
+        const [h, m] = s.split(':').map(Number)
+        const start = h + m / 60
+        return { start, startLabel: formatHour(start), endLabel: formatHour(start + 0.5) }
+      })
+    : generateTimeSlots(selService)
   const durationHrs      = getServiceDurationHours(selService)
 
   function timeLabel(){
