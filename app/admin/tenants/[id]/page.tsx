@@ -10,11 +10,12 @@ const supabaseAdmin = createAdminClient(
 
 export const revalidate = 0
 
-export default async function AdminTenantDetailPage({ params }: { params: { id: string } }) {
+export default async function AdminTenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const { data: tenant } = await supabaseAdmin
     .from('tenants')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .maybeSingle()
 
   if (!tenant) notFound()
@@ -27,7 +28,7 @@ export default async function AdminTenantDetailPage({ params }: { params: { id: 
   const { data: auditLog } = await supabaseAdmin
     .from('admin_audit_log')
     .select('*')
-    .eq('affected_tenant_id', params.id)
+    .eq('affected_tenant_id', id)
     .order('created_at', { ascending: false })
     .limit(20)
 
@@ -109,7 +110,7 @@ export default async function AdminTenantDetailPage({ params }: { params: { id: 
       </div>
 
       {/* Acciones */}
-      <TenantActions tenantId={params.id} currentStatus={effectiveStatus} trialEndsAt={tenant.trial_ends_at} />
+      <TenantActions tenantId={id} currentStatus={effectiveStatus} trialEndsAt={tenant.trial_ends_at} />
 
       {/* Audit log */}
       <div style={{
