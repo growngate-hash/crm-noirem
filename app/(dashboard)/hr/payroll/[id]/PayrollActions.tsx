@@ -30,6 +30,11 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'ok' | 'error', text: string } | null>(null)
 
+  const [showPayModal, setShowPayModal] = useState(false)
+  const [paymentAccountId, setPaymentAccountId] = useState('')
+  const [bankAccounts, setBankAccounts] = useState<{id: string, name: string, account_type: string, current_balance: number, currency: string}[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(false)
+
   const [form, setForm] = useState({
     employee_id: '',
     days_worked: String(periodDays),
@@ -39,10 +44,8 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     notes: '',
   })
 
-  // Empleados que aún no tienen línea en este período
   const availableEmployees = employees.filter(e => !lines.find(l => l.employee_id === e.id))
 
-  // Calcular total automáticamente
   const selectedEmployee = employees.find(e => e.id === form.employee_id)
   const dailySalary = selectedEmployee
     ? selectedEmployee.salary_period === 'monthly'
@@ -53,7 +56,20 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     + Number(form.bonuses)
     - Number(form.deductions)
 
-  async function handleAddLine(e: React.FormEvent) {
+  async function loadBankAccounts() {
+    setLoadingAccounts(true)
+    const supabaseClient = createClient()
+    const { data } = await supabaseClient
+      .from('bank_accounts')
+      .select('id, name, account_type, current_balance, currency')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('name')
+    setBankAccounts(data ?? [])
+    setLoadingAccounts(false)
+  }
+
+  async function handleAddLine(e: React.BaseSyntheticEvent) {
     e.preventDefault()
     if (!form.employee_id) return
     setSaving(true)
@@ -76,7 +92,6 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
       })
 
     if (!error) {
-      // Actualizar total del período
       const newTotal = lines.reduce((sum, l) => sum + l.total, 0) + total
       await supabase
         .from('payroll_periods')
@@ -116,11 +131,27 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     router.refresh()
   }
 
-  async function handleMarkPaid() {
+  async function handleMarkPaid(accountId: string) {
+    if (!accountId) return
+    setSaving(true)
+
     await supabase
       .from('payroll_periods')
       .update({ status: 'paid', paid_at: new Date().toISOString() })
       .eq('id', periodId)
+
+    const account = bankAccounts.find(a => a.id === accountId)
+    if (account) {
+      const totalNomina = lines.reduce((sum, l) => sum + l.total, 0)
+      await supabase
+        .from('bank_accounts')
+        .update({ current_balance: account.current_balance - totalNomina })
+        .eq('id', accountId)
+    }
+
+    setSaving(false)
+    setShowPayModal(false)
+    setPaymentAccountId('')
     router.refresh()
   }
 
@@ -161,7 +192,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             </button>
           )}
           {isApproved && (
-            <button onClick={handleMarkPaid} style={{
+            <button onClick={() => { setShowPayModal(true); loadBankAccounts() }} style={{
               display: 'flex', alignItems: 'center', gap: 6,
               background: '#E6F5EC', color: '#1F8F5C', border: '1px solid #A3D9B8',
               borderRadius: 7, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
@@ -287,6 +318,91 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             ))}
           </tbody>
         </table>
+      )}
+
+      {/* Modal de confirmación de pago */}
+      {showPayModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(11,42,74,0.4)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: '#FFFFFF', borderRadius: 14, padding: '32px',
+            width: '100%', maxWidth: 480,
+            boxShadow: '0 24px 48px rgba(11,42,74,0.18)',
+          }}>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#3DD9D6', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>
+              Confirmar pago de nómina
+            </div>
+            <h2 style={{ margin: '0 0 20px', fontSize: 20, fontWeight: 600, color: '#0B2A4A', fontFamily: 'Geist, sans-serif' }}>
+              ¿Desde qué cuenta se realiza el pago?
+            </h2>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#5A5852', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Cuenta de pago *
+              </label>
+              {loadingAccounts ? (
+                <div style={{ fontSize: 13, color: '#A8A6A0' }}>Cargando cuentas...</div>
+              ) : (
+                <select
+                  value={paymentAccountId}
+                  onChange={e => setPaymentAccountId(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 14px',
+                    background: '#FFFFFF', border: '1.5px solid #F0EFEA',
+                    borderRadius: 8, color: '#0B2A4A', fontSize: 14,
+                    boxSizing: 'border-box' as const,
+                  }}
+                >
+                  <option value="">Seleccionar cuenta...</option>
+                  {bankAccounts.map(acc => (
+                    <option key={acc.id} value={acc.id}>
+                      {acc.name} — {acc.currency} {acc.current_balance.toLocaleString('es', { minimumFractionDigits: 2 })}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            <div style={{ background: '#FAFAF7', borderRadius: 10, padding: '14px 16px', marginBottom: 24, border: '1px solid #F0EFEA' }}>
+              <div style={{ fontSize: 11, color: '#5A5852', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.5px', fontFamily: 'JetBrains Mono, monospace' }}>
+                Asiento contable que se generará
+              </div>
+              <div style={{ fontSize: 13, color: '#0B2A4A', fontFamily: 'JetBrains Mono, monospace' }}>
+                DEBE &nbsp; 5120 Nómina<br/>
+                HABER &nbsp; Cuenta seleccionada
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setShowPayModal(false); setPaymentAccountId('') }}
+                style={{
+                  background: 'transparent', border: '1.5px solid #F0EFEA',
+                  color: '#5A5852', borderRadius: 8, padding: '10px 20px',
+                  fontSize: 13, cursor: 'pointer',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => handleMarkPaid(paymentAccountId)}
+                disabled={!paymentAccountId || saving}
+                style={{
+                  background: paymentAccountId ? '#F5B544' : '#F0EFEA',
+                  color: paymentAccountId ? '#1A1A1A' : '#A8A6A0',
+                  border: 'none', borderRadius: 8, padding: '10px 24px',
+                  fontSize: 13, fontWeight: 600, cursor: paymentAccountId ? 'pointer' : 'not-allowed',
+                  opacity: saving ? 0.7 : 1,
+                }}
+              >
+                {saving ? 'Procesando...' : 'Confirmar pago'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
