@@ -11,6 +11,7 @@ interface Props {
   userId: string
   periodStatus: string
   periodDays: number
+  periodName: string
   employees: Pick<Employee, 'id' | 'full_name' | 'salary_base' | 'salary_period' | 'role'>[]
   lines: (PayrollLine & { employee: Employee })[]
 }
@@ -22,7 +23,7 @@ const INPUT: React.CSSProperties = {
   boxSizing: 'border-box' as const, width: '100%',
 }
 
-export default function PayrollActions({ periodId, userId, periodStatus, periodDays, employees, lines }: Props) {
+export default function PayrollActions({ periodId, userId, periodStatus, periodDays, periodName, employees, lines }: Props) {
   const supabase = createClient()
   const router = useRouter()
 
@@ -135,18 +136,97 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     if (!accountId) return
     setSaving(true)
 
+    const totalNomina = lines.reduce((sum, l) => sum + l.total, 0)
+    const account = bankAccounts.find(a => a.id === accountId)
+
+    // 1. Marcar período como pagado
     await supabase
       .from('payroll_periods')
       .update({ status: 'paid', paid_at: new Date().toISOString() })
       .eq('id', periodId)
 
-    const account = bankAccounts.find(a => a.id === accountId)
+    // 2. Descontar saldo de bank_account
     if (account) {
-      const totalNomina = lines.reduce((sum, l) => sum + l.total, 0)
       await supabase
         .from('bank_accounts')
         .update({ current_balance: account.current_balance - totalNomina })
         .eq('id', accountId)
+    }
+
+    // 3. Generar asiento contable
+    const { data: bankAccountData } = await supabase
+      .from('bank_accounts')
+      .select('chart_account_id')
+      .eq('id', accountId)
+      .maybeSingle()
+
+    const { data: nominaAccount } = await supabase
+      .from('chart_of_accounts')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('code', '5120')
+      .maybeSingle()
+
+    const { data: fiscalPeriod } = await supabase
+      .from('fiscal_periods')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('status', 'open')
+      .maybeSingle()
+
+    if (bankAccountData?.chart_account_id && nominaAccount?.id) {
+      const now = new Date()
+      const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`
+
+      const { data: lastEntry } = await supabase
+        .from('journal_entries')
+        .select('entry_number')
+        .eq('user_id', userId)
+        .like('entry_number', `JE-${yearMonth}-%`)
+        .order('entry_number', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      const lastNum = lastEntry?.entry_number
+        ? parseInt(lastEntry.entry_number.split('-')[2]) + 1
+        : 1
+      const entryNumber = `JE-${yearMonth}-${String(lastNum).padStart(4, '0')}`
+
+      const { data: journalEntry } = await supabase
+        .from('journal_entries')
+        .insert({
+          user_id: userId,
+          entry_number: entryNumber,
+          entry_date: now.toISOString().split('T')[0],
+          description: `Pago de nómina — ${periodName}`,
+          reference_type: 'payroll',
+          reference_id: periodId,
+          fiscal_period_id: fiscalPeriod?.id ?? null,
+          status: 'posted',
+          total_debit: totalNomina,
+          total_credit: totalNomina,
+        })
+        .select('id')
+        .single()
+
+      if (journalEntry?.id) {
+        await supabase.from('journal_lines').insert([
+          {
+            journal_entry_id: journalEntry.id,
+            account_id: nominaAccount.id,
+            debit: totalNomina,
+            credit: 0,
+            description: `Gasto de nómina — ${periodName}`,
+          },
+          {
+            journal_entry_id: journalEntry.id,
+            account_id: bankAccountData.chart_account_id,
+            debit: 0,
+            credit: totalNomina,
+            description: `Pago desde ${account?.name ?? 'cuenta'} — ${periodName}`,
+          },
+        ])
+      }
     }
 
     setSaving(false)

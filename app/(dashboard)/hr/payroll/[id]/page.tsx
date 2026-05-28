@@ -118,6 +118,7 @@ export default async function PayrollDetailPage({ params }: { params: Promise<{ 
           userId={user.id}
           periodStatus={period.status}
           periodDays={periodDays}
+          periodName={period.name}
           employees={employees ?? []}
           lines={lines ?? []}
         />
