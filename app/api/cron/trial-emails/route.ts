@@ -9,8 +9,15 @@ const supabaseAdmin = createAdminClient(
 
 // Protección por secret token — solo Supabase cron puede llamar esto
 function isAuthorized(req: NextRequest): boolean {
-  const token = req.headers.get('x-cron-secret')
-  return token === process.env.CRON_SECRET
+  // Vercel Cron Jobs envía Authorization: Bearer <token>
+  const authHeader = req.headers.get('authorization')
+  if (authHeader === `Bearer ${process.env.CRON_SECRET}`) return true
+
+  // Fallback para llamadas manuales con x-cron-secret
+  const cronHeader = req.headers.get('x-cron-secret')
+  if (cronHeader === process.env.CRON_SECRET) return true
+
+  return false
 }
 
 export async function POST(req: NextRequest) {
