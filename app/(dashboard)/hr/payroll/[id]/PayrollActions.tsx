@@ -142,32 +142,38 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
     const account = bankAccounts.find(a => a.id === accountId)
 
     // 1. Marcar período como pagado
-    await supabase
+    const { error: paidError } = await supabase
       .from('payroll_periods')
       .update({ status: 'paid', paid_at: new Date().toISOString() })
       .eq('id', periodId)
+    console.log('[payroll] paidError:', paidError)
 
     // 2. Descontar saldo de bank_account
     if (account) {
-      await supabase
+      const { error: bankError } = await supabase
         .from('bank_accounts')
         .update({ current_balance: account.current_balance - totalNomina })
         .eq('id', accountId)
+      console.log('[payroll] bankError:', bankError)
     }
 
     // 3. Generar asiento contable
-    const { data: bankAccountData } = await supabase
+    const { data: bankAccountData, error: baError } = await supabase
       .from('bank_accounts')
       .select('chart_account_id')
       .eq('id', accountId)
       .maybeSingle()
+    console.log('[payroll] baError:', baError)
+    console.log('[payroll] chart_account_id:', bankAccountData?.chart_account_id)
 
-    const { data: nominaAccount } = await supabase
+    const { data: nominaAccount, error: naError } = await supabase
       .from('chart_of_accounts')
       .select('id')
       .eq('user_id', userId)
       .eq('code', '5120')
       .maybeSingle()
+    console.log('[payroll] naError:', naError)
+    console.log('[payroll] nominaAccount id:', nominaAccount?.id)
 
     const { data: fiscalPeriod } = await supabase
       .from('fiscal_periods')
@@ -194,7 +200,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         : 1
       const entryNumber = `JE-${yearMonth}-${String(lastNum).padStart(4, '0')}`
 
-      const { data: journalEntry } = await supabase
+      const { data: journalEntry, error: jeError } = await supabase
         .from('journal_entries')
         .insert({
           user_id: userId,
@@ -210,9 +216,11 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
         })
         .select('id')
         .single()
+      console.log('[payroll] jeError:', jeError)
+      console.log('[payroll] journalEntry id:', journalEntry?.id)
 
       if (journalEntry?.id) {
-        await supabase.from('journal_lines').insert([
+        const { error: jlError } = await supabase.from('journal_lines').insert([
           {
             journal_entry_id: journalEntry.id,
             account_id: nominaAccount.id,
@@ -230,6 +238,7 @@ export default function PayrollActions({ periodId, userId, periodStatus, periodD
             currency: currency ?? 'AED',
           },
         ])
+        console.log('[payroll] jlError:', jlError)
       }
     }
 
