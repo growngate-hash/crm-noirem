@@ -369,13 +369,82 @@ Ambas traducciones son obligatorias simultáneamente — la clave `TranslationKe
 |---|---|---|
 | `hr/page.tsx` | Client | Necesita estado para la tabla + KPIs reactivos |
 | `hr/employees/new/page.tsx` | Client | Formulario controlado con `useState` |
-| `hr/employees/[id]/page.tsx` | **Server** | Fetch inicial del empleado con `notFound()` si no existe |
+| `hr/employees/[id]/page.tsx` | **Client** | Edición inline, toggle de estado, limpieza de vehículos |
 | `hr/employees/[id]/EmployeeAttendance.tsx` | Client | Estado del formulario de asistencia + fetch reactivo |
 | `hr/payroll/page.tsx` | Client | Estado del formulario de nuevo período + lista reactiva |
 | `hr/payroll/[id]/page.tsx` | **Server** | Fetch del período, líneas y empleados disponibles |
 | `hr/payroll/[id]/PayrollActions.tsx` | Client | Formulario de líneas + botones de estado |
 
 Los Server Components usan `export const revalidate = 0` para no cachear — necesario porque los Client Components hijos llaman a `router.refresh()` tras mutaciones, lo que re-ejecuta el Server Component y actualiza los datos sin navegar.
+
+> `hr/employees/[id]/page.tsx` fue convertido de Server a Client Component para soportar edición inline. Usa `useParams()` para obtener el `id` y `useEffect` con `createClient()` del lado cliente para el fetch inicial.
+
+---
+
+## Página de detalle de empleado (`employees/[id]/page.tsx`)
+
+### Edición inline
+
+El header del empleado tiene un botón **Editar** que despliega un formulario inline dentro del mismo card — sin navegación a otra página. Al guardar, actualiza el estado local optimísticamente y cierra el formulario.
+
+Campos editables: `full_name`, `email`, `phone`, `role`, `salary_base`, `salary_period`, `start_date`, `commission_type`, `commission_value`, `notes`.
+
+```typescript
+await supabase.from('employees').update({
+  full_name, email, phone, role,
+  salary_base: parseFloat(form.salary_base) || 0,
+  salary_period, start_date,
+  commission_type, commission_value: parseFloat(form.commission_value) || 0,
+  notes,
+  updated_at: new Date().toISOString(),
+}).eq('id', id)
+```
+
+### Toggle de estado (`handleToggleStatus`)
+
+El badge de estado es un botón clickeable (`Activo — click para cambiar`). Al hacer clic ejecuta 3 pasos:
+
+**Paso 1 — Actualizar `employees.status`:**
+```typescript
+await supabase.from('employees').update({ status: newStatus }).eq('id', id)
+```
+
+**Paso 2 — Limpiar vehículos si pasa a `inactive`:**
+
+Usa estrategia dual de búsqueda para cubrir el caso en que `employee_ids` no esté sincronizado con `technicians`:
+
+```typescript
+// Búsqueda por UUID
+const { data: vehiclesByIds } = await supabase
+  .from('vehicles').select('id, employee_ids, technicians')
+  .contains('employee_ids', [id])
+
+// Búsqueda por nombre (fallback si employee_ids está desincronizado)
+const { data: vehiclesByName } = await supabase
+  .from('vehicles').select('id, employee_ids, technicians')
+  .contains('technicians', [employee.full_name])
+
+// Deduplicar y actualizar
+const allVehicles = [...(vehiclesByIds ?? []), ...(vehiclesByName ?? [])]
+  .filter((v, i, arr) => arr.findIndex(x => x.id === v.id) === i)
+
+for (const vehicle of allVehicles) {
+  await supabase.from('vehicles').update({
+    employee_ids:  vehicle.employee_ids.filter(eid => eid !== id),
+    technicians:   vehicle.technicians.filter(name => name !== employee.full_name),
+    technician:    updatedTechnicians.join(', '),
+  }).eq('id', vehicle.id)
+}
+```
+
+Los tres campos de vehículo se actualizan simultáneamente: `employee_ids` (UUIDs), `technicians` (array de nombres) y `technician` (string concatenado legacy).
+
+Si el empleado pasa de `inactive` a `active`, los vehículos **no se modifican** — la reasignación es manual desde `vehicles/page.tsx`.
+
+**Paso 3 — Actualización optimista del estado local:**
+```typescript
+setEmployee(prev => prev ? { ...prev, status: newStatus } : prev)
+```
 
 ---
 
