@@ -107,7 +107,7 @@ export async function GET(req: NextRequest) {
     { data: svc },
   ] = await Promise.all([
     sb.from('business_hours')
-      .select('is_open, open_time, close_time')
+      .select('is_open, start_time, end_time')
       .eq('day_of_week', dayOfWeek)
       .maybeSingle(),
 
@@ -147,8 +147,8 @@ export async function GET(req: NextRequest) {
   // ── Parámetros dinámicos ──────────────────────────────────────────────────
   const BUFFER_MIN = travelSetting?.travel_time_minutes ?? FALLBACK_BUFFER
 
-  const [startH, startM = 0] = (businessHour.open_time  ?? '08:00').split(':').map(Number)
-  const [endH,   endM   = 0] = (businessHour.close_time ?? '18:00').split(':').map(Number)
+  const [startH, startM = 0] = (businessHour.start_time  ?? '08:00').split(':').map(Number)
+  const [endH,   endM   = 0] = (businessHour.end_time ?? '18:00').split(':').map(Number)
   const OPEN_MIN  = startH * 60 + startM
   const CLOSE_MIN = endH   * 60 + endM
 
@@ -207,7 +207,7 @@ export async function GET(req: NextRequest) {
 
     // El servicio solicitado debe caber íntegro antes del cierre
     if (slotStart + requestedDurMin >= CLOSE_MIN) {
-      blocked.push({ slot, reason: `Fuera de horario (cierre ${businessHour.close_time})` })
+      blocked.push({ slot, reason: `Fuera de horario (cierre ${businessHour.end_time})` })
       continue
     }
 
