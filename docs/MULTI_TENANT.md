@@ -312,7 +312,9 @@ CREATE POLICY "superadmin_all" ON admin_audit_log
 Columnas: `performed_by`, `action`, `affected_tenant_id`, `payload (jsonb)`, `note`, `created_at`.
 
 Rutas excluidas del matcher (no pasan por middleware):
-`_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/register`, `booking`, `auth`, imágenes.
+`_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/cron`, `api/register`, `booking`, `auth`, imágenes.
+
+> Para la lógica completa de emails transaccionales y cron jobs, ver [docs/EMAIL_CRON.md](EMAIL_CRON.md).
 
 ---
 
