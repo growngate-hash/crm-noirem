@@ -486,9 +486,10 @@ export default function VehiclesPage() {
   const [saving,            setSaving]            = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   // multi-tech state
-  const [addTechs,    setAddTechs]    = useState<string[]>([])
-  const [editTechs,   setEditTechs]   = useState<string[]>([])
-  const [assignTechs, setAssignTechs] = useState<string[]>([])
+  const [addTechs,      setAddTechs]      = useState<string[]>([])
+  const [editTechs,     setEditTechs]     = useState<string[]>([])
+  const [assignTechs,   setAssignTechs]   = useState<string[]>([])
+  const [techEmployees, setTechEmployees] = useState<{id: string, full_name: string}[]>([])
 
   // vehicle inventory panel
   const [invVeh,        setInvVeh]        = useState<any|null>(null)
@@ -579,6 +580,15 @@ export default function VehiclesPage() {
     const sb = createClient()
     sb.from('contacts').select('id, name').then(({data})=>setContacts(data??[]))
     sb.from('services').select('id, name').then(({data})=>setServices(data??[]))
+    sb.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      sb.from('employees').select('id, full_name')
+        .eq('user_id', user.id)
+        .eq('role', 'technician')
+        .eq('status', 'active')
+        .order('full_name')
+        .then(({ data }) => setTechEmployees(data ?? []))
+    })
     sb.from('inventory_items').select('id, name, unit').then(({data})=>setAllInvItems(data??[]))
     sb.from('services').select('*').eq('is_active', true).then(({data})=>setActiveServices(data??[]))
     sb.from('service_inventory').select('*').then(({data})=>{
@@ -735,11 +745,13 @@ export default function VehiclesPage() {
   async function saveEdit() {
     if (!editVeh || !editForm.name.trim()) return
     setSaving(true)
+    const assignedEmployee = techEmployees.find(e => editTechs.includes(e.full_name))
     const {error} = await createClient().from('vehicles').update({
       name:editForm.name, license_plate:editForm.license_plate, make:editForm.make,
       model:editForm.model, year:editForm.year?Number(editForm.year):null,
       color:editForm.color,
       technician:editTechs.join(', '), technicians:editTechs,
+      employee_id: assignedEmployee?.id ?? null,
     }).eq('id', editVeh.id)
     setSaving(false)
     if (error) { addToast(error.message,'error'); return }
@@ -1044,7 +1056,7 @@ export default function VehiclesPage() {
               <div><MLabel>{t('year')}</MLabel><MInput type="number" placeholder="2023" value={editForm.year} onChange={e=>setEditForm({...editForm,year:e.target.value})}/></div>
               <div><MLabel>{t('color')}</MLabel><MInput placeholder="White" value={editForm.color} onChange={e=>setEditForm({...editForm,color:e.target.value})}/></div>
             </div>
-            <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={contacts.map(c=>c.name)}/></div>
+            <div><MLabel>{t('technicians')}</MLabel><TechPicker selected={editTechs} onChange={setEditTechs} pool={techEmployees.map(e=>e.full_name)}/></div>
           </div>
           {showDeleteConfirm && (
             <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
