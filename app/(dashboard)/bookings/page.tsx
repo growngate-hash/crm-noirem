@@ -369,9 +369,12 @@ export default function BookingsPage() {
 
     const checkNewBookings = async () => {
       const sb = createClient()
+      const { data: { user } } = await sb.auth.getUser()
+      if (!user) return
       const { data } = await sb
         .from('booking_requests')
         .select('id, customer_name, service_name, scheduled_at, created_at')
+        .eq('owner_id', user.id)
         .gt('created_at', lastCheckedAt.current)
         .order('created_at', { ascending: true })
 
