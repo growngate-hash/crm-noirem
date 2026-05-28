@@ -93,16 +93,23 @@ export default function EmployeeDetailPage() {
     if (newStatus === 'inactive') {
       const { data: vehicles } = await supabase
         .from('vehicles')
-        .select('id, employee_ids')
+        .select('id, employee_ids, technicians')
         .contains('employee_ids', [id])
 
       if (vehicles?.length) {
         for (const vehicle of vehicles) {
           const updatedIds = (vehicle.employee_ids ?? [])
             .filter((eid: string) => eid !== id)
+          const updatedTechnicians = (vehicle.technicians ?? [])
+            .filter((name: string) => name !== employee.full_name)
+
           await supabase
             .from('vehicles')
-            .update({ employee_ids: updatedIds })
+            .update({
+              employee_ids: updatedIds,
+              technicians: updatedTechnicians,
+              technician: updatedTechnicians.join(', '),
+            })
             .eq('id', vehicle.id)
         }
       }
