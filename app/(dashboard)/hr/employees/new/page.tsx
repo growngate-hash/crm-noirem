@@ -9,6 +9,29 @@ import Link from 'next/link'
 const CYAN = '#3DD9D6'
 const CTA  = '#F5B544'
 
+const LABEL: React.CSSProperties = {
+  display: 'block', fontSize: 12, fontWeight: 600,
+  color: '#5A5852', marginBottom: 6,
+  textTransform: 'uppercase', letterSpacing: '0.5px',
+}
+
+const ICON_BASE: React.CSSProperties = {
+  position: 'absolute', left: 14, top: '50%',
+  transform: 'translateY(-50%)', transition: 'color 0.18s', pointerEvents: 'none',
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12, boxShadow: '0 4px 12px rgba(11,42,74,0.06)', overflow: 'hidden' }}>
+      <div style={{ padding: '16px 28px', borderBottom: '1px solid #F0EFEA', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 5, height: 5, borderRadius: '50%', background: CYAN, flexShrink: 0 }} />
+        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 500, color: CYAN, textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
+      </div>
+      <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: 18 }}>{children}</div>
+    </div>
+  )
+}
+
 export default function NewEmployeePage() {
   const router = useRouter()
   const supabase = createClient()
@@ -70,29 +93,6 @@ export default function NewEmployeePage() {
       transition: 'border-color 0.18s, box-shadow 0.18s',
       boxShadow: active ? '0 0 0 3px rgba(61,217,214,0.12)' : 'none',
     }
-  }
-
-  const LABEL: React.CSSProperties = {
-    display: 'block', fontSize: 12, fontWeight: 600,
-    color: '#5A5852', marginBottom: 6,
-    textTransform: 'uppercase', letterSpacing: '0.5px',
-  }
-
-  const ICON_BASE: React.CSSProperties = {
-    position: 'absolute', left: 14, top: '50%',
-    transform: 'translateY(-50%)', transition: 'color 0.18s', pointerEvents: 'none',
-  }
-
-  function Section({ title, children }: { title: string; children: React.ReactNode }) {
-    return (
-      <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12, boxShadow: '0 4px 12px rgba(11,42,74,0.06)', overflow: 'hidden' }}>
-        <div style={{ padding: '16px 28px', borderBottom: '1px solid #F0EFEA', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: CYAN, flexShrink: 0 }} />
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10, fontWeight: 500, color: CYAN, textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
-        </div>
-        <div style={{ padding: '28px', display: 'flex', flexDirection: 'column', gap: 18 }}>{children}</div>
-      </div>
-    )
   }
 
   return (
