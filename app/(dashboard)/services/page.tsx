@@ -126,7 +126,7 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
           <span style={{color:'#F5B544',fontSize:18,lineHeight:1,flexShrink:0}}>◈</span>
           <span style={{fontSize:16,fontWeight:700,color:'#0B2A4A'}}>{s.name}</span>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:'#F5B544',whiteSpace:'nowrap',marginLeft:12}}>{priceStr}</span>
+        <span style={{fontSize:13,fontWeight:700,color:'#0B2A4A',whiteSpace:'nowrap',marginLeft:12}}>{priceStr}</span>
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginLeft:26,marginBottom:14}}>
         <span style={{fontSize:11,color:'#5A5852'}}>{s.code ?? s.category ?? ''}</span>
@@ -984,7 +984,7 @@ export default function ServicesPage() {
               <tfoot>
                 <tr style={{background:'#FAFAF7',borderTop:'2px solid #F5B54440'}}>
                   <td colSpan={5} style={{padding:'12px 16px',color:'#5A5852',fontSize:11,fontWeight:700,letterSpacing:'1px'}}>COSTO TOTAL DE INVENTARIO</td>
-                  <td style={{padding:'12px 16px',color:'#F5B544',fontSize:12,fontWeight:700}}>
+                  <td style={{padding:'12px 16px',color:'#0B2A4A',fontSize:12,fontWeight:600}}>
                     AED {srcInventory.reduce((s:number,i:any)=>s+(i.unit_price||0),0).toFixed(2)} prom.
                   </td>
                   <td style={{padding:'12px 16px'}}>
