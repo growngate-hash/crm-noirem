@@ -666,7 +666,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       ].map(f => (
                         <div key={f.label} style={{ textAlign: 'center' }}>
                           <div style={{ color: '#5A5852', fontSize: 9, fontWeight: 700, letterSpacing: '1px', marginBottom: 3 }}>{f.label}</div>
-                          <div style={{ color: f.label === 'TOTAL' ? (inv.status === 'anulada' ? '#ef4444' : '#3DD9D6') : '#0B2A4A', fontWeight: f.label === 'TOTAL' ? 800 : 600, fontSize: f.label === 'TOTAL' ? 14 : 12 }}>{f.value}</div>
+                          <div style={{ color: f.label === 'TOTAL' ? (inv.status === 'anulada' ? '#ef4444' : '#0B2A4A') : '#0B2A4A', fontWeight: f.label === 'TOTAL' ? 800 : 600, fontSize: f.label === 'TOTAL' ? 14 : 12 }}>{f.value}</div>
                         </div>
                       ))}
                     </div>
@@ -720,7 +720,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                     <td style={{ padding: '12px 8px', fontSize: 13, color: '#0B2A4A' }}>{(inv as any).contacts?.name ?? '—'}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#5A5852' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#5A5852' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
-                    <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#3DD9D6' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 8px', fontSize: 13, fontWeight: 700, color: '#0B2A4A' }}>AED {Number(inv.total ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px' }}>
                       {(() => {
                         const sc = inv.status === 'pagada'     ? { color: '#22c55e', bg: 'rgba(34,197,94,0.1)',   label: 'Pagada'     }
@@ -768,7 +768,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   <td colSpan={4} style={{ padding: '12px 0', fontSize: 12, color: '#5A5852', borderTop: '1px solid #F0EFEA' }}>
                     {invoices.length} {lang === 'es' ? 'facturas' : 'invoices'}
                   </td>
-                  <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#3DD9D6', borderTop: '1px solid #F0EFEA' }}>
+                  <td style={{ padding: '12px 8px', fontSize: 14, fontWeight: 800, color: '#0B2A4A', borderTop: '1px solid #F0EFEA' }}>
                     AED {invoices.filter(inv => inv.status !== 'anulada').reduce((sum, inv) => sum + Number(inv.total ?? 0), 0).toFixed(2)}
                   </td>
                   <td colSpan={2} style={{ borderTop: '1px solid #F0EFEA' }} />
@@ -795,7 +795,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
             </div>
           </div>
           <div style={{
-            fontSize: 14, fontWeight: 700, color: '#F5B544',
+            fontSize: 14, fontWeight: 700, color: '#0B2A4A',
             fontFamily: 'monospace'
           }}>
             Total: {payrollPeriods
@@ -840,7 +840,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       ? '1px solid #F0EFEA' : 'none'
                   }}>
                     <td style={{ padding: '12px 16px', fontSize: 13,
-                      fontWeight: 600, color: '#e8e6e0' }}>
+                      fontWeight: 600, color: '#0B2A4A' }}>
                       {p.name}
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 12,
@@ -858,7 +858,8 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{
-                        background: 'rgba(201,168,76,0.1)', color: '#F5B544',
+                        background: '#E6F0FA', color: '#0B2A4A',
+                        border: '1px solid #0B2A4A',
                         padding: '2px 8px', borderRadius: 4,
                         fontSize: 11, fontWeight: 600, fontFamily: 'monospace'
                       }}>
@@ -866,7 +867,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px', fontSize: 13,
-                      fontWeight: 700, color: '#e8e6e0', fontFamily: 'monospace' }}>
+                      fontWeight: 700, color: '#0B2A4A', fontFamily: 'monospace' }}>
                       {p.total_amount.toLocaleString('es', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
