@@ -105,7 +105,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
       )}
 
       {/* Logo */}
-      <div style={{ padding: '18px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid rgba(61,217,214,0.15)', flexShrink: 0 }}>
+      <div style={{ height: 64, padding: '0 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid rgba(61,217,214,0.15)', flexShrink: 0 }}>
         <div style={{
           width: 32, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0, overflow: 'hidden',
