@@ -1262,16 +1262,19 @@ function IntegrationsSection() {
             </div>
             {int.key !== 'whatsapp' ? (
               <button onClick={e => { e.stopPropagation(); setEnabled(p => ({...p, [int.key]:!p[int.key]})) }}
-                style={{ width:42, height:22, borderRadius:99, border:'none', cursor:'pointer', position:'relative', flexShrink:0, background:enabled[int.key]?'var(--gold)':'var(--bg3)', transition:'background 0.2s' }}>
-                <div style={{ position:'absolute', top:3, left:enabled[int.key]?22:3, width:16, height:16, borderRadius:'50%', background:enabled[int.key]?'#000':'var(--text2)', transition:'left 0.2s' }}/>
+                style={{ background:'none', border:'none', padding:0, cursor:'pointer', flexShrink:0 }}>
+                {enabled[int.key] ? (
+                  <span style={{ fontSize:10, fontWeight:700, color:'#1A6B40', background:'#E6F4EE', border:'1px solid #A3D4B5', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>ACTIVO</span>
+                ) : (
+                  <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
+                )}
               </button>
             ) : (
-              <span style={{ fontSize:9, fontWeight:700, padding:'3px 8px', borderRadius:99, whiteSpace:'nowrap',
-                background: waConnected ? 'rgba(34,197,94,0.15)' : 'rgba(136,133,128,0.12)',
-                border: `1px solid ${waConnected ? 'rgba(34,197,94,0.3)' : 'rgba(136,133,128,0.2)'}`,
-                color: waConnected ? '#22c55e' : '#888580' }}>
-                {waConnected ? 'ACTIVO' : 'INACTIVO'}
-              </span>
+              waConnected ? (
+                <span style={{ fontSize:10, fontWeight:700, color:'#1A6B40', background:'#E6F4EE', border:'1px solid #A3D4B5', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>ACTIVO</span>
+              ) : (
+                <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
+              )
             )}
           </div>
         ))}
