@@ -115,8 +115,8 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
             : <svg width="22" height="36" viewBox="-25 -50 50 100"><path d="M 0 -45 C 3 -15, 7 -7, 24 0 C 7 7, 3 15, 0 45 C -3 15, -7 7, -24 0 C -7 -7, -3 -15, 0 -45 Z" fill="#FAFAF7"/><path d="M 0 -18 C 1.5 -6, 3 -2, 10 0 C 3 2, 1.5 6, 0 18 C -1.5 6, -3 2, -10 0 C -3 -2, -1.5 -6, 0 -18 Z" fill="#3DD9D6"/></svg>}
         </div>
         <div>
-          <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 500, color: '#FAFAF7', letterSpacing: '-0.04em', lineHeight: 1 }}>saffi</div>
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#3DD9D6', letterSpacing: '1px', textTransform: 'uppercase' }}>ERP</span>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#FAFAF7', letterSpacing: '0.08em' }}>{companyName}</div>
+          <div style={{ fontSize: 8, color: '#B8D4ED', letterSpacing: '0.05em', marginTop: 1 }}>{companySubtitle}</div>
         </div>
       </div>
 
