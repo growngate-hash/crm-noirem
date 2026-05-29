@@ -97,6 +97,8 @@ export default function HRPage() {
               background: 'var(--color-card)', border: '1px solid var(--color-border)',
               borderRadius: 12, padding: '20px 24px',
               display: 'flex', alignItems: 'center', gap: 16,
+              boxShadow: '0 2px 8px rgba(11,42,74,0.07)',
+              transition: 'box-shadow 0.2s',
             }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 10,
@@ -106,10 +108,10 @@ export default function HRPage() {
                 <Icon size={20} color={k.color} />
               </div>
               <div>
-                <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                <div style={{ fontSize: 32, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1 }}>
                   {k.value}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
                   {k.label}
                 </div>
               </div>
@@ -173,18 +175,31 @@ export default function HRPage() {
                     style={{
                       borderBottom: i < employees.length - 1 ? '1px solid var(--color-border)' : 'none',
                       cursor: 'pointer',
+                      borderRadius: 8,
+                      transition: 'background 0.15s',
                     }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#F5F4EF'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}
                     onClick={() => router.push(`/hr/employees/${emp.id}`)}
                   >
                     <td style={{ padding: '14px 24px' }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                        {emp.full_name}
-                      </div>
-                      {emp.email && (
-                        <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
-                          {emp.email}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 3, height: 36, borderRadius: 2,
+                          background: 'var(--color-accent, #F5B544)',
+                          flexShrink: 0,
+                        }} />
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                            {emp.full_name}
+                          </div>
+                          {emp.email && (
+                            <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>
+                              {emp.email}
+                            </div>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </td>
                     <td style={{ padding: '14px 24px', fontSize: 13, color: 'var(--color-text-primary)' }}>
                       {ROLE_LABELS[emp.role] ?? emp.role}
