@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Package } from 'lucide-react'
@@ -8,26 +8,26 @@ import { useLanguage } from '@/contexts/LanguageContext'
 
 // ─── shared inputs ────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
-  width:'100%', background:'#1a1a1e', borderRadius:8, padding:'10px 12px',
-  color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
+  width:'100%', background:'#FFFFFF', borderRadius:8, padding:'10px 12px',
+  color:'#0B2A4A', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
 }
 function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [foc,setFoc] = useState(false)
-  return <input {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`, ...props.style}}/>
+  return <input {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP,border:`1.5px solid ${foc?'#3DD9D6':'#F0EFEA'}`, ...props.style}}/>
 }
 function MSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const [foc,setFoc] = useState(false)
-  return <select {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`,cursor:'pointer', ...props.style}}/>
+  return <select {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP,border:`1.5px solid ${foc?'#3DD9D6':'#F0EFEA'}`,cursor:'pointer', ...props.style}}/>
 }
 function MLabel({ children }: { children: React.ReactNode }) {
-  return <label style={{display:'block',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',color:'#888580',marginBottom:6}}>{children}</label>
+  return <label style={{display:'block',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',color:'#5A5852',marginBottom:6}}>{children}</label>
 }
 
 // ─── category badge ───────────────────────────────────────────────────────────
 const CAT_STYLE: Record<string,{bg:string;border:string;color:string}> = {
   'Químico':     {bg:'rgba(79,163,255,0.1)',  border:'rgba(79,163,255,0.3)',  color:'#4fa3ff'},
   'Consumible':  {bg:'rgba(52,211,153,0.1)',  border:'rgba(52,211,153,0.3)',  color:'#34d399'},
-  'Herramienta': {bg:'rgba(201,168,76,0.12)', border:'rgba(201,168,76,0.3)', color:'#c9a84c'},
+  'Herramienta': {bg:'rgba(201,168,76,0.12)', border:'rgba(201,168,76,0.3)', color:'#F5B544'},
 }
 function CatBadge({ cat }: { cat: string }) {
   const s = CAT_STYLE[cat] ?? CAT_STYLE['Consumible']
@@ -40,7 +40,7 @@ function StatusPill({ value, onChange }: { value: string; onChange: (v: string)=
     <div style={{display:'flex',gap:8}}>
       {[['en_ruta','EN RUTA'],['libre','LIBRE']].map(([v,label])=>(
         <button key={v} type="button" onClick={()=>onChange(v)}
-          style={{padding:'7px 18px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',transition:'all 0.15s',background:value===v?'#c9a84c':'#1a1a1e',color:value===v?'#0d0d0f':'#888580',border:value===v?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)'}}>
+          style={{padding:'7px 18px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',transition:'all 0.15s',background:value===v?'#F5B544':'#FFFFFF',color:value===v?'#1A1A1A':'#5A5852',border:value===v?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)'}}>
           {label}
         </button>
       ))}
@@ -52,10 +52,10 @@ function StatusPill({ value, onChange }: { value: string; onChange: (v: string)=
 function VModal({ title, onClose, children, maxWidth=520 }: { title: string; onClose: ()=>void; children: React.ReactNode; maxWidth?: number }) {
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={onClose}>
-      <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:28,width:'100%',maxWidth,maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+      <div style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:14,padding:28,width:'100%',maxWidth,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 24px 48px rgba(11,42,74,0.12)'}} onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
-          <span style={{fontSize:17,fontWeight:700,color:'#f0ede8'}}>{title}</span>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}><X size={18}/></button>
+          <span style={{fontSize:17,fontWeight:700,color:'#0B2A4A'}}>{title}</span>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}><X size={18}/></button>
         </div>
         {children}
       </div>
@@ -70,7 +70,7 @@ function IconBtn({ onClick, danger=false, children }: { onClick: ()=>void; dange
   const [hov,setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{width:24,height:24,borderRadius:'50%',background:'#1a1a1e',border:`1px solid ${hov?(danger?'#ff4f4f':'#c9a84c'):'rgba(255,255,255,0.1)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:hov?(danger?'#ff4f4f':'#c9a84c'):'#888580',transition:'all 0.15s',flexShrink:0}}>
+      style={{width:24,height:24,borderRadius:'50%',background:'#FFFFFF',border:`1px solid ${hov?(danger?'#ff4f4f':'#F5B544'):'rgba(11,42,74,0.1)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:hov?(danger?'#ff4f4f':'#F5B544'):'#5A5852',transition:'all 0.15s',flexShrink:0}}>
       {children}
     </button>
   )
@@ -79,8 +79,8 @@ function IconBtn({ onClick, danger=false, children }: { onClick: ()=>void; dange
 // ─── progress bar ─────────────────────────────────────────────────────────────
 function ProgBar({ pct }: { pct: number }) {
   return (
-    <div style={{height:4,borderRadius:2,background:'#1a1a1e',overflow:'hidden'}}>
-      <div style={{width:`${Math.min(pct,100)}%`,height:'100%',borderRadius:2,background:'#c9a84c',transition:'width 0.3s'}}/>
+    <div style={{height:4,borderRadius:2,background:'#FFFFFF',overflow:'hidden'}}>
+      <div style={{width:`${Math.min(pct,100)}%`,height:'100%',borderRadius:2,background:'#F5B544',transition:'width 0.3s'}}/>
     </div>
   )
 }
@@ -89,7 +89,7 @@ function ProgBar({ pct }: { pct: number }) {
 function StatusBadge({ status }: { status: string }) {
   const enRuta = status === 'en_ruta'
   return (
-    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.1em',padding:'3px 8px',borderRadius:99,whiteSpace:'nowrap',background:enRuta?'rgba(201,168,76,0.15)':'rgba(52,211,153,0.15)',border:`1px solid ${enRuta?'rgba(201,168,76,0.4)':'rgba(52,211,153,0.4)'}`,color:enRuta?'#c9a84c':'#34d399'}}>
+    <span style={{fontSize:9,fontWeight:800,letterSpacing:'0.1em',padding:'3px 8px',borderRadius:99,whiteSpace:'nowrap',background:enRuta?'rgba(201,168,76,0.15)':'rgba(52,211,153,0.15)',border:`1px solid ${enRuta?'rgba(201,168,76,0.4)':'rgba(52,211,153,0.4)'}`,color:enRuta?'#F5B544':'#34d399'}}>
       {enRuta?'EN RUTA':'LIBRE'}
     </span>
   )
@@ -101,12 +101,12 @@ function TechTag({ name, onRemove }: { name: string; onRemove: () => void }) {
   return (
     <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:99,
       background:'rgba(201,168,76,0.12)',border:`1px solid ${hov?'rgba(255,79,79,0.45)':'rgba(201,168,76,0.35)'}`,
-      color:'#c9a84c',fontSize:11,fontWeight:600,transition:'border-color 0.15s'}}>
+      color:'#F5B544',fontSize:11,fontWeight:600,transition:'border-color 0.15s'}}>
       {name}
       <button type="button" onClick={onRemove}
         onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',
-          color:hov?'#ff4f4f':'#888580',lineHeight:1,transition:'color 0.15s'}}>
+          color:hov?'#ff4f4f':'#5A5852',lineHeight:1,transition:'color 0.15s'}}>
         <X size={10}/>
       </button>
     </span>
@@ -155,7 +155,7 @@ function TechPicker({ selected, onChange, pool }: {
         {canAdd && (
           <button type="button" onClick={()=>add(query.trim())}
             style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',
-              background:'#c9a84c',border:'none',borderRadius:6,color:'#0d0d0f',
+              background:'#F5B544',border:'none',borderRadius:6,color:'#1A1A1A',
               fontSize:11,fontWeight:700,padding:'3px 8px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
             + Agregar
           </button>
@@ -163,7 +163,7 @@ function TechPicker({ selected, onChange, pool }: {
       </div>
       {open && filtered.length > 0 && (
         <div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,
-          background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,
+          background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,
           zIndex:810,overflow:'hidden',boxShadow:'0 8px 24px rgba(0,0,0,0.5)'}}>
           {filtered.map(t=>(
             <TechDropRow key={t} name={t} onPick={()=>add(t)}/>
@@ -178,7 +178,7 @@ function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
   const [hov,setHov] = useState(false)
   return (
     <div onClick={onPick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#f0ede8',
+      style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#0B2A4A',
         fontFamily:'Outfit,sans-serif',background:hov?'rgba(201,168,76,0.1)':'transparent',
         transition:'background 0.1s'}}>
       {name}
@@ -189,8 +189,8 @@ function TechDropRow({ name, onPick }: { name: string; onPick: ()=>void }) {
 // ─── vehicle agenda (today + tomorrow bookings) ───────────────────────────────
 const STATUS_DOT: Record<string, string> = {
   confirmed:   '#34d399',
-  in_progress: '#c9a84c',
-  pending:     '#888580',
+  in_progress: '#F5B544',
+  pending:     '#5A5852',
 }
 
 function VehicleAgenda({ bookings, tz }: { bookings: any[]; tz: UseTimezoneReturn }) {
@@ -209,18 +209,18 @@ function VehicleAgenda({ bookings, tz }: { bookings: any[]; tz: UseTimezoneRetur
   if (!serviciosHoy.length && !serviciosManana.length) return null
 
   function AgendaRow({ b }: { b: any }) {
-    const dot = STATUS_DOT[b.status] ?? '#888580'
+    const dot = STATUS_DOT[b.status] ?? '#5A5852'
     return (
       <div style={{display:'flex',gap:8,alignItems:'center',padding:'6px 8px',
         borderRadius:7,background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.05)'}}>
-        <span style={{fontSize:11,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
+        <span style={{fontSize:11,fontWeight:700,color:'#F5B544',whiteSpace:'nowrap',flexShrink:0,fontVariantNumeric:'tabular-nums'}}>
           {tz.formatHora(b.scheduled_at)}
         </span>
         <div style={{minWidth:0,flex:1}}>
-          <div style={{fontSize:11,fontWeight:600,color:'#f0ede8',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+          <div style={{fontSize:11,fontWeight:600,color:'#0B2A4A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
             {b.contacts?.name ?? '—'}
           </div>
-          <div style={{fontSize:10,color:'#888580',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+          <div style={{fontSize:10,color:'#5A5852',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
             {b.services?.name ?? '—'}
           </div>
         </div>
@@ -230,17 +230,17 @@ function VehicleAgenda({ bookings, tz }: { bookings: any[]; tz: UseTimezoneRetur
   }
 
   return (
-    <div style={{borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:10,marginTop:2,display:'flex',flexDirection:'column',gap:6}}>
-      <div style={{fontSize:9,fontWeight:700,color:'#888580',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:2}}>
+    <div style={{borderTop:'1px solid #F0EFEA',paddingTop:10,marginTop:2,display:'flex',flexDirection:'column',gap:6}}>
+      <div style={{fontSize:9,fontWeight:700,color:'#5A5852',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:2}}>
         Agenda
       </div>
 
       {serviciosHoy.length > 0 && (
         <div style={{display:'flex',flexDirection:'column',gap:4}}>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#c9a84c',textTransform:'uppercase'}}>HOY</span>
+            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#F5B544',textTransform:'uppercase'}}>HOY</span>
             <span style={{flex:1,height:1,background:'rgba(201,168,76,0.15)'}}/>
-            <span style={{fontSize:9,fontWeight:600,color:'#c9a84c',background:'rgba(201,168,76,0.1)',borderRadius:99,padding:'1px 6px'}}>
+            <span style={{fontSize:9,fontWeight:600,color:'#F5B544',background:'rgba(201,168,76,0.1)',borderRadius:99,padding:'1px 6px'}}>
               {serviciosHoy.length}
             </span>
           </div>
@@ -251,9 +251,9 @@ function VehicleAgenda({ bookings, tz }: { bookings: any[]; tz: UseTimezoneRetur
       {serviciosManana.length > 0 && (
         <div style={{display:'flex',flexDirection:'column',gap:4,marginTop:serviciosHoy.length?4:0}}>
           <div style={{display:'flex',alignItems:'center',gap:6}}>
-            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#888580',textTransform:'uppercase'}}>MAÑANA</span>
-            <span style={{flex:1,height:1,background:'rgba(255,255,255,0.06)'}}/>
-            <span style={{fontSize:9,fontWeight:600,color:'#888580',background:'rgba(255,255,255,0.05)',borderRadius:99,padding:'1px 6px'}}>
+            <span style={{fontSize:8,fontWeight:800,letterSpacing:'0.14em',color:'#5A5852',textTransform:'uppercase'}}>MAÑANA</span>
+            <span style={{flex:1,height:1,background:'#F0EFEA'}}/>
+            <span style={{fontSize:9,fontWeight:600,color:'#5A5852',background:'rgba(255,255,255,0.05)',borderRadius:99,padding:'1px 6px'}}>
               {serviciosManana.length}
             </span>
           </div>
@@ -280,24 +280,24 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
     : booking.status === 'in_progress' ? 'en_ruta'
     : 'asignado'
 
-  const statusConfig: Record<string, {label: string; color: string; bg: string}> = {
-    disponible: { label: 'DISPONIBLE', color: '#22c55e', bg: '#22c55e20' },
-    en_ruta:    { label: 'EN RUTA',    color: '#f59e0b', bg: '#f59e0b20' },
-    asignado:   { label: 'ASIGNADO',   color: '#3b82f6', bg: '#3b82f620' },
+  const statusConfig: Record<string, {label: string; color: string; bg: string; border: string}> = {
+    disponible: { label: 'DISPONIBLE', color: '#1F5A9B', bg: '#E6F0FA',               border: 'rgba(31,90,155,0.3)' },
+    en_ruta:    { label: 'EN SERVICIO',color: '#1F8F5C', bg: '#E6F5EC',               border: 'rgba(31,143,92,0.3)' },
+    asignado:   { label: 'ASIGNADO',   color: '#1A8A87', bg: 'rgba(61,217,214,0.1)', border: 'rgba(61,217,214,0.3)' },
   }
   const sc = statusConfig[vehicleStatus]
   const progress = booking?.progress ?? 0
 
   return (
-    <div style={{position:'relative',background:'#1a1a1f',border:`1px solid ${isActive?'#c9a84c40':'#2a2a30'}`,borderRadius:16,padding:20,width:260,flexShrink:0,transition:'border-color 0.2s'}}>
+    <div style={{position:'relative',background:'#FFFFFF',border:'1px solid rgba(11,42,74,0.15)',borderRadius:16,padding:20,width:260,flexShrink:0,transition:'border-color 0.2s',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}>
 
       {/* Header: placa + estado + acciones */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}>
         <div>
-          <div style={{color:'#fff',fontSize:16,fontWeight:800,marginBottom:4}}>
+          <div style={{color:'#0B2A4A',fontSize:16,fontWeight:700,marginBottom:4}}>
             {v.license_plate || v.vin || v.name || 'MÓVIL'}
           </div>
-          <div style={{color:'#666',fontSize:12}}>
+          <div style={{color:'#5A5852',fontSize:12}}>
             {[v.make, v.model, v.year].filter(Boolean).join(' ') || v.name || ''}
           </div>
           {/* Service status toggle badge */}
@@ -323,7 +323,7 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
           })()}
         </div>
         <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
-          <span style={{padding:'4px 10px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'1px',background:sc.bg,color:sc.color,border:`1px solid ${sc.color}40`,whiteSpace:'nowrap'}}>
+          <span style={{padding:'4px 10px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'1px',background:sc.bg,color:sc.color,border:`1px solid ${sc.border}`,whiteSpace:'nowrap'}}>
             {sc.label}
           </span>
           <div style={{display:'flex',gap:4}} onClick={e=>e.stopPropagation()}>
@@ -335,46 +335,46 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
 
       {/* Alerta stock bajo */}
       {alertCount > 0 && (
-        <div style={{background:'#f59e0b15',border:'1px solid #f59e0b40',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
-          <span style={{color:'#f59e0b',fontSize:13}}>⚠</span>
-          <span style={{color:'#f59e0b',fontSize:12,fontWeight:600}}>Stock Bajo · {alertCount} item{alertCount !== 1 ? 's' : ''}</span>
+        <div style={{background:'#FDF4DE',border:'1px solid rgba(245,181,68,0.3)',borderRadius:8,padding:'8px 12px',marginBottom:12,display:'flex',alignItems:'center',gap:8}}>
+          <span style={{color:'#F5B544',fontSize:13}}>⚠</span>
+          <span style={{color:'#F5B544',fontSize:12,fontWeight:600}}>Stock Bajo · {alertCount} item{alertCount !== 1 ? 's' : ''}</span>
         </div>
       )}
 
       {/* Info del servicio activo */}
       {isActive ? (
-        <div style={{background:'#0d0d0f',borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:8,padding:14,marginBottom:12}}>
           {booking.services?.name && (
             <div style={{marginBottom:10}}>
-              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>SERVICIO</div>
-              <div style={{color:'#fff',fontSize:14,fontWeight:700}}>{booking.services.name}</div>
+              <div style={{color:'#A8A6A0',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3,textTransform:'uppercase'}}>SERVICIO</div>
+              <div style={{color:'#0B2A4A',fontSize:14,fontWeight:600}}>{booking.services.name}</div>
             </div>
           )}
           {booking.contacts?.name && (
             <div style={{marginBottom:booking.technician||booking.scheduled_at?10:0}}>
-              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>CLIENTE</div>
-              <div style={{color:'#fff',fontSize:14,fontWeight:600}}>{booking.contacts.name}</div>
+              <div style={{color:'#A8A6A0',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3,textTransform:'uppercase'}}>CLIENTE</div>
+              <div style={{color:'#0B2A4A',fontSize:14,fontWeight:600}}>{booking.contacts.name}</div>
             </div>
           )}
           {booking.technician && (
             <div style={{marginBottom:booking.scheduled_at?10:0}}>
-              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>TÉCNICO</div>
-              <div style={{color:'#888',fontSize:13}}>{booking.technician}</div>
+              <div style={{color:'#A8A6A0',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3,textTransform:'uppercase'}}>TÉCNICO</div>
+              <div style={{color:'#0B2A4A',fontSize:13}}>{booking.technician}</div>
             </div>
           )}
           {booking.scheduled_at && (
             <div>
-              <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3}}>PROGRAMADO</div>
-              <div style={{color:'#888',fontSize:12}}>
+              <div style={{color:'#A8A6A0',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:3,textTransform:'uppercase'}}>PROGRAMADO</div>
+              <div style={{color:'#0B2A4A',fontSize:12}}>
                 {new Date(booking.scheduled_at).toLocaleDateString('es-ES',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
               </div>
             </div>
           )}
         </div>
       ) : (
-        <div style={{background:'#0d0d0f',borderRadius:10,padding:20,marginBottom:12,textAlign:'center'}}>
+        <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:8,padding:20,marginBottom:12,textAlign:'center'}}>
           <div style={{color:'#22c55e',fontSize:13,fontWeight:600}}>Sin reservas activas</div>
-          <div style={{color:'#555',fontSize:11,marginTop:4}}>Disponible para asignar</div>
+          <div style={{color:'#5A5852',fontSize:11,marginTop:4}}>Disponible para asignar</div>
         </div>
       )}
 
@@ -382,16 +382,16 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
       {isActive && (
         <div style={{marginBottom:12}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6}}>
-            <span style={{color:'#666',fontSize:11,fontWeight:700}}>PROGRESO DEL SERVICIO</span>
-            <span style={{color:'#c9a84c',fontSize:12,fontWeight:800}}>{progress}%</span>
+            <span style={{color:'#5A5852',fontSize:11,fontWeight:700}}>PROGRESO DEL SERVICIO</span>
+            <span style={{color:'#F5B544',fontSize:12,fontWeight:800}}>{progress}%</span>
           </div>
-          <div style={{height:6,background:'#2a2a30',borderRadius:3,overflow:'hidden'}}>
-            <div style={{height:'100%',width:`${progress}%`,background:progress>=100?'#22c55e':progress>=50?'#c9a84c':'#3b82f6',borderRadius:3,transition:'width 0.5s ease'}}/>
+          <div style={{height:6,background:'#F0EFEA',borderRadius:3,overflow:'hidden'}}>
+            <div style={{height:'100%',width:`${progress}%`,background:progress>=100?'#22c55e':progress>=50?'#F5B544':'#3b82f6',borderRadius:3,transition:'width 0.5s ease'}}/>
           </div>
           <div style={{display:'flex',gap:6,marginTop:8}}>
             {[0,25,50,75,100].map(pct=>(
               <button key={pct} onClick={()=>onProgressUpdate(booking.id, pct)}
-                style={{flex:1,padding:'5px 0',background:progress===pct?'#c9a84c':'#0d0d0f',border:`1px solid ${progress===pct?'#c9a84c':'#2a2a30'}`,borderRadius:6,color:progress===pct?'#0d0d0f':'#666',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:1,padding:'5px 0',background:progress===pct?'#0B2A4A':'#F0EFEA',border:`1px solid ${progress===pct?'#0B2A4A':'#F0EFEA'}`,borderRadius:6,color:progress===pct?'#FAFAF7':'#5A5852',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 {pct}%
               </button>
             ))}
@@ -401,9 +401,9 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
 
       {/* Precio */}
       {isActive && booking.price && (
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,padding:'8px 12px',background:'#c9a84c10',borderRadius:8}}>
-          <span style={{color:'#666',fontSize:12}}>Valor del servicio</span>
-          <span style={{color:'#c9a84c',fontWeight:800,fontSize:15}}>AED {parseFloat(booking.price).toFixed(2)}</span>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,padding:'8px 12px',background:'rgba(245,181,68,0.08)',borderRadius:8}}>
+          <span style={{color:'#5A5852',fontSize:12}}>Valor del servicio</span>
+          <span style={{color:'#F5B544',fontWeight:700,fontSize:15}}>AED {parseFloat(booking.price).toFixed(2)}</span>
         </div>
       )}
 
@@ -415,7 +415,7 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
         {alertCount > 0 && (
           <span style={{position:'absolute',top:-6,left:-4,background:'#ff4f4f',color:'#fff',fontSize:9,fontWeight:800,borderRadius:99,padding:'1px 5px',zIndex:1,lineHeight:'14px'}}>{alertCount}</span>
         )}
-        <button onClick={onInventory} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'6px 12px',borderRadius:8,background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',color:'#c9a84c',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+        <button onClick={onInventory} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'6px 12px',borderRadius:8,background:'#0B2A4A',border:'none',color:'#FAFAF7',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
           <Package size={12}/> Inventario
         </button>
       </div>
@@ -423,10 +423,10 @@ function VehicleCard({ v, alertCount, agenda, tz, onEdit, onClear, onAssign, onI
       {/* Clear confirmation overlay */}
       {confirmClear && (
         <div style={{position:'absolute',inset:0,background:'rgba(13,13,15,0.94)',borderRadius:16,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:14,padding:16,zIndex:10}}>
-          <span style={{fontSize:12,color:'#f0ede8',textAlign:'center',lineHeight:1.6}}>¿Marcar este vehículo como disponible?</span>
+          <span style={{fontSize:12,color:'#0B2A4A',textAlign:'center',lineHeight:1.6}}>¿Marcar este vehículo como disponible?</span>
           <div style={{display:'flex',gap:8}}>
-            <button onClick={()=>setConfirmClear(false)} style={{padding:'7px 16px',borderRadius:7,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
-            <button onClick={()=>{setConfirmClear(false);onClear()}} style={{padding:'7px 16px',borderRadius:7,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Sí</button>
+            <button onClick={()=>setConfirmClear(false)} style={{padding:'7px 16px',borderRadius:7,border:'1px solid rgba(255,255,255,0.1)',background:'#FFFFFF',color:'#5A5852',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
+            <button onClick={()=>{setConfirmClear(false);onClear()}} style={{padding:'7px 16px',borderRadius:7,border:'none',background:'#F5B544',color:'#1A1A1A',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Sí</button>
           </div>
         </div>
       )}
@@ -458,10 +458,10 @@ const EMPTY_VEH       = { name:'', license_plate:'', make:'', model:'', year:'',
 const EMPTY_ASSIGN    = { client_id:'', service_id:'', client_address:'', departed_at:'', eta:'', technician:'' }
 const EMPTY_INV_ITEM  = { item_name:'', category:'Químico', stock_current:'', stock_minimum:'', unit:'mL' }
 
-const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
-const BTN_GOLD:     React.CSSProperties = { padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif' }
-const BTN_RED:      React.CSSProperties = { padding:'8px 14px', borderRadius:8, border:'1px solid rgba(255,79,79,0.3)', background:'transparent', color:'#ff4f4f', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
-const BTN_GHOST:    React.CSSProperties = { padding:'8px 16px', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'#1a1a1e', color:'#888580', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
+const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#F5B544', color:'#1A1A1A', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
+const BTN_GOLD:     React.CSSProperties = { padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#F5B544', color:'#1A1A1A', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif' }
+const BTN_RED:      React.CSSProperties = { padding:'8px 14px', borderRadius:8, border:'1px solid rgba(217,83,61,0.3)', background:'#FBE7E2', color:'#D9533D', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
+const BTN_GHOST:    React.CSSProperties = { padding:'8px 16px', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'#FFFFFF', color:'#5A5852', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }
 
 export default function VehiclesPage() {
   const { t } = useLanguage()
@@ -815,14 +815,14 @@ export default function VehiclesPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('vehicles')} — Home Service</div>
-          <div style={{fontSize:12,color:'#888580',marginTop:3}}>{tz.getToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#0B2A4A'}}>{t('vehicles')} — Home Service</div>
+          <div style={{fontSize:12,color:'#5A5852',marginTop:3}}>{tz.getToday().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         </div>
         <button style={BTN_GOLD} onClick={()=>setShowAdd(true)}>+ {t('addVehicle')}</button>
       </div>
 
       {/* ── Section label ── */}
-      <div style={{fontSize:11,fontWeight:600,color:'#888580',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:14}}>
+      <div style={{fontSize:10,fontWeight:600,color:'#A8A6A0',letterSpacing:'1px',textTransform:'uppercase',marginBottom:14,fontFamily:'JetBrains Mono, monospace'}}>
         Vehicles — Real Time
       </div>
 
@@ -830,7 +830,7 @@ export default function VehiclesPage() {
       {loading ? (
         <div style={{display:'flex',gap:12}}>
           {[1,2,3,4].map(i=>(
-            <div key={i} style={{width:224,height:320,background:'#141416',borderRadius:12,border:'1px solid rgba(255,255,255,0.06)',flexShrink:0}} className="skeleton"/>
+            <div key={i} style={{width:224,height:320,background:'#FAFAF7',borderRadius:12,border:'1px solid #F0EFEA',flexShrink:0}} className="skeleton"/>
           ))}
         </div>
       ) : vehicles.length === 0 ? (
@@ -872,33 +872,33 @@ export default function VehiclesPage() {
       {invVeh && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:620,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
           onClick={()=>{ setInvVeh(null); setVehInventory([]); setShowAddInv(false); setEditInvItem(null) }}>
-          <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:28,width:'100%',maxWidth:780,maxHeight:'90vh',overflowY:'auto'}}
+          <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:14,padding:28,width:'100%',maxWidth:780,maxHeight:'90vh',overflowY:'auto'}}
             onClick={e=>e.stopPropagation()}>
 
             {/* panel header */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
               <div>
-                <div style={{fontSize:16,fontWeight:700,color:'#f0ede8',marginBottom:4}}>
+                <div style={{fontSize:16,fontWeight:700,color:'#0B2A4A',marginBottom:4}}>
                   Inventario — {invVeh.name}
                 </div>
-                <div style={{fontSize:12,color:'#888580'}}>{invVeh.license_plate}</div>
+                <div style={{fontSize:12,color:'#5A5852'}}>{invVeh.license_plate}</div>
               </div>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <button onClick={()=>setShowAddInv(true)} style={{...BTN_GOLD,fontSize:12,padding:'6px 14px'}}>+ Agregar Item</button>
                 <button onClick={()=>{ setInvVeh(null); setVehInventory([]); setShowAddInv(false); setEditInvItem(null) }}
-                  style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}><X size={18}/></button>
+                  style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}><X size={18}/></button>
               </div>
             </div>
 
             {/* KPIs */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:20}}>
               {[
-                { label:'Total Items',        value:String(vehInventory.length),  color:'#f0ede8' },
+                { label:'Total Items',        value:String(vehInventory.length),  color:'#0B2A4A' },
                 { label:'Alertas Stock',       value:String(invAlerts),            color:invAlerts>0?'#ff4f4f':'#34d399' },
-                { label:'Servicios Posibles',  value:String(availableServices.length),   color:availableServices.length>0?'#c9a84c':'#888580' },
+                { label:'Servicios Posibles',  value:String(availableServices.length),   color:availableServices.length>0?'#F5B544':'#5A5852' },
               ].map(k=>(
-                <div key={k.label} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
-                  <div style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
+                <div key={k.label} style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:10,padding:'14px 16px'}}>
+                  <div style={{fontSize:10,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
                   <div style={{fontSize:22,fontWeight:700,color:k.color}}>{k.value}</div>
                 </div>
               ))}
@@ -907,9 +907,9 @@ export default function VehiclesPage() {
             {/* empty state */}
             {!loadingInv && vehInventory.length === 0 && (
               <div style={{textAlign:'center',padding:'32px 0',marginBottom:16}}>
-                <div style={{fontSize:13,color:'#888580',marginBottom:16}}>Sin inventario registrado para este vehículo.</div>
+                <div style={{fontSize:13,color:'#5A5852',marginBottom:16}}>Sin inventario registrado para este vehículo.</div>
                 <button onClick={loadStandardInventory} disabled={savingInv}
-                  style={{padding:'10px 20px',borderRadius:8,border:'1px solid rgba(201,168,76,0.3)',background:'transparent',color:'#c9a84c',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                  style={{padding:'10px 20px',borderRadius:8,border:'1px solid rgba(201,168,76,0.3)',background:'transparent',color:'#F5B544',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                   {savingInv?'Cargando…':'📦 Cargar inventario estándar'}
                 </button>
               </div>
@@ -917,34 +917,34 @@ export default function VehiclesPage() {
 
             {/* inventory table */}
             {(loadingInv || vehInventory.length > 0) && (
-              <div style={{overflow:'hidden',borderRadius:10,border:'1px solid rgba(255,255,255,0.06)',marginBottom:20}}>
+              <div style={{overflow:'hidden',borderRadius:10,border:'1px solid #F0EFEA',marginBottom:20}}>
                 <table style={{width:'100%',borderCollapse:'collapse'}}>
                   <thead>
-                    <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                    <tr style={{borderBottom:'1px solid #F0EFEA'}}>
                       {['Producto','Categoría','Stock Móvil','Mínimo','Estado',''].map(h=>(
-                        <th key={h} style={{padding:'10px 14px',fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
+                        <th key={h} style={{padding:'10px 14px',fontSize:10,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.07em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {loadingInv ? (
-                      <tr><td colSpan={6} style={{padding:32,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
+                      <tr><td colSpan={6} style={{padding:32,textAlign:'center',color:'#5A5852'}}>Cargando…</td></tr>
                     ) : vehInventory.map((item:any)=>{
                       const cur = item.stock_current ?? 0
                       const min = item.stock_minimum ?? 0
                       const estado = cur === 0 ? 'sin' : cur < min ? 'bajo' : 'ok'
                       const isEditing = editInvItem?.id === item.id
                       return (
-                        <tr key={item.id} style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                          <td style={{padding:'12px 14px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{item.item_name}</td>
+                        <tr key={item.id} style={{borderBottom:'1px solid #F0EFEA'}}>
+                          <td style={{padding:'12px 14px',fontSize:13,fontWeight:500,color:'#0B2A4A'}}>{item.item_name}</td>
                           <td style={{padding:'12px 14px'}}><CatBadge cat={item.category||'Consumible'}/></td>
                           <td style={{padding:'12px 14px'}}>
-                            <span style={{fontSize:13,fontWeight:700,color:cur<min?'#ff4f4f':'#f0ede8'}}>
+                            <span style={{fontSize:13,fontWeight:700,color:cur<min?'#ff4f4f':'#0B2A4A'}}>
                               {cur} {item.unit}
                               {cur<min && <span style={{marginLeft:4}}>⚠️</span>}
                             </span>
                           </td>
-                          <td style={{padding:'12px 14px',fontSize:13,color:'#888580'}}>{min} {item.unit}</td>
+                          <td style={{padding:'12px 14px',fontSize:13,color:'#5A5852'}}>{min} {item.unit}</td>
                           <td style={{padding:'12px 14px'}}>
                             {estado==='ok'   && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#34d399'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>OK</span>}
                             {estado==='bajo' && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#fbbf24'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#fbbf24',display:'inline-block'}}/>Bajo</span>}
@@ -966,7 +966,7 @@ export default function VehiclesPage() {
             {/* possible services */}
             {vehInventory.length > 0 && (
               <div style={{marginTop:20,paddingTop:20,borderTop:'1px solid #2a2a30'}}>
-                <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:12}}>
+                <div style={{color:'#5A5852',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:12}}>
                   SERVICIOS QUE PUEDE REALIZAR CON STOCK ACTUAL
                 </div>
                 {availableServices.length === 0 ? (
@@ -981,7 +981,7 @@ export default function VehiclesPage() {
                         <div key={service.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',background:'#22c55e10',border:'1px solid #22c55e30',borderRadius:8,padding:'10px 14px'}}>
                           <div>
                             <div style={{color:'#fff',fontWeight:600,fontSize:13}}>{service.name}</div>
-                            <div style={{color:'#666',fontSize:11,marginTop:2}}>
+                            <div style={{color:'#5A5852',fontSize:11,marginTop:2}}>
                               {required.map((r:any)=>`${r.item?.name ?? r.inventory_item_id}: ${r.quantity} ${r.unit || 'u'}`).join(' · ')}
                             </div>
                           </div>
@@ -1002,12 +1002,12 @@ export default function VehiclesPage() {
 
       {/* ── Edit inventory item (inline modal, zIndex 650) ── */}
       {editInvItem && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:650,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
+        <div style={{position:'fixed',inset:0,background:'rgba(11,42,74,0.12)',zIndex:650,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
           onClick={()=>setEditInvItem(null)}>
-          <div style={{background:'#141416',border:'1px solid rgba(201,168,76,0.25)',borderRadius:12,padding:20,width:'100%',maxWidth:360}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:'#FAFAF7',border:'1px solid rgba(201,168,76,0.25)',borderRadius:12,padding:20,width:'100%',maxWidth:360}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-              <span style={{fontSize:14,fontWeight:700,color:'#f0ede8'}}>{editInvItem.item_name}</span>
-              <button onClick={()=>setEditInvItem(null)} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}><X size={15}/></button>
+              <span style={{fontSize:14,fontWeight:700,color:'#0B2A4A'}}>{editInvItem.item_name}</span>
+              <button onClick={()=>setEditInvItem(null)} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}><X size={15}/></button>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:16}}>
               <div>
@@ -1022,7 +1022,7 @@ export default function VehiclesPage() {
             <div style={{display:'flex',gap:8}}>
               <button onClick={()=>setEditInvItem(null)} style={BTN_GHOST}>Cancelar</button>
               <button onClick={saveEditInvItem} disabled={savingInvEdit}
-                style={{flex:1,padding:10,borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                style={{flex:1,padding:10,borderRadius:8,border:'none',background:'#F5B544',color:'#1A1A1A',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                 {savingInvEdit?'Guardando…':'Guardar'}
               </button>
             </div>
@@ -1068,7 +1068,7 @@ export default function VehiclesPage() {
             <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
               <span style={{fontSize:12,color:'#ff4f4f'}}>{t('deleteContactQ').replace('contacto','vehículo')}</span>
               <div style={{display:'flex',gap:6}}>
-                <button onClick={()=>setShowDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>{t('no')}</button>
+                <button onClick={()=>setShowDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#FFFFFF',color:'#5A5852',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>{t('no')}</button>
                 <button onClick={deleteVeh} style={{padding:'5px 12px',borderRadius:6,border:'none',background:'#ff4f4f',color:'#fff',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>{t('yes')}, {t('delete').toLowerCase()}</button>
               </div>
             </div>
@@ -1084,12 +1084,12 @@ export default function VehiclesPage() {
 
       {/* ── Modal: Add Inventory Item ── */}
       {showAddInv && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:650,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
+        <div style={{position:'fixed',inset:0,background:'rgba(11,42,74,0.12)',zIndex:650,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
           onClick={()=>{setShowAddInv(false);setAddInvForm({...EMPTY_INV_ITEM})}}>
-          <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:28,width:'100%',maxWidth:480}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:14,padding:28,width:'100%',maxWidth:480}} onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <span style={{fontSize:16,fontWeight:700,color:'#f0ede8'}}>Agregar Item a {invVeh?.name}</span>
-              <button onClick={()=>{setShowAddInv(false);setAddInvForm({...EMPTY_INV_ITEM})}} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}><X size={18}/></button>
+              <span style={{fontSize:16,fontWeight:700,color:'#0B2A4A'}}>Agregar Item a {invVeh?.name}</span>
+              <button onClick={()=>{setShowAddInv(false);setAddInvForm({...EMPTY_INV_ITEM})}} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}><X size={18}/></button>
             </div>
             <div style={{display:'flex',flexDirection:'column',gap:14}}>
               <div>
@@ -1111,7 +1111,7 @@ export default function VehiclesPage() {
                 <div style={{display:'flex',gap:6}}>
                   {CATS.map(c=>(
                     <button key={c} type="button" onClick={()=>setAddInvForm({...addInvForm,category:c})}
-                      style={{padding:'6px 14px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',background:addInvForm.category===c?'#c9a84c':'#1a1a1e',color:addInvForm.category===c?'#0d0d0f':'#888580',border:addInvForm.category===c?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)'}}>
+                      style={{padding:'6px 14px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',background:addInvForm.category===c?'#F5B544':'#FFFFFF',color:addInvForm.category===c?'#1A1A1A':'#5A5852',border:addInvForm.category===c?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)'}}>
                       {c}
                     </button>
                   ))}
