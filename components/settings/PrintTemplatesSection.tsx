@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -29,7 +29,7 @@ const DEFAULTS: TemplateConfig = {
   company_email: '',
   company_website: '',
   company_trn: '',
-  accent_color: '#c9a84c',
+  accent_color: '#F5B544',
   show_vat: true,
   show_trn: true,
   footer_text: 'Gracias por confiar en nosotros',
@@ -45,7 +45,7 @@ function Field({ label, value, onChange, placeholder = '', type = 'text', hint =
 }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>
+      <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>
         {label}
       </div>
       <input
@@ -55,12 +55,12 @@ function Field({ label, value, onChange, placeholder = '', type = 'text', hint =
         placeholder={placeholder}
         style={{
           width: '100%', padding: '10px 14px',
-          background: '#0d0d0f', border: '1px solid #2a2a30',
-          borderRadius: 8, color: '#fff', fontSize: 13,
+          background: '#FFFFFF', border: '1.5px solid #F0EFEA',
+          borderRadius: 8, color: '#0B2A4A', fontSize: 13,
           outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif',
         }}
       />
-      {hint && <div style={{ color: '#555', fontSize: 11, marginTop: 4 }}>{hint}</div>}
+      {hint && <div style={{ color: '#A8A6A0', fontSize: 11, marginTop: 4 }}>{hint}</div>}
     </div>
   )
 }
@@ -72,16 +72,16 @@ function ToggleRow({ label, value, onChange, hint = '' }: {
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       marginBottom: 12, padding: '12px 16px',
-      background: '#0d0d0f', borderRadius: 8, border: '1px solid #2a2a30',
+      background: '#F5F4EF', borderRadius: 8, border: '1px solid #F0EFEA',
     }}>
       <div>
-        <div style={{ color: '#f0ede8', fontSize: 13, fontWeight: 600 }}>{label}</div>
-        {hint && <div style={{ color: '#555', fontSize: 11, marginTop: 2 }}>{hint}</div>}
+        <div style={{ color: '#0B2A4A', fontSize: 13, fontWeight: 600 }}>{label}</div>
+        {hint && <div style={{ color: '#5A5852', fontSize: 11, marginTop: 2 }}>{hint}</div>}
       </div>
       <div
         onClick={() => onChange(!value)}
         style={{
-          width: 44, height: 24, background: value ? '#c9a84c' : '#2a2a30',
+          width: 44, height: 24, background: value ? '#0B2A4A' : '#F0EFEA',
           borderRadius: 12, cursor: 'pointer', position: 'relative',
           transition: 'background 0.2s', flexShrink: 0,
         }}
@@ -119,18 +119,18 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
             {t.company_name[0]}
           </div>
           <div style={{ fontWeight: 900, fontSize: 16 }}>{t.company_name}</div>
-          <div style={{ color: '#888', fontSize: 12 }}>{t.company_subtitle}</div>
+          <div style={{ color: '#5A5852', fontSize: 12 }}>{t.company_subtitle}</div>
           {t.company_address && <div style={{ color: '#666', fontSize: 11, marginTop: 4 }}>{t.company_address}</div>}
           {t.company_phone   && <div style={{ color: '#666', fontSize: 11 }}>{t.company_phone}</div>}
           {t.company_email   && <div style={{ color: '#666', fontSize: 11 }}>{t.company_email}</div>}
           {t.show_trn && t.company_trn && (
-            <div style={{ color: '#888', fontSize: 11, marginTop: 4 }}>TRN: {t.company_trn}</div>
+            <div style={{ color: '#5A5852', fontSize: 11, marginTop: 4 }}>TRN: {t.company_trn}</div>
           )}
         </div>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: 26, fontWeight: 900 }}>FACTURA</div>
           <div style={{ color: t.accent_color, fontWeight: 700, fontSize: 15 }}>#{t.invoice_prefix}-001</div>
-          <div style={{ color: '#888', fontSize: 11, marginTop: 8 }}>
+          <div style={{ color: '#5A5852', fontSize: 11, marginTop: 8 }}>
             Fecha: {new Date().toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai' })}
           </div>
         </div>
@@ -138,7 +138,7 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
 
       {/* Cliente ejemplo */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#888', marginBottom: 6 }}>FACTURADO A</div>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '2px', color: '#5A5852', marginBottom: 6 }}>FACTURADO A</div>
         <div style={{ fontWeight: 700, fontSize: 15 }}>Ahmed Al Mansouri</div>
         <div style={{ color: '#666', fontSize: 12 }}>ahmed@example.ae · +971 50 000 0000</div>
       </div>
@@ -146,7 +146,7 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
       {/* Tabla */}
       <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
         <thead>
-          <tr style={{ background: '#0d0d0f' }}>
+          <tr style={{ background: '#0B2A4A' }}>
             <th style={{ padding: '10px 14px', textAlign: 'left', color: '#fff', fontSize: 11, letterSpacing: '1px' }}>DESCRIPCIÓN</th>
             <th style={{ padding: '10px 14px', textAlign: 'right', color: '#fff', fontSize: 11, letterSpacing: '1px' }}>IMPORTE</th>
           </tr>
@@ -169,7 +169,7 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
             <span>VAT (5%)</span><span>AED 25.00</span>
           </div>
         )}
-        <div style={{ display: 'flex', gap: 40, fontSize: 16, fontWeight: 900, paddingTop: 8, borderTop: '2px solid #0d0d0f', marginTop: 4 }}>
+        <div style={{ display: 'flex', gap: 40, fontSize: 16, fontWeight: 900, paddingTop: 8, borderTop: '2px solid #0B2A4A', marginTop: 4 }}>
           <span>TOTAL</span>
           <span style={{ color: t.accent_color }}>AED {t.show_vat ? '525.00' : '500.00'}</span>
         </div>
@@ -178,20 +178,20 @@ function InvoicePreview({ t }: { t: TemplateConfig }) {
       {/* Info adicional */}
       {t.payment_terms && (
         <div style={{ background: '#f9f9f9', borderRadius: 6, padding: '10px 14px', marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '1px', marginBottom: 4 }}>TÉRMINOS DE PAGO</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#5A5852', letterSpacing: '1px', marginBottom: 4 }}>TÉRMINOS DE PAGO</div>
           <div style={{ fontSize: 12, color: '#444' }}>{t.payment_terms}</div>
         </div>
       )}
       {t.bank_details && (
         <div style={{ background: '#f9f9f9', borderRadius: 6, padding: '10px 14px', marginBottom: 12 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#888', letterSpacing: '1px', marginBottom: 4 }}>DATOS BANCARIOS</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: '#5A5852', letterSpacing: '1px', marginBottom: 4 }}>DATOS BANCARIOS</div>
           <div style={{ fontSize: 12, color: '#444' }}>{t.bank_details}</div>
         </div>
       )}
 
       {/* Footer */}
       <div style={{ borderTop: '1px solid #eee', paddingTop: 16, textAlign: 'center', color: '#aaa', fontSize: 11 }}>
-        <div style={{ fontWeight: 700, color: '#888', marginBottom: 2 }}>{t.company_name} · {t.company_subtitle}</div>
+        <div style={{ fontWeight: 700, color: '#5A5852', marginBottom: 2 }}>{t.company_name} · {t.company_subtitle}</div>
         <div>{t.footer_text}</div>
       </div>
     </div>
@@ -233,7 +233,7 @@ export function PrintTemplatesSection() {
         company_email:    map.template_email            || '',
         company_website:  map.template_website          || '',
         company_trn:      map.template_trn              || '',
-        accent_color:     map.template_accent_color     || '#c9a84c',
+        accent_color:     map.template_accent_color     || '#F5B544',
         show_vat:         map.template_show_vat !== 'false',
         show_trn:         map.template_show_trn !== 'false',
         footer_text:      map.template_footer_text      || prev.footer_text,
@@ -280,8 +280,8 @@ export function PrintTemplatesSection() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <h2 style={{ color: '#f0ede8', fontSize: 22, fontWeight: 800, margin: 0 }}>Plantillas de Impresión</h2>
-          <p style={{ color: '#888580', fontSize: 13, marginTop: 4, margin: '4px 0 0' }}>
+          <h2 style={{ color: '#0B2A4A', fontSize: 22, fontWeight: 800, margin: 0 }}>Plantillas de Impresión</h2>
+          <p style={{ color: '#5A5852', fontSize: 13, marginTop: 4, margin: '4px 0 0' }}>
             Personaliza el diseño y contenido de tus facturas
           </p>
         </div>
@@ -289,9 +289,9 @@ export function PrintTemplatesSection() {
           onClick={handleSave}
           disabled={saving}
           style={{
-            padding: '10px 24px', background: saved ? '#22c55e' : '#c9a84c',
-            color: '#0d0d0f', border: 'none', borderRadius: 8,
-            fontSize: 13, fontWeight: 800, cursor: 'pointer', transition: 'background 0.2s',
+            padding: '10px 24px', background: saved ? '#22c55e' : '#F5B544',
+            color: '#1A1A1A', border: 'none', borderRadius: 8,
+            fontSize: 13, fontWeight: 700, cursor: 'pointer', transition: 'background 0.2s',
             fontFamily: 'Outfit,sans-serif', flexShrink: 0,
           }}
         >
@@ -307,9 +307,9 @@ export function PrintTemplatesSection() {
             onClick={() => setActiveTab(tab)}
             style={{
               padding: '8px 20px',
-              background: activeTab === tab ? '#c9a84c' : '#1a1a1f',
-              color: activeTab === tab ? '#0d0d0f' : '#888580',
-              border: `1px solid ${activeTab === tab ? '#c9a84c' : '#2a2a30'}`,
+              background: activeTab === tab ? '#0B2A4A' : '#FFFFFF',
+              color: activeTab === tab ? '#FFFFFF' : '#5A5852',
+              border: `1px solid ${activeTab === tab ? '#0B2A4A' : '#F0EFEA'}`,
               borderRadius: 8, fontSize: 12, fontWeight: 700,
               cursor: 'pointer', letterSpacing: '1px', textTransform: 'uppercase',
               fontFamily: 'Outfit,sans-serif',
@@ -324,8 +324,8 @@ export function PrintTemplatesSection() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
 
           {/* Columna izquierda — empresa */}
-          <div style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 12, padding: 20 }}>
-            <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 16 }}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12, padding: 20 }}>
+            <div style={{ color: '#5A5852', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '1px solid #F0EFEA', paddingBottom: 12, marginBottom: 16 }}>
               INFORMACIÓN DE LA EMPRESA
             </div>
             <Field label="NOMBRE DE LA EMPRESA" value={template.company_name}
@@ -349,20 +349,20 @@ export function PrintTemplatesSection() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
             {/* Visual */}
-            <div style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 12, padding: 20 }}>
-              <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 16 }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12, padding: 20 }}>
+              <div style={{ color: '#5A5852', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '1px solid #F0EFEA', paddingBottom: 12, marginBottom: 16 }}>
                 CONFIGURACIÓN VISUAL
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <div style={{ color: '#888', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>COLOR DE ACENTO</div>
+                <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: 6 }}>COLOR DE ACENTO</div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <input type="color" value={template.accent_color}
                     onChange={e => set({ accent_color: e.target.value })}
-                    style={{ width: 44, height: 44, border: 'none', borderRadius: 8, cursor: 'pointer', background: 'none' }} />
+                    style={{ width: 44, height: 44, border: '2px solid #F0EFEA', borderRadius: 6, cursor: 'pointer', background: 'none' }} />
                   <input type="text" value={template.accent_color}
                     onChange={e => set({ accent_color: e.target.value })}
-                    style={{ flex: 1, padding: '10px 14px', background: '#0d0d0f', border: '1px solid #2a2a30', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
+                    style={{ flex: 1, padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
                 </div>
               </div>
 
@@ -376,8 +376,8 @@ export function PrintTemplatesSection() {
             </div>
 
             {/* Textos */}
-            <div style={{ background: '#1a1a1f', border: '1px solid #2a2a30', borderRadius: 12, padding: 20 }}>
-              <div style={{ color: '#c9a84c', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 16 }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12, padding: 20 }}>
+              <div style={{ color: '#5A5852', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', borderBottom: '1px solid #F0EFEA', paddingBottom: 12, marginBottom: 16 }}>
                 TEXTOS DE LA FACTURA
               </div>
               <Field label="TÉRMINOS DE PAGO" value={template.payment_terms}
