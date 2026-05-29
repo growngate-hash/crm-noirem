@@ -232,7 +232,7 @@ export default function AccountingPage() {
             setAccounts(data ?? [])
             setShowManualEntry(true)
           }}
-          style={{ padding: '10px 20px', background: '#0B2A4A', color: '#F5F4EF', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}
+          style={{ padding: '10px 20px', background: '#F5B544', color: '#1A1A1A', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
         >
           + Asiento Manual
         </button>
@@ -497,7 +497,7 @@ export default function AccountingPage() {
             </div>
             <button
               onClick={() => setShowNewAccount(true)}
-              style={{ padding: '10px 20px', background: '#0B2A4A', color: '#F5F4EF', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+              style={{ padding: '10px 20px', background: '#F5B544', color: '#1A1A1A', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
             >
               + NUEVA CUENTA
             </button>
