@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
@@ -12,9 +12,9 @@ const initials = (n: string) => n.split(' ').slice(0, 2).map(w => w[0]).join('')
 
 // ─── category badge ───────────────────────────────────────────────────────────
 const CAT_STYLE: Record<string, { bg: string; border: string; color: string; icon?: string }> = {
-  'Black Diamond': { bg:'rgba(201,168,76,0.15)', border:'rgba(201,168,76,0.4)',  color:'#c9a84c', icon:'◆' },
-  Platinum:        { bg:'rgba(229,228,226,0.1)',  border:'rgba(229,228,226,0.3)', color:'#e5e4e2', icon:'◆' },
-  VIP:             { bg:'rgba(79,163,255,0.1)',   border:'rgba(79,163,255,0.3)',  color:'#4fa3ff', icon:'★' },
+  'Black Diamond': { bg:'#0B2A4A', border:'rgba(11,42,74,0.4)',   color:'#FAFAF7', icon:'◆' },
+  Platinum:        { bg:'#F0EFEA', border:'rgba(11,42,74,0.15)',  color:'#5A5852', icon:'◆' },
+  VIP:             { bg:'#E6F0FA', border:'rgba(31,90,155,0.2)',  color:'#1F5A9B', icon:'★' },
 }
 function CategoryBadge({ tier }: { tier: string }) {
   const s = CAT_STYLE[tier] ?? CAT_STYLE.VIP
@@ -39,19 +39,19 @@ function formatVehicle(v: { make?: string; model?: string; license_plate?: strin
 
 function VehiclesCell({ vehicles }: { vehicles: any[] }) {
   const [showTip, setShowTip] = useState(false)
-  if (!vehicles || vehicles.length === 0) return <span style={{ color:'#3a3836' }}>—</span>
+  if (!vehicles || vehicles.length === 0) return <span style={{ color:'#A8A6A0' }}>—</span>
   const first = vehicles[0]
   const rest  = vehicles.slice(1)
   return (
     <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-      <span style={{ fontSize:12, color:'#888580', whiteSpace:'nowrap' }}>{formatVehicle(first)}</span>
+      <span style={{ fontSize:12, color:'#5A5852', whiteSpace:'nowrap' }}>{formatVehicle(first)}</span>
       {rest.length > 0 && (
         <div style={{ position:'relative' }} onMouseEnter={() => setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
-          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'rgba(201,168,76,0.15)', border:'1px solid rgba(201,168,76,0.4)', color:'#c9a84c', cursor:'default', whiteSpace:'nowrap' }}>+{rest.length} más</span>
+          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:99, background:'rgba(201,168,76,0.15)', border:'1px solid rgba(201,168,76,0.4)', color:'#F5B544', cursor:'default', whiteSpace:'nowrap' }}>+{rest.length} más</span>
           {showTip && (
-            <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', borderRadius:8, padding:'8px 12px', minWidth:180, boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+            <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#0B2A4A', border:'1px solid rgba(61,217,214,0.2)', borderRadius:8, padding:'8px 12px', minWidth:180, boxShadow:'0 4px 12px rgba(11,42,74,0.15)' }}>
               {rest.map((v: any) => (
-                <div key={v.id} style={{ fontSize:11, color:'#f0ede8', padding:'3px 0', whiteSpace:'nowrap' }}>
+                <div key={v.id} style={{ fontSize:11, color:'#FAFAF7', padding:'3px 0', whiteSpace:'nowrap' }}>
                   {formatVehicle(v)}
                 </div>
               ))}
@@ -65,7 +65,7 @@ function VehiclesCell({ vehicles }: { vehicles: any[] }) {
 
 // ─── phone cell (WhatsApp) ────────────────────────────────────────────────────
 function PhoneCell({ phone }: { phone?: string }) {
-  if (!phone) return <span style={{ color:'#3a3836' }}>—</span>
+  if (!phone) return <span style={{ color:'#A8A6A0' }}>—</span>
   const clean = phone.replace(/\D/g, '')
   return (
     <a href={`https://wa.me/${clean}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}
@@ -80,13 +80,13 @@ function PhoneCell({ phone }: { phone?: string }) {
 // ─── address cell (truncated + tooltip) ───────────────────────────────────────
 function AddressCell({ address }: { address?: string }) {
   const [showTip, setShowTip] = useState(false)
-  if (!address) return <span style={{ color:'#3a3836' }}>—</span>
+  if (!address) return <span style={{ color:'#A8A6A0' }}>—</span>
   const truncated = address.length > 30 ? address.slice(0, 30) + '…' : address
   return (
     <div style={{ position:'relative' }} onMouseEnter={() => address.length > 30 && setShowTip(true)} onMouseLeave={() => setShowTip(false)}>
-      <span style={{ fontSize:12, color:'#888580', cursor:address.length > 30 ? 'help' : 'default' }}>{truncated}</span>
+      <span style={{ fontSize:12, color:'#5A5852', cursor:address.length > 30 ? 'help' : 'default' }}>{truncated}</span>
       {showTip && (
-        <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.1)', borderRadius:8, padding:'8px 12px', minWidth:200, maxWidth:320, boxShadow:'0 4px 20px rgba(0,0,0,0.5)', fontSize:11, color:'#f0ede8', lineHeight:1.5, whiteSpace:'normal' }}>
+        <div style={{ position:'absolute', left:0, top:'calc(100% + 6px)', zIndex:200, background:'#0B2A4A', border:'1px solid rgba(61,217,214,0.2)', borderRadius:8, padding:'8px 12px', minWidth:200, maxWidth:320, boxShadow:'0 4px 12px rgba(11,42,74,0.15)', fontSize:11, color:'#FAFAF7', lineHeight:1.5, whiteSpace:'normal' }}>
           {address}
         </div>
       )}
@@ -99,7 +99,7 @@ function ActionBtn({ children, onClick }: { children: React.ReactNode; onClick?:
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ width:30, height:30, borderRadius:'50%', background:'#1a1a1e', border:`1px solid ${hov ? '#c9a84c' : 'rgba(255,255,255,0.1)'}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:hov ? '#c9a84c' : '#888580', transition:'all 0.15s', flexShrink:0 }}
+      style={{ width:30, height:30, borderRadius:'50%', background: hov ? '#F4F6F8' : '#FFFFFF', border: hov ? '1px solid #3DD9D6' : '1px solid #F0EFEA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s', flexShrink:0, boxShadow:'0 1px 3px rgba(11,42,74,0.08)' }}
     >
       {children}
     </button>
@@ -107,7 +107,7 @@ function ActionBtn({ children, onClick }: { children: React.ReactNode; onClick?:
 }
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
-const INP_BASE: React.CSSProperties = { width:'100%', background:'#1a1a1e', borderRadius:8, padding:'10px 12px', color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box' }
+const INP_BASE: React.CSSProperties = { width:'100%', background:'#FFFFFF', borderRadius:8, padding:'10px 12px', color:'#0B2A4A', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box' }
 
 function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [foc, setFoc] = useState(false)
@@ -115,7 +115,7 @@ function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
     <input {...props}
       onFocus={e => { setFoc(true); props.onFocus?.(e) }}
       onBlur={e => { setFoc(false); props.onBlur?.(e) }}
-      style={{ ...INP_BASE, border:`1px solid ${foc ? '#c9a84c' : 'rgba(255,255,255,0.08)'}`, ...props.style }}
+      style={{ ...INP_BASE, border:`1.5px solid ${foc ? '#3DD9D6' : '#F0EFEA'}`, ...props.style }}
     />
   )
 }
@@ -125,12 +125,12 @@ function MTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea {...props}
       onFocus={e => { setFoc(true); props.onFocus?.(e) }}
       onBlur={e => { setFoc(false); props.onBlur?.(e) }}
-      style={{ ...INP_BASE, border:`1px solid ${foc ? '#c9a84c' : 'rgba(255,255,255,0.08)'}`, resize:'vertical', ...props.style }}
+      style={{ ...INP_BASE, border:`1.5px solid ${foc ? '#3DD9D6' : '#F0EFEA'}`, resize:'vertical', ...props.style }}
     />
   )
 }
 function MLabel({ children }: { children: React.ReactNode }) {
-  return <label style={{ display:'block', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#888580', marginBottom:6 }}>{children}</label>
+  return <label style={{ display:'block', fontSize:12, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.5px', color:'#5A5852', marginBottom:6 }}>{children}</label>
 }
 
 // ─── tier picker ──────────────────────────────────────────────────────────────
@@ -142,7 +142,7 @@ function TierPicker({ value, onChange }: { value: string; onChange: (v: string) 
         const active = value === t
         return (
           <button key={t} type="button" onClick={() => onChange(t)}
-            style={{ flex:1, padding:'9px 4px', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all 0.15s', background:active ? '#c9a84c' : '#1a1a1e', color:active ? '#0d0d0f' : '#888580', border:active ? '1px solid #c9a84c' : '1px solid rgba(255,255,255,0.1)' }}
+            style={{ flex:1, padding:'9px 4px', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all 0.15s', background:active ? '#F5B544' : '#FFFFFF', color:active ? '#F4F6F8' : '#5A5852', border:active ? '1px solid #F5B544' : '1px solid #F0EFEA' }}
           >
             <span style={{ fontSize:10 }}>{TIER_ICONS[t]}</span> {t}
           </button>
@@ -156,10 +156,10 @@ function TierPicker({ value, onChange }: { value: string; onChange: (v: string) 
 function ContactModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.7)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={onClose}>
-      <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, padding:28, width:'100%', maxWidth:520, position:'relative', maxHeight:'90vh', overflowY:'auto' }} onClick={e => e.stopPropagation()}>
+      <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:14, padding:28, width:'100%', maxWidth:520, position:'relative', maxHeight:'90vh', overflowY:'auto', boxShadow:'0 24px 48px rgba(11,42,74,0.12)' }} onClick={e => e.stopPropagation()}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
-          <span style={{ fontSize:18, fontWeight:700, color:'#f0ede8' }}>{title}</span>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <span style={{ fontSize:18, fontWeight:700, color:'#0B2A4A' }}>{title}</span>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#5A5852', padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
             <X size={18} />
           </button>
         </div>
@@ -178,7 +178,7 @@ const TIER_PILLS = ['All','Black Diamond','Platinum','VIP']
 const EMPTY_CLIENT   = { name:'', phone:'', email:'', vehicle_type:'', license_plate:'', tier:'VIP', address:'', notes:'' }
 const EMPTY_PROVIDER = { name:'', phone:'', email:'', supplier_type:'', address:'', notes:'' }
 
-const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', transition:'opacity 0.15s', cursor:'pointer' }
+const SUBMIT_STYLE: React.CSSProperties = { width:'100%', padding:14, borderRadius:10, border:'none', marginTop:20, background:'#F5B544', color:'#1A1A1A', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', transition:'opacity 0.15s', cursor:'pointer' }
 
 export default function ContactsPage() {
   const { t } = useLanguage()
@@ -355,8 +355,8 @@ export default function ContactsPage() {
 
   const emptyMsg    = activeTab === 'suppliers' ? t('noSuppliersYet') : t('noClientsYet')
   const emptyAction = activeTab === 'suppliers'
-    ? <button onClick={() => setShowProvider(true)} style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'1px solid rgba(201,168,76,0.3)', background:'#1a1a1e', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addSupplier')}</button>
-    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
+    ? <button onClick={() => setShowProvider(true)} style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'1px solid rgba(201,168,76,0.3)', background:'#FFFFFF', color:'#F5B544', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addSupplier')}</button>
+    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#F5B544', color:'#F4F6F8', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
 
   return (
     <div className="page-pad" style={{ padding:24, minHeight:'100%' }}>
@@ -365,7 +365,7 @@ export default function ContactsPage() {
       <div style={{ display:'flex', borderBottom:'1px solid var(--border)', marginBottom:20 }}>
         {(['clients', 'suppliers'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)}
-            style={{ background:'transparent', border:'none', cursor:'pointer', padding:'10px 18px', fontSize:14, fontFamily:'Outfit,sans-serif', fontWeight:activeTab===tab?600:400, color:activeTab===tab?'#c9a84c':'#888580', borderBottom:`2px solid ${activeTab===tab?'#c9a84c':'transparent'}`, marginBottom:-1, transition:'all 0.15s' }}
+            style={{ background:'transparent', border:'none', cursor:'pointer', padding:'10px 18px', fontSize:14, fontFamily:'Outfit,sans-serif', fontWeight:activeTab===tab?600:400, color:activeTab===tab?'#F5B544':'#5A5852', borderBottom:`2px solid ${activeTab===tab?'#F5B544':'transparent'}`, marginBottom:-1, transition:'all 0.15s' }}
           >
             {t(tab === 'clients' ? 'clients' : 'suppliers')}
           </button>
@@ -375,7 +375,7 @@ export default function ContactsPage() {
       {/* ── Filter bar ── */}
       <div style={{ display:'flex', gap:10, marginBottom:16, alignItems:'center', flexWrap:'wrap' }}>
         <div style={{ position:'relative', flex:1, minWidth:160, maxWidth:300 }}>
-          <Search size={13} color="#888580" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
+          <Search size={13} color="#5A5852" style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} />
           <input className="inp" style={{ paddingLeft:30, fontSize:12 }} placeholder={t('searchPlaceholder')} value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {!isMobile && (
@@ -384,7 +384,7 @@ export default function ContactsPage() {
               const isActive = tierFilter === pill
               return (
                 <button key={pill} onClick={() => setTierFilter(pill)}
-                  style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#c9a84c':'rgba(201,168,76,0.12)', color:isActive?'#0d0d0f':'#c9a84c', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                  style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#F4F6F8':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
                 >
                   {pill}
                 </button>
@@ -395,13 +395,13 @@ export default function ContactsPage() {
         <div style={{ display:'flex', gap:8, marginLeft:'auto' }}>
           {!isMobile && (
             <button onClick={() => setShowProvider(true)}
-              style={{ padding:'8px 16px', borderRadius:8, cursor:'pointer', background:'#1a1a1e', border:'1px solid rgba(201,168,76,0.3)', color:'#c9a84c', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
+              style={{ padding:'8px 16px', borderRadius:8, cursor:'pointer', background:'#FFFFFF', border:'1px solid rgba(201,168,76,0.3)', color:'#F5B544', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
             >
               + {t('addSupplier')}
             </button>
           )}
           <button onClick={() => activeTab === 'suppliers' ? setShowProvider(true) : setShowClient(true)}
-            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
+            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#F5B544', color:'#F4F6F8', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
           >
             + {isMobile ? t(activeTab === 'suppliers' ? 'addSupplier' : 'addClient') : t('addClient')}
           </button>
@@ -415,7 +415,7 @@ export default function ContactsPage() {
             const isActive = tierFilter === pill
             return (
               <button key={pill} onClick={() => setTierFilter(pill)}
-                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', flexShrink:0, background:isActive?'#c9a84c':'rgba(201,168,76,0.12)', color:isActive?'#0d0d0f':'#c9a84c', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', flexShrink:0, background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#F4F6F8':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
               >
                 {pill}
               </button>
@@ -428,7 +428,7 @@ export default function ContactsPage() {
       {isMobile ? (
         <div>
           {loading ? (
-            <div style={{ padding:40, textAlign:'center', color:'#888580', fontSize:13 }}>Cargando...</div>
+            <div style={{ padding:40, textAlign:'center', color:'#5A5852', fontSize:13 }}>Cargando...</div>
           ) : filtered.length === 0 ? (
             <EmptyState
               icon={activeTab === 'suppliers' ? 'supplier' : 'contact'}
@@ -444,16 +444,16 @@ export default function ContactsPage() {
             const recentAddress = c.address || sortedBk.find((b: any) => b.address)?.address
             return (
               <div key={c.id} onClick={() => setSelectedContact(c)}
-                style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', marginBottom:8, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, cursor:'pointer', transition:'border-color 0.15s', active:{borderColor:'#c9a84c'} } as any}
+                style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', marginBottom:8, background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, cursor:'pointer', transition:'border-color 0.15s', active:{borderColor:'#F5B544'} } as any}
               >
-                <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,#c9a84c,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#000', flexShrink:0 }}>
+                <div style={{ width:44, height:44, borderRadius:'50%', background:'linear-gradient(135deg,#3DD9D6,#1A8A87)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:700, color:'#000', flexShrink:0 }}>
                   {initials(c.name ?? '?')}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
+                  <div style={{ fontSize:14, fontWeight:600, color:'#0B2A4A', marginBottom:4, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                    {c.phone && <span style={{ fontSize:11, color:'#888580', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.phone}</span>}
-                    {!c.phone && c.email && <span style={{ fontSize:11, color:'#888580', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.email}</span>}
+                    {c.phone && <span style={{ fontSize:11, color:'#5A5852', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.phone}</span>}
+                    {!c.phone && c.email && <span style={{ fontSize:11, color:'#5A5852', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.email}</span>}
                   </div>
                 </div>
                 <div style={{ flexShrink:0 }}>
@@ -471,14 +471,14 @@ export default function ContactsPage() {
         <div className="glass table-wrap" style={{ overflow:'hidden' }}>
           <table style={{ width:'100%', borderCollapse:'collapse', minWidth:600 }}>
             <thead>
-              <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+              <tr style={{ background:'#FAFAF7', borderBottom:'1px solid #F0EFEA' }}>
                 {activeTab === 'suppliers' ? (
                   [t('client'), t('category'), t('supplierType'), t('phone'), t('totalSpent'), t('actions')].map(h => (
-                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
                   ))
                 ) : (
                   [t('client'), t('category'), t('phone'), 'Dirección', 'Vehículos', t('totalSpent'), t('actions')].map(h => (
-                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                    <th key={h} style={{ padding:'12px 16px', fontSize:11, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
                   ))
                 )}
               </tr>
@@ -505,12 +505,12 @@ export default function ContactsPage() {
                 const sortedBk   = [...(c.bookings ?? [])].sort((a: any, b: any) => new Date(b.scheduled_at ?? 0).getTime() - new Date(a.scheduled_at ?? 0).getTime())
                 const recentAddress = c.address || sortedBk.find((b: any) => b.address)?.address
                 return (
-                  <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.04)', cursor:'pointer' }} onClick={() => setDrawer(c)}>
+                  <tr key={c.id} className="row-hover" style={{ borderBottom:'1px solid #F0EFEA', cursor:'pointer' }} onClick={() => setDrawer(c)}>
                     {/* CLIENTE */}
                     <td style={{ padding:'14px 16px' }}>
-                      <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8', marginBottom:3 }}>{c.name}</div>
+                      <div style={{ fontSize:14, fontWeight:600, color:'#0B2A4A', marginBottom:3 }}>{c.name}</div>
                       {activeTab !== 'suppliers' && (
-                        <div style={{ fontSize:11, color:'#888580' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
+                        <div style={{ fontSize:11, color:'#5A5852' }}>{bkCount} {bkCount===1?t('booking'):t('bookings2')}</div>
                       )}
                     </td>
                     {/* CATEGORÍA */}
@@ -522,8 +522,8 @@ export default function ContactsPage() {
                     </td>
                     {activeTab === 'suppliers' ? (
                       <>
-                        <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#f0ede8' : '#3a3836' }}>{c.supplier_type || '—'}</td>
-                        <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#f0ede8' : '#3a3836' }}>{c.phone || '—'}</td>
+                        <td style={{ padding:'14px 16px', fontSize:13, color: c.supplier_type ? '#0B2A4A' : '#A8A6A0' }}>{c.supplier_type || '—'}</td>
+                        <td style={{ padding:'14px 16px', fontSize:13, color: c.phone ? '#0B2A4A' : '#A8A6A0' }}>{c.phone || '—'}</td>
                       </>
                     ) : (
                       <>
@@ -536,13 +536,13 @@ export default function ContactsPage() {
                       </>
                     )}
                     {/* GASTO TOTAL */}
-                    <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#f0ede8' }}>{fmt(totalSpent)}</td>
+                    <td style={{ padding:'14px 16px', fontSize:13, fontWeight:600, color:'#0B2A4A' }}>{fmt(totalSpent)}</td>
                     {/* ACCIONES */}
                     <td style={{ padding:'14px 16px' }} onClick={e => e.stopPropagation()}>
                       <div style={{ display:'flex', gap:6 }}>
-                        <ActionBtn><MessageCircle size={13} /></ActionBtn>
-                        <ActionBtn><Phone size={13} /></ActionBtn>
-                        <ActionBtn onClick={() => openEdit(c)}><Pencil size={13} /></ActionBtn>
+                        <ActionBtn><MessageCircle size={13} color="#1F8F5C" /></ActionBtn>
+                        <ActionBtn><Phone size={13} color="#5A5852" /></ActionBtn>
+                        <ActionBtn onClick={() => openEdit(c)}><Pencil size={13} color="#1F5A9B" /></ActionBtn>
                       </div>
                     </td>
                   </tr>
@@ -559,49 +559,49 @@ export default function ContactsPage() {
           <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.45)', zIndex:400 }} onClick={() => setDrawer(null)} />
           <div className="glass" style={{ position:'fixed', top:0, right:0, width:340, height:'100vh', zIndex:500, borderRadius:'14px 0 0 14px', display:'flex', flexDirection:'column', overflow:'hidden' }}>
             <div style={{ padding:'20px 20px 16px', borderBottom:'1px solid var(--border)', position:'relative' }}>
-              <button onClick={() => setDrawer(null)} style={{ position:'absolute', top:16, right:16, background:'none', border:'none', color:'#888580', cursor:'pointer', padding:4 }}>
+              <button onClick={() => setDrawer(null)} style={{ position:'absolute', top:16, right:16, background:'none', border:'none', color:'#5A5852', cursor:'pointer', padding:4 }}>
                 <X size={16} />
               </button>
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
-                <div style={{ width:46, height:46, borderRadius:'50%', background:'linear-gradient(135deg,#c9a84c,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, color:'#000', flexShrink:0 }}>
+                <div style={{ width:46, height:46, borderRadius:'50%', background:'linear-gradient(135deg,#3DD9D6,#1A8A87)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700, color:'#000', flexShrink:0 }}>
                   {initials(drawer.name ?? '?')}
                 </div>
                 <div>
-                  <div style={{ fontSize:15, fontWeight:700, color:'#f0ede8', marginBottom:6 }}>{drawer.name}</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:'#0B2A4A', marginBottom:6 }}>{drawer.name}</div>
                   {drawer.tipo === 'proveedor'
-                    ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.12)', color:'#888580' }}>PROVEEDOR</span>
+                    ? <span style={{ fontSize:10, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'#F0EFEA', border:'1px solid rgba(255,255,255,0.12)', color:'#5A5852' }}>PROVEEDOR</span>
                     : <CategoryBadge tier={drawer.tier ?? 'VIP'} />
                   }
                 </div>
               </div>
-              {drawer.email && <div style={{ fontSize:12, color:'#888580', marginBottom:3 }}>{drawer.email}</div>}
-              {drawer.phone && <div style={{ fontSize:12, color:'#888580' }}>{drawer.phone}</div>}
+              {drawer.email && <div style={{ fontSize:12, color:'#5A5852', marginBottom:3 }}>{drawer.email}</div>}
+              {drawer.phone && <div style={{ fontSize:12, color:'#5A5852' }}>{drawer.phone}</div>}
             </div>
             <div className="scroll" style={{ flex:1, padding:20 }}>
               <div style={{ marginBottom:20 }}>
-                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('vehicles')}</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('vehicles')}</div>
                 {(drawer.vehicles ?? []).length === 0
-                  ? <div style={{ fontSize:12, color:'#888580' }}>{t('noVehiclesReg')}</div>
+                  ? <div style={{ fontSize:12, color:'#5A5852' }}>{t('noVehiclesReg')}</div>
                   : (drawer.vehicles ?? []).map((v: any) => (
                     <div key={v.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:10, marginBottom:8 }}>
-                      <Car size={14} color="#c9a84c" />
+                      <Car size={14} color="#F5B544" />
                       <div>
-                        <div style={{ fontSize:12, fontWeight:600, color:'#f0ede8' }}>{v.make} {v.model}</div>
-                        <div style={{ fontSize:10, color:'#888580', fontFamily:'monospace' }}>{v.license_plate ?? ''}{v.year ? ` · ${v.year}` : ''}</div>
+                        <div style={{ fontSize:12, fontWeight:600, color:'#0B2A4A' }}>{v.make} {v.model}</div>
+                        <div style={{ fontSize:10, color:'#5A5852', fontFamily:'monospace' }}>{v.license_plate ?? ''}{v.year ? ` · ${v.year}` : ''}</div>
                       </div>
                     </div>
                   ))}
               </div>
               <div>
-                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('lastBookings')}</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>{t('lastBookings')}</div>
                 {(drawer.bookings ?? []).length === 0
-                  ? <div style={{ fontSize:12, color:'#888580' }}>{t('noBookingsYet2')}</div>
+                  ? <div style={{ fontSize:12, color:'#5A5852' }}>{t('noBookingsYet2')}</div>
                   : [...(drawer.bookings ?? [])].sort((a: any, b: any) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime()).slice(0, 5).map((bk: any, i: number) => (
-                    <div key={bk.id ?? i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
+                    <div key={bk.id ?? i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:'1px solid #F0EFEA' }}>
                       <div>
-                        <div style={{ fontSize:12, fontWeight:600, color:'#f0ede8' }}>{fmt(bk.price ?? 0)}</div>
+                        <div style={{ fontSize:12, fontWeight:600, color:'#0B2A4A' }}>{fmt(bk.price ?? 0)}</div>
                         {bk.created_at && (
-                          <div style={{ fontSize:10, color:'#888580', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
+                          <div style={{ fontSize:10, color:'#5A5852', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
                             <Calendar size={9} /> {new Date(bk.created_at).toLocaleDateString('es-AE')}
                           </div>
                         )}
@@ -628,17 +628,17 @@ export default function ContactsPage() {
             </div>
             {/* header */}
             <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:20 }}>
-              <div style={{ width:50, height:50, borderRadius:'50%', background:'linear-gradient(135deg,#c9a84c,#8b6914)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:700, color:'#000', flexShrink:0 }}>
+              <div style={{ width:50, height:50, borderRadius:'50%', background:'linear-gradient(135deg,#3DD9D6,#1A8A87)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:17, fontWeight:700, color:'#000', flexShrink:0 }}>
                 {initials(selectedContact.name ?? '?')}
               </div>
               <div>
-                <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8', marginBottom:5 }}>{selectedContact.name}</div>
+                <div style={{ fontSize:16, fontWeight:700, color:'#0B2A4A', marginBottom:5 }}>{selectedContact.name}</div>
                 {selectedContact.tipo === 'proveedor'
                   ? <span style={{ fontSize:9, fontWeight:700, padding:'3px 9px', borderRadius:99, background:'rgba(79,163,255,0.1)', border:'1px solid rgba(79,163,255,0.3)', color:'#4fa3ff' }}>PROVEEDOR</span>
                   : <CategoryBadge tier={selectedContact.tier ?? 'VIP'} />
                 }
               </div>
-              <button onClick={() => setSelectedContact(null)} style={{ marginLeft:'auto', background:'none', border:'none', color:'#888580', cursor:'pointer', padding:6 }}>
+              <button onClick={() => setSelectedContact(null)} style={{ marginLeft:'auto', background:'none', border:'none', color:'#5A5852', cursor:'pointer', padding:6 }}>
                 <X size={18} />
               </button>
             </div>
@@ -656,18 +656,18 @@ export default function ContactsPage() {
               { label: t('notes'),   value: selectedContact.notes },
             ].filter(Boolean).map((f: any) => f.value ? (
               <div key={f.label} style={{ marginBottom:14, padding:'10px 14px', background:'var(--bg3)', borderRadius:10, border:'1px solid var(--border)' }}>
-                <div style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{f.label}</div>
-                <div style={{ fontSize:13, color:'#f0ede8', fontWeight:500 }}>{f.value}</div>
+                <div style={{ fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:4 }}>{f.label}</div>
+                <div style={{ fontSize:13, color:'#0B2A4A', fontWeight:500 }}>{f.value}</div>
               </div>
             ) : null)}
             {/* action buttons */}
             <div style={{ display:'flex', gap:10, marginTop:8 }}>
               {selectedContact.phone && (
-                <a href={`tel:${selectedContact.phone}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'13px 0', borderRadius:10, background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                <a href={`tel:${selectedContact.phone}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'13px 0', borderRadius:10, background:'#F5B544', color:'#F4F6F8', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
                   <Phone size={15} /> LLAMAR
                 </a>
               )}
-              <button onClick={() => { openEdit(selectedContact); setSelectedContact(null) }} style={{ flex:1, padding:'13px 0', borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'var(--bg3)', color:'#f0ede8', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+              <button onClick={() => { openEdit(selectedContact); setSelectedContact(null) }} style={{ flex:1, padding:'13px 0', borderRadius:10, border:'1px solid #E5E7EB', background:'var(--bg3)', color:'#0B2A4A', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
                 EDITAR
               </button>
             </div>
@@ -743,9 +743,9 @@ export default function ContactsPage() {
                 <AlertTriangle size={15} color="#ff4f4f" />
                 <span style={{ fontSize:13, fontWeight:600, color:'#ff4f4f' }}>{t('deleteContactQ')}</span>
               </div>
-              <div style={{ fontSize:12, color:'#888580', marginBottom:14 }}>{t('irreversible')}</div>
+              <div style={{ fontSize:12, color:'#5A5852', marginBottom:14 }}>{t('irreversible')}</div>
               <div style={{ display:'flex', gap:8 }}>
-                <button onClick={() => setShowDeleteConfirm(false)} style={{ flex:1, padding:'9px 0', borderRadius:8, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+                <button onClick={() => setShowDeleteConfirm(false)} style={{ flex:1, padding:'9px 0', borderRadius:8, border:'1px solid #E5E7EB', background:'transparent', color:'#5A5852', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
                   {t('cancel')}
                 </button>
                 <button onClick={deleteContact} disabled={deleting} style={{ flex:1, padding:'9px 0', borderRadius:8, border:'none', background:'#ff4f4f', color:'#fff', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
@@ -762,10 +762,10 @@ export default function ContactsPage() {
                 {t('deleteContact')}
               </button>
             )}
-            <button onClick={closeEdit} style={{ flex:1, padding:14, borderRadius:10, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+            <button onClick={closeEdit} style={{ flex:1, padding:14, borderRadius:10, border:'1px solid #E5E7EB', background:'transparent', color:'#5A5852', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
               {t('cancel')}
             </button>
-            <button onClick={saveEdit} disabled={saving || !editForm.name?.trim()} style={{ flex:2, padding:14, borderRadius:10, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:editForm.name?.trim()?'pointer':'not-allowed', opacity:editForm.name?.trim()?1:0.5 }}>
+            <button onClick={saveEdit} disabled={saving || !editForm.name?.trim()} style={{ flex:2, padding:14, borderRadius:10, border:'none', background:'#F5B544', color:'#F4F6F8', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:editForm.name?.trim()?'pointer':'not-allowed', opacity:editForm.name?.trim()?1:0.5 }}>
               {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
