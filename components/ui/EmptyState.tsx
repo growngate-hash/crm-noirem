@@ -11,7 +11,7 @@ const KNOWN = ['invoice','expense','contact','supplier','vehicle','booking','ser
 function EmptyIcon({ icon }: { icon: string }) {
   return (
     <svg width="32" height="32" viewBox="0 0 24 24"
-      fill="none" stroke="#c9a84c" strokeWidth="1.5"
+      fill="none" stroke="#A8A6A0" strokeWidth="1.5"
       strokeLinecap="round" strokeLinejoin="round">
       {icon === 'invoice' && <>
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -23,7 +23,7 @@ function EmptyIcon({ icon }: { icon: string }) {
         <circle cx="12" cy="12" r="10"/>
         <line x1="12" y1="6" x2="12" y2="12"/>
         <path d="M8 12h8"/>
-        <circle cx="12" cy="16" r="0.5" fill="#c9a84c"/>
+        <circle cx="12" cy="16" r="0.5" fill="#A8A6A0"/>
       </>}
       {icon === 'contact' && <>
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -66,7 +66,7 @@ function EmptyIcon({ icon }: { icon: string }) {
       {!KNOWN.includes(icon) && <>
         <circle cx="12" cy="12" r="10"/>
         <line x1="12" y1="8" x2="12" y2="12"/>
-        <circle cx="12" cy="16" r="0.5" fill="#c9a84c"/>
+        <circle cx="12" cy="16" r="0.5" fill="#A8A6A0"/>
       </>}
     </svg>
   )
@@ -77,26 +77,26 @@ export function EmptyState({ icon, title, subtitle, actionLabel, onAction }: Emp
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       justifyContent: 'center', padding: '60px 24px', textAlign: 'center',
-      background: '#1a1a1f', border: '1px dashed #2a2a30',
-      borderRadius: 16, margin: '16px 0',
+      background: '#FAFAF7', border: '1px solid #F0EFEA',
+      borderRadius: 12, margin: '16px 0',
     }}>
       <div style={{
         width: 72, height: 72, borderRadius: '50%',
-        background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.18)',
+        background: '#F0EFEA', border: '1px solid #E0DDD8',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginBottom: 20,
       }}>
         <EmptyIcon icon={icon} />
       </div>
-      <div style={{ color: '#f0ede8', fontSize: 16, fontWeight: 700, marginBottom: 8, letterSpacing: '0.3px', fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ color: '#0B2A4A', fontSize: 16, fontWeight: 700, marginBottom: 8, letterSpacing: '0.3px', fontFamily: 'Outfit, sans-serif' }}>
         {title}
       </div>
-      <div style={{ color: '#888580', fontSize: 13, lineHeight: 1.5, maxWidth: 240, marginBottom: actionLabel ? 24 : 0, fontFamily: 'Outfit, sans-serif' }}>
+      <div style={{ color: '#5A5852', fontSize: 13, lineHeight: 1.5, maxWidth: 240, marginBottom: actionLabel ? 24 : 0, fontFamily: 'Outfit, sans-serif' }}>
         {subtitle}
       </div>
       {actionLabel && onAction && (
         <button onClick={onAction} style={{
-          padding: '11px 24px', background: '#c9a84c', color: '#0d0d0f',
+          padding: '11px 24px', background: '#F5B544', color: '#1A1A1A',
           border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 800,
           cursor: 'pointer', letterSpacing: '0.8px', fontFamily: 'Outfit, sans-serif',
         }}>

@@ -99,7 +99,7 @@ function ActionBtn({ children, onClick }: { children: React.ReactNode; onClick?:
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ width:30, height:30, borderRadius:'50%', background: hov ? '#1A1A1A' : '#FFFFFF', border: hov ? '1px solid #3DD9D6' : '1px solid #F0EFEA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s', flexShrink:0, boxShadow:'0 1px 3px rgba(11,42,74,0.08)' }}
+      style={{ width:30, height:30, borderRadius:'50%', background: hov ? '#F4F6F8' : '#FFFFFF', border: hov ? '1px solid #3DD9D6' : '1px solid #F0EFEA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s', flexShrink:0, boxShadow:'0 1px 3px rgba(11,42,74,0.08)' }}
     >
       {children}
     </button>
