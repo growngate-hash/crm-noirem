@@ -66,16 +66,16 @@ function CatPill({ cat }: { cat: string }) {
 const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 // â”€â”€â”€ account type badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-const ACC_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
-  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#0B2A4A', icon: 'CC' },
-  'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#3DD9D6', icon: 'BK' },
-  'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: 'CA' },
+const ACC_STYLE: Record<string, { bg: string; border: string; color: string; icon: string }> = {
+  'Credit Card': { bg: '#E6F0FA', border: '#CBD8E8', color: '#0B2A4A', icon: 'CC' },
+  'Bank':        { bg: '#E6F0FA', border: '#CBD8E8', color: '#0B2A4A', icon: 'BK' },
+  'Cash':        { bg: '#E6F0FA', border: '#CBD8E8', color: '#0B2A4A', icon: 'CA' },
 }
 function AccTypeBadge({ type }: { type: string }) {
   const s = ACC_STYLE[type] ?? ACC_STYLE['Cash']
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 99,
-      fontSize: 11, fontWeight: 600, background: s.bg, color: s.color }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 6,
+      fontSize: 11, fontWeight: 600, background: s.bg, border: `1px solid ${s.border}`, color: s.color }}>
       {s.icon} {type}
     </span>
   )
@@ -496,7 +496,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
               ))}
             </div>
             <button onClick={() => setShowAdd(true)}
-              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#0d0d0f', fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#FAFAF7', fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
               + {t('addExpense')}
             </button>
           </div>
@@ -521,7 +521,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
             {displayed.length === 0 ? (
               <div style={{ padding: 32, textAlign: 'center', color: '#5A5852', fontSize: 13 }}>{t('noExpensesInCat')}</div>
             ) : displayed.map((e: any) => (
-              <div key={e.id} style={{ background: '#1a1a1f', border: '1px solid #F0EFEA', borderRadius: 10, padding: 14, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+              <div key={e.id} style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 10, padding: 14, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: '#0B2A4A', fontWeight: 600, fontSize: 14, marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {e.description}
@@ -648,7 +648,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                          : inv.status === 'anulada'    ? { color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  border: '#ef444455', label: 'Anulada'    }
                          :                               { color: '#5A5852', bg: 'rgba(136,133,128,0.1)', border: '#88858055', label: inv.status   }
                 return (
-                  <div key={inv.id} style={{ background: '#1a1a1f', border: `1px solid ${inv.status === 'anulada' ? 'rgba(239,68,68,0.2)' : '#F0EFEA'}`, borderRadius: 10, padding: 14 }}>
+                  <div key={inv.id} style={{ background: '#FFFFFF', border: `1px solid ${inv.status === 'anulada' ? 'rgba(239,68,68,0.2)' : '#F0EFEA'}`, borderRadius: 10, padding: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div>
                         <div style={{ fontFamily: 'monospace', color: '#0B2A4A', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
@@ -1099,7 +1099,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
               </label>
             </div>
             <button onClick={saveExpense} disabled={saving || uploadingReceipt || !form.description.trim() || !form.amount}
-              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#F5B544', color: '#0d0d0f', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount && !saving && !uploadingReceipt) ? 1 : 0.5 }}>
+              style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', marginTop: 22, background: '#F5B544', color: '#FAFAF7', fontSize: 14, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: (form.description.trim() && form.amount && !saving && !uploadingReceipt) ? 1 : 0.5 }}>
               {uploadingReceipt ? 'Subiendo archivo...' : saving ? t('saving') : t('saveExpenseBtn')}
             </button>
           </div>
@@ -1179,7 +1179,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       <div key={account.id} onClick={() => { setSelectedBankAccount(account.id); setPaymentError('') }}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                           padding: '12px 16px',
-                          background: sel ? color + '15' : '#0d0d0f',
+                          background: sel ? color + '15' : '#FAFAF7',
                           border: `2px solid ${sel ? color : '#F0EFEA'}`,
                           borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -1376,7 +1376,7 @@ function BanksTab() {
   const cashBal  = accounts.filter(a => a.account_type === 'Cash').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
   const ccBal    = accounts.filter(a => a.account_type === 'Credit Card').reduce((s, a) => s + parseFloat(a.current_balance ?? a.balance ?? 0), 0)
 
-  function balColor(v: number) { return v > 0 ? '#34d399' : v < 0 ? '#ff4f4f' : '#5A5852' }
+  function balColor(v: number) { return v > 0 ? '#0B2A4A' : v < 0 ? '#D9533D' : '#5A5852' }
 
   function AccModal({ title, onClose, onSave, saveLabel }: { title: string; onClose: () => void; onSave: () => void; saveLabel: string }) {
     return (
@@ -1426,7 +1426,7 @@ function BanksTab() {
               </button>
             )}
             <button onClick={onSave} disabled={saving || !form.name.trim()}
-              style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: form.name.trim() ? 1 : 0.5 }}>
+              style={{ padding: '10px 24px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#FAFAF7', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', opacity: form.name.trim() ? 1 : 0.5 }}>
               {saving ? 'Guardando…' : saveLabel}
             </button>
           </div>
@@ -1444,7 +1444,7 @@ function BanksTab() {
           <div style={{ fontSize: 12, color: '#5A5852', marginTop: 3 }}>{t('bankSubtitle')}</div>
         </div>
         <button onClick={openAdd}
-          style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#0d0d0f', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+          style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#FAFAF7', fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
           + {t('addAccount')}
         </button>
       </div>
@@ -1467,7 +1467,7 @@ function BanksTab() {
                 <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: '#5A5852', fontSize: 13 }}>{t('noAccountsFound')}</td></tr>
               ) : accounts.map(acc => (
                 <tr key={acc.id} style={{ borderBottom: '1px solid #F0EFEA', transition: 'background 0.1s' }}
-                  onMouseEnter={ev => (ev.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                  onMouseEnter={ev => (ev.currentTarget.style.background = '#FAFAF7')}
                   onMouseLeave={ev => (ev.currentTarget.style.background = 'transparent')}>
                   {/* name */}
                   <td style={{ padding: '12px 16px' }}>
@@ -1488,7 +1488,7 @@ function BanksTab() {
                   </td>
                   {/* reconciliation */}
                   <td style={{ padding: '12px 16px' }}>
-                    <button style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', background: '#FFFFFF', border: '1px solid rgba(201,168,76,0.25)', color: '#0B2A4A' }}>
+                    <button style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', background: '#FFFFFF', border: '1px solid #0B2A4A', color: '#0B2A4A' }}>
                       {t('reconcile')}
                     </button>
                   </td>
@@ -1516,7 +1516,7 @@ function BanksTab() {
         ].map(k => (
           <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 10, padding: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: '#5A5852', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>{k.label}</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{aed(k.value)}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: k.value >= 0 ? '#0B2A4A' : '#D9533D' }}>{aed(k.value)}</div>
           </div>
         ))}
       </div>
@@ -1539,9 +1539,9 @@ function BanksTab() {
           const balance = parseFloat(account.current_balance ?? account.balance ?? 0)
           return (
             <div key={account.id} style={{
-              background: '#1a1a1f',
-              border: `1px solid ${color}30`,
-              borderRadius: 16,
+              background: '#FFFFFF',
+              border: '1px solid #0B2A4A',
+              borderRadius: 12,
               padding: 20,
               position: 'relative',
               transition: 'border-color 0.2s',
@@ -1563,7 +1563,7 @@ function BanksTab() {
                   background: 'transparent',
                   border: '1px solid #F0EFEA',
                   borderRadius: 6,
-                  color: '#555',
+                  color: '#5A5852',
                   fontSize: 10, fontWeight: 700,
                   padding: '3px 8px',
                   cursor: 'pointer',
@@ -1575,15 +1575,15 @@ function BanksTab() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <div style={{
                   padding: '5px 10px', borderRadius: 6,
-                  background: color + '20',
-                  border: `1px solid ${color}40`,
-                  color,
+                  background: '#0B2A4A',
+                  border: '1px solid #0B2A4A',
+                  color: '#FFFFFF',
                   fontSize: 9, fontWeight: 800, letterSpacing: '1px', flexShrink: 0,
                 }}>
                   {getBankIcon(account.account_type, account.name)}
                 </div>
                 <div style={{
-                  color: '#fff', fontSize: 14, fontWeight: 700,
+                  color: '#0B2A4A', fontSize: 14, fontWeight: 700,
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                   paddingRight: 40,
                 }}>{account.name}</div>
@@ -1591,16 +1591,21 @@ function BanksTab() {
               {/* Saldo */}
               <div style={{ color: '#5A5852', fontSize: 10, fontWeight: 700, letterSpacing: '1px', marginBottom: 4 }}>SALDO ACTUAL</div>
               <div style={{
-                color: balance >= 0 ? color : '#ef4444',
-                fontSize: 26, fontWeight: 900, letterSpacing: '-0.5px', marginBottom: 12,
+                color: balance > 0 ? '#F5B544' : balance < 0 ? '#D9533D' : '#A8A6A0',
+                fontSize: 24, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 12,
               }}>AED {balance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
               {/* Footer */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid #F0EFEA' }}>
-                <span style={{ color: '#555', fontSize: 11 }}>
+                <span style={{ color: '#A8A6A0', fontSize: 11 }}>
                   {account.currency || 'AED'}
                   {account.account_number ? ` · ****${account.account_number.slice(-4)}` : ''}
                 </span>
-                <span style={{ color: balance > 0 ? '#22c55e' : '#A8A6A0', fontSize: 10, fontWeight: 700 }}>
+                <span style={{
+                  background: balance > 0 ? '#E6F4EE' : '#F0EFEA',
+                  color: balance > 0 ? '#1A6B40' : '#5A5852',
+                  fontSize: 10, fontWeight: 700,
+                  padding: '2px 8px', borderRadius: 4,
+                }}>
                   {balance > 0 ? 'ACTIVO' : 'SIN MOVIMIENTOS'}
                 </span>
               </div>
@@ -1627,14 +1632,14 @@ function BanksTab() {
           justifyContent: 'center', padding: 24,
         }} onClick={() => setEditingBank(null)}>
           <div style={{
-            background: '#1a1a1f',
+            background: '#FFFFFF',
             border: '1px solid #F0EFEA',
             borderRadius: 16,
             padding: 32,
             width: '100%', maxWidth: 460,
           }} onClick={e => e.stopPropagation()}>
             <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
-            <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Editar Cuenta</div>
+            <div style={{ color: '#0B2A4A', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Editar Cuenta</div>
             {/* Nombre */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOMBRE *</div>
@@ -1642,7 +1647,7 @@ function BanksTab() {
                 value={editBankForm.name}
                 onChange={e => setEditBankForm(p => ({...p, name: e.target.value}))}
                 placeholder="ej. Emirates NBD"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
               />
             </div>
             {/* Tipo */}
@@ -1659,7 +1664,7 @@ function BanksTab() {
                     onClick={() => setEditBankForm(p => ({...p, account_type: type.value}))}
                     style={{
                       padding: '10px 14px',
-                      background: editBankForm.account_type === type.value ? type.color + '20' : '#0d0d0f',
+                      background: editBankForm.account_type === type.value ? type.color + '20' : '#FAFAF7',
                       border: `2px solid ${editBankForm.account_type === type.value ? type.color : '#F0EFEA'}`,
                       borderRadius: 8,
                       color: editBankForm.account_type === type.value ? type.color : '#A8A6A0',
@@ -1678,7 +1683,7 @@ function BanksTab() {
                 value={editBankForm.account_number}
                 onChange={e => setEditBankForm(p => ({...p, account_number: e.target.value}))}
                 placeholder="ej. AE07 0331 2345 6789 0123 456"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }}
               />
             </div>
             {/* Moneda */}
@@ -1687,7 +1692,7 @@ function BanksTab() {
               <select
                 value={editBankForm.currency}
                 onChange={e => setEditBankForm(p => ({...p, currency: e.target.value}))}
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}
               >
                 <option value="AED">AED - Dirham Emirati</option>
                 <option value="USD">USD - Dolar Americano</option>
@@ -1702,7 +1707,7 @@ function BanksTab() {
                 value={editBankForm.notes}
                 onChange={e => setEditBankForm(p => ({...p, notes: e.target.value}))}
                 placeholder="ej. Cuenta principal de operaciones"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }}
               />
             </div>
             {/* Buttons */}
@@ -1714,7 +1719,7 @@ function BanksTab() {
               <button
                 onClick={handleSaveBank}
                 disabled={savingBank || !editBankForm.name.trim()}
-                style={{ flex: 2, padding: 13, background: '#F5B544', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingBank || !editBankForm.name.trim() ? 0.6 : 1 }}
+                style={{ flex: 2, padding: 13, background: '#F5B544', color: '#FAFAF7', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingBank || !editBankForm.name.trim() ? 0.6 : 1 }}
               >{savingBank ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}</button>
             </div>
           </div>
@@ -1723,14 +1728,14 @@ function BanksTab() {
       {/* nueva cuenta bancaria modal */}
       {showNewBankAccount && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowNewBankAccount(false)}>
-          <div style={{ background: '#1a1a1f', border: '1px solid #F0EFEA', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }} onClick={e => e.stopPropagation()}>
+          <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }} onClick={e => e.stopPropagation()}>
             <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
-            <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Cuenta</div>
+            <div style={{ color: '#0B2A4A', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Cuenta</div>
             {/* Nombre */}
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NOMBRE *</div>
               <input value={newBankForm.name} onChange={e => setNewBankForm(p => ({...p, name: e.target.value}))} placeholder="ej. Emirates NBD"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
             </div>
             {/* Tipo */}
             <div style={{ marginBottom: 16 }}>
@@ -1743,7 +1748,7 @@ function BanksTab() {
                   { value: 'Credit Card', label: 'Tarjeta de Crédito', color: '#ef4444' },
                 ] as const).map(type => (
                   <button key={type.value} onClick={() => setNewBankForm(p => ({...p, account_type: type.value}))}
-                    style={{ padding: '10px 14px', background: newBankForm.account_type === type.value ? type.color + '20' : '#0d0d0f', border: `2px solid ${newBankForm.account_type === type.value ? type.color : '#F0EFEA'}`, borderRadius: 8, color: newBankForm.account_type === type.value ? type.color : '#A8A6A0', fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left', fontFamily: 'Outfit,sans-serif' }}>
+                    style={{ padding: '10px 14px', background: newBankForm.account_type === type.value ? type.color + '20' : '#FAFAF7', border: `2px solid ${newBankForm.account_type === type.value ? type.color : '#F0EFEA'}`, borderRadius: 8, color: newBankForm.account_type === type.value ? type.color : '#A8A6A0', fontSize: 12, fontWeight: 700, cursor: 'pointer', textAlign: 'left', fontFamily: 'Outfit,sans-serif' }}>
                     {type.label}
                   </button>
                 ))}
@@ -1753,13 +1758,13 @@ function BanksTab() {
             <div style={{ marginBottom: 16 }}>
               <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>NÚMERO DE CUENTA / IBAN <span style={{ color: '#555', marginLeft: 4 }}>(opcional)</span></div>
               <input value={newBankForm.account_number} onChange={e => setNewBankForm(p => ({...p, account_number: e.target.value}))} placeholder="ej. AE07 0331 2345 6789 0123 456"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'monospace' }} />
             </div>
             {/* Moneda */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>MONEDA</div>
               <select value={newBankForm.currency} onChange={e => setNewBankForm(p => ({...p, currency: e.target.value}))}
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#fff', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
+                style={{ width: '100%', padding: '10px 14px', background: '#FFFFFF', border: '1.5px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
                 <option value="AED">AED — Dirham Emiratí</option>
                 <option value="USD">USD — Dólar Americano</option>
                 <option value="EUR">EUR — Euro</option>
@@ -1769,7 +1774,7 @@ function BanksTab() {
             {/* Buttons */}
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowNewBankAccount(false)} style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid #F0EFEA', borderRadius: 10, color: '#5A5852', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>CANCELAR</button>
-              <button onClick={handleSaveNewBank} disabled={savingNewBank || !newBankForm.name.trim()} style={{ flex: 2, padding: 13, background: '#F5B544', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingNewBank || !newBankForm.name.trim() ? 0.6 : 1 }}>
+              <button onClick={handleSaveNewBank} disabled={savingNewBank || !newBankForm.name.trim()} style={{ flex: 2, padding: 13, background: '#F5B544', color: '#FAFAF7', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: savingNewBank || !newBankForm.name.trim() ? 0.6 : 1 }}>
                 {savingNewBank ? 'GUARDANDO...' : 'CREAR CUENTA'}
               </button>
             </div>
@@ -1986,7 +1991,7 @@ function ComprasTab() {
           <span style={{ color: '#A8A6A0', fontSize: 13, fontWeight: 400, marginLeft: 8 }}>{purchaseInvoices.length} facturas</span>
         </div>
         <button onClick={() => setShowNewPurchase(true)}
-          style={{ padding: '10px 20px', background: '#F5B544', color: '#0d0d0f', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+          style={{ padding: '10px 20px', background: '#F5B544', color: '#FAFAF7', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
           + NUEVA COMPRA
         </button>
       </div>
@@ -2102,7 +2107,7 @@ function ComprasTab() {
                     const contact = contacts.find((c: any) => c.id === e.target.value)
                     setPurchaseForm((p: any) => ({ ...p, supplier_id: e.target.value, supplier_name: contact?.name || '' }))
                   }}
-                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
+                  style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', fontFamily: 'Outfit,sans-serif' }}>
                   <option value="">Seleccionar proveedor</option>
                   {contacts.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
@@ -2112,7 +2117,7 @@ function ComprasTab() {
                 <input value={purchaseForm.invoice_number}
                   onChange={e => setPurchaseForm((p: any) => ({...p, invoice_number: e.target.value}))}
                   placeholder="ej. FACT-2026-001"
-                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                  style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
               </div>
             </div>
 
@@ -2122,19 +2127,19 @@ function ComprasTab() {
                 <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>FECHA EMISIÓN</div>
                 <input type="date" value={purchaseForm.issue_date}
                   onChange={e => setPurchaseForm((p: any) => ({...p, issue_date: e.target.value}))}
-                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                  style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
               </div>
               <div>
                 <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 6 }}>FECHA VENCIMIENTO</div>
                 <input type="date" value={purchaseForm.due_date}
                   onChange={e => setPurchaseForm((p: any) => ({...p, due_date: e.target.value}))}
-                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                  style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
               </div>
             </div>
 
             {/* Líneas */}
             <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 10 }}>PRODUCTOS / LÍNEAS</div>
-            <div style={{ background: '#0d0d0f', borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
+            <div style={{ background: '#FAFAF7', borderRadius: 8, overflow: 'hidden', marginBottom: 12 }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#FFFFFF' }}>
@@ -2170,7 +2175,7 @@ function ComprasTab() {
                                 value={line.description}
                                 onChange={e => updatePurchaseLine(i, 'description', e.target.value)}
                                 placeholder="Descripción adicional"
-                                style={{ width: 180, padding: '4px 8px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 6, color: '#5A5852', fontSize: 11, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                                style={{ width: 180, padding: '4px 8px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 6, color: '#5A5852', fontSize: 11, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
                             )}
                           </div>
                         </td>
@@ -2236,9 +2241,9 @@ function ComprasTab() {
                   value={purchaseForm.discount}
                   onChange={e => setPurchaseForm((p: any) => ({...p, discount: e.target.value}))}
                   placeholder="0.00"
-                  style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                  style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
               </div>
-              <div style={{ flex: 1, background: '#0d0d0f', borderRadius: 8, padding: '12px 16px' }}>
+              <div style={{ flex: 1, background: '#FAFAF7', borderRadius: 8, padding: '12px 16px' }}>
                 {[
                   { label: 'Subtotal',   value: subtotalLineas,                         color: '#0B2A4A', prefix: ''  },
                   { label: 'Descuento',  value: parseFloat(purchaseForm.discount) || 0, color: '#22c55e', prefix: '-' },
@@ -2259,14 +2264,14 @@ function ComprasTab() {
               <input value={purchaseForm.notes}
                 onChange={e => setPurchaseForm((p: any) => ({...p, notes: e.target.value}))}
                 placeholder="Observaciones adicionales"
-                style={{ width: '100%', padding: '10px 14px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                style={{ width: '100%', padding: '10px 14px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 13, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
             </div>
 
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowNewPurchase(false)}
                 style={{ flex: 1, padding: 13, background: 'transparent', border: '1px solid #F0EFEA', borderRadius: 10, color: '#5A5852', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>CANCELAR</button>
               <button onClick={handleSavePurchase} disabled={saving}
-                style={{ flex: 2, padding: 13, background: '#F5B544', color: '#0d0d0f', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: saving ? 0.6 : 1 }}>
+                style={{ flex: 2, padding: 13, background: '#F5B544', color: '#FAFAF7', border: 'none', borderRadius: 10, fontSize: 13, fontWeight: 800, cursor: 'pointer', fontFamily: 'Outfit,sans-serif', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'GUARDANDO...' : 'GUARDAR FACTURA'}
               </button>
             </div>
@@ -2289,7 +2294,7 @@ function ComprasTab() {
               <input value={payPurchaseForm.payment_reference}
                 onChange={e => setPayPurchaseForm(p => ({...p, payment_reference: e.target.value}))}
                 placeholder="ej. TRF-2026-001"
-                style={{ width: '100%', padding: '12px 16px', background: '#0d0d0f', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
+                style={{ width: '100%', padding: '12px 16px', background: '#FAFAF7', border: '1px solid #F0EFEA', borderRadius: 8, color: '#0B2A4A', fontSize: 14, outline: 'none', boxSizing: 'border-box', fontFamily: 'Outfit,sans-serif' }} />
             </div>
             <div style={{ marginBottom: 24 }}>
               <div style={{ color: '#5A5852', fontSize: 11, fontWeight: 700, letterSpacing: '1px', marginBottom: 8 }}>PAGAR DESDE *</div>
@@ -2299,7 +2304,7 @@ function ComprasTab() {
                 return (
                   <div key={account.id}
                     onClick={() => setPayPurchaseForm(p => ({...p, bank_account_id: account.id}))}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: selected ? color + '15' : '#0d0d0f', border: `2px solid ${selected ? color : '#F0EFEA'}`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: selected ? color + '15' : '#FAFAF7', border: `2px solid ${selected ? color : '#F0EFEA'}`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ padding: '4px 8px', borderRadius: 4, background: color + '20', color, fontSize: 9, fontWeight: 800, fontFamily: 'Outfit,sans-serif' }}>
                         {getBankIcon(account.account_type, account.name)}
