@@ -99,7 +99,7 @@ function ActionBtn({ children, onClick }: { children: React.ReactNode; onClick?:
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ width:30, height:30, borderRadius:'50%', background: hov ? '#F4F6F8' : '#FFFFFF', border: hov ? '1px solid #3DD9D6' : '1px solid #F0EFEA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s', flexShrink:0, boxShadow:'0 1px 3px rgba(11,42,74,0.08)' }}
+      style={{ width:30, height:30, borderRadius:'50%', background: hov ? '#1A1A1A' : '#FFFFFF', border: hov ? '1px solid #3DD9D6' : '1px solid #F0EFEA', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', transition:'all 0.15s', flexShrink:0, boxShadow:'0 1px 3px rgba(11,42,74,0.08)' }}
     >
       {children}
     </button>
@@ -142,7 +142,7 @@ function TierPicker({ value, onChange }: { value: string; onChange: (v: string) 
         const active = value === t
         return (
           <button key={t} type="button" onClick={() => onChange(t)}
-            style={{ flex:1, padding:'9px 4px', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all 0.15s', background:active ? '#F5B544' : '#FFFFFF', color:active ? '#F4F6F8' : '#5A5852', border:active ? '1px solid #F5B544' : '1px solid #F0EFEA' }}
+            style={{ flex:1, padding:'9px 4px', borderRadius:8, cursor:'pointer', fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', justifyContent:'center', gap:5, transition:'all 0.15s', background:active ? '#F5B544' : '#FFFFFF', color:active ? '#1A1A1A' : '#5A5852', border:active ? '1px solid #F5B544' : '1px solid #F0EFEA' }}
           >
             <span style={{ fontSize:10 }}>{TIER_ICONS[t]}</span> {t}
           </button>
@@ -356,7 +356,7 @@ export default function ContactsPage() {
   const emptyMsg    = activeTab === 'suppliers' ? t('noSuppliersYet') : t('noClientsYet')
   const emptyAction = activeTab === 'suppliers'
     ? <button onClick={() => setShowProvider(true)} style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'1px solid rgba(201,168,76,0.3)', background:'#FFFFFF', color:'#F5B544', fontSize:13, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addSupplier')}</button>
-    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#F5B544', color:'#F4F6F8', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
+    : <button onClick={() => setShowClient(true)}   style={{ marginTop:12, padding:'8px 20px', borderRadius:8, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>+ {t('addClient')}</button>
 
   return (
     <div className="page-pad" style={{ padding:24, minHeight:'100%' }}>
@@ -384,7 +384,7 @@ export default function ContactsPage() {
               const isActive = tierFilter === pill
               return (
                 <button key={pill} onClick={() => setTierFilter(pill)}
-                  style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#F4F6F8':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                  style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:isActive?700:600, fontFamily:'Outfit,sans-serif', transition:'all 0.15s', background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#1A1A1A':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
                 >
                   {pill}
                 </button>
@@ -401,7 +401,7 @@ export default function ContactsPage() {
             </button>
           )}
           <button onClick={() => activeTab === 'suppliers' ? setShowProvider(true) : setShowClient(true)}
-            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#F5B544', color:'#F4F6F8', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
+            style={{ padding:'8px 16px', borderRadius:8, border:'none', cursor:'pointer', background:'#F5B544', color:'#1A1A1A', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', whiteSpace:'nowrap' }}
           >
             + {isMobile ? t(activeTab === 'suppliers' ? 'addSupplier' : 'addClient') : t('addClient')}
           </button>
@@ -415,7 +415,7 @@ export default function ContactsPage() {
             const isActive = tierFilter === pill
             return (
               <button key={pill} onClick={() => setTierFilter(pill)}
-                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', flexShrink:0, background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#F4F6F8':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
+                style={{ padding:'6px 14px', borderRadius:99, cursor:'pointer', fontSize:11, fontWeight:600, fontFamily:'Outfit,sans-serif', flexShrink:0, background:isActive?'#F5B544':'rgba(201,168,76,0.12)', color:isActive?'#1A1A1A':'#F5B544', border:isActive?'none':'1px solid rgba(201,168,76,0.3)' }}
               >
                 {pill}
               </button>
@@ -663,7 +663,7 @@ export default function ContactsPage() {
             {/* action buttons */}
             <div style={{ display:'flex', gap:10, marginTop:8 }}>
               {selectedContact.phone && (
-                <a href={`tel:${selectedContact.phone}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'13px 0', borderRadius:10, background:'#F5B544', color:'#F4F6F8', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
+                <a href={`tel:${selectedContact.phone}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, padding:'13px 0', borderRadius:10, background:'#F5B544', color:'#1A1A1A', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', textDecoration:'none' }}>
                   <Phone size={15} /> LLAMAR
                 </a>
               )}
@@ -765,7 +765,7 @@ export default function ContactsPage() {
             <button onClick={closeEdit} style={{ flex:1, padding:14, borderRadius:10, border:'1px solid #E5E7EB', background:'transparent', color:'#5A5852', fontSize:14, fontWeight:600, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
               {t('cancel')}
             </button>
-            <button onClick={saveEdit} disabled={saving || !editForm.name?.trim()} style={{ flex:2, padding:14, borderRadius:10, border:'none', background:'#F5B544', color:'#F4F6F8', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:editForm.name?.trim()?'pointer':'not-allowed', opacity:editForm.name?.trim()?1:0.5 }}>
+            <button onClick={saveEdit} disabled={saving || !editForm.name?.trim()} style={{ flex:2, padding:14, borderRadius:10, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:14, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:editForm.name?.trim()?'pointer':'not-allowed', opacity:editForm.name?.trim()?1:0.5 }}>
               {saving ? t('saving') : t('saveChanges')}
             </button>
           </div>
