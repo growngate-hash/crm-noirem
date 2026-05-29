@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useCompany } from '@/contexts/CompanyContext'
@@ -139,8 +139,8 @@ function PresetBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ padding: '6px 12px', borderRadius: 6, fontFamily: 'Outfit,sans-serif', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
-        border: `1px solid ${hov ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}`,
-        background: '#1a1a1e', color: hov ? '#c9a84c' : '#888580' }}>
+        border: `1px solid ${hov ? 'rgba(201,168,76,0.4)' : '#F0EFEA'}`,
+        background: '#FFFFFF', color: hov ? '#c9a84c' : '#5A5852' }}>
       {label}
     </button>
   )
@@ -160,7 +160,7 @@ function PermissionsModal({
   const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
     Admin:      { bg: 'rgba(201,168,76,0.15)',  color: '#c9a84c' },
     Manager:    { bg: 'rgba(0,212,170,0.15)',   color: '#00d4aa' },
-    Technician: { bg: 'rgba(136,133,128,0.15)', color: '#888580' },
+    Technician: { bg: 'rgba(136,133,128,0.15)', color: '#5A5852' },
   }
 
   function toggleOp(modKey: string, op: string) {
@@ -191,34 +191,34 @@ function PermissionsModal({
     setSaving(false)
   }
 
-  const sep = <div style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', margin: '16px 0' }}/>
+  const sep = <div style={{ borderBottom: '1px solid #F0EFEA', margin: '16px 0' }}/>
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
       onClick={onClose}>
-      <div style={{ background: '#141416', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, width: '100%', maxWidth: 660, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+      <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 14, width: '100%', maxWidth: 660, maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
         onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ padding: '18px 24px', borderBottom: '1px solid #F0EFEA', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#f0ede8' }}>Permisos de {member.name}</div>
-            <div style={{ fontSize: 12, color: '#888580', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: '#0B2A4A' }}>Permisos de {member.name}</div>
+            <div style={{ fontSize: 12, color: '#5A5852', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
               Rol actual:
               <span style={{ fontSize: 10, fontWeight: 700, borderRadius: 20, padding: '2px 8px',
                 background: ROLE_STYLE[currentRole]?.bg ?? 'transparent',
-                color: ROLE_STYLE[currentRole]?.color ?? '#888580' }}>
+                color: ROLE_STYLE[currentRole]?.color ?? '#5A5852' }}>
                 {currentRole.toUpperCase()}
               </span>
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888580', padding: 4, display: 'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5A5852', padding: 4, display: 'flex' }}><X size={18}/></button>
         </div>
 
         {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: 24 }}>
           {/* Role pills */}
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Rol del usuario</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#5A5852', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Rol del usuario</div>
           <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
             {(['Admin','Manager','Technician'] as const).map(r => {
               const rs = ROLE_STYLE[r]; const active = editRole === r
@@ -226,7 +226,7 @@ function PermissionsModal({
                 <button key={r} onClick={() => setEditRole(r)}
                   style={{ padding: '8px 18px', borderRadius: 20, fontFamily: 'Outfit,sans-serif', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
                     border: `1px solid ${active ? rs.color : 'rgba(255,255,255,0.1)'}`,
-                    background: active ? rs.bg : 'transparent', color: active ? rs.color : '#888580' }}>
+                    background: active ? rs.bg : 'transparent', color: active ? rs.color : '#5A5852' }}>
                   {r.toUpperCase()}
                 </button>
               )
@@ -236,30 +236,30 @@ function PermissionsModal({
           {sep}
 
           {/* Modules table */}
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 12 }}>Módulos del sistema</div>
-          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#0B2A4A', marginBottom: 12 }}>Módulos del sistema</div>
+          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #F0EFEA' }}>
             {/* header */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px', background: '#1a1a1e', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '8px 12px', alignItems: 'center' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Módulo</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px', background: '#FFFFFF', borderBottom: '1px solid #F0EFEA', padding: '8px 12px', alignItems: 'center' }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: '#5A5852', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Módulo</div>
               {['Ver','Crear','Editar','Eliminar'].map(h => (
-                <div key={h} style={{ fontSize: 10, fontWeight: 600, color: '#888580', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>{h}</div>
+                <div key={h} style={{ fontSize: 10, fontWeight: 600, color: '#5A5852', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'center' }}>{h}</div>
               ))}
             </div>
             {MOD_CFG.map((mod, i) => {
               const p = editPerms[mod.key as keyof Permissions] as any
               return (
                 <div key={mod.key} style={{ display: 'grid', gridTemplateColumns: '1fr 72px 72px 72px 72px',
-                  background: i % 2 === 0 ? '#1a1a1e' : '#141416', padding: '10px 12px', alignItems: 'center',
-                  borderBottom: i < MOD_CFG.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                  background: i % 2 === 0 ? '#FFFFFF' : '#FFFFFF', padding: '10px 12px', alignItems: 'center',
+                  borderBottom: i < MOD_CFG.length - 1 ? '1px solid #F5F4EF' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontSize: 16, width: 24, textAlign: 'center' }}>{mod.icon}</span>
-                    <span style={{ fontSize: 13, color: '#f0ede8', fontWeight: 500 }}>{mod.label}</span>
+                    <span style={{ fontSize: 13, color: '#0B2A4A', fontWeight: 500 }}>{mod.label}</span>
                   </div>
                   {(['view','create','edit','delete'] as const).map(op => (
                     <div key={op} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                       {mod.ops.includes(op)
                         ? <Toggle on={!!p[op]} onChange={() => toggleOp(mod.key, op)}/>
-                        : <span style={{ fontSize: 14, color: '#3a3836' }}>—</span>}
+                        : <span style={{ fontSize: 14, color: '#A8A6A0' }}>—</span>}
                     </div>
                   ))}
                 </div>
@@ -270,7 +270,7 @@ function PermissionsModal({
           {sep}
 
           {/* Presets */}
-          <div style={{ fontSize: 12, fontWeight: 600, color: '#888580', marginBottom: 10 }}>Presets rápidos</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: '#5A5852', marginBottom: 10 }}>Presets rápidos</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <PresetBtn label="Aplicar Admin"      onClick={() => applyPreset('Admin')}/>
             <PresetBtn label="Aplicar Manager"    onClick={() => applyPreset('Manager')}/>
@@ -279,7 +279,7 @@ function PermissionsModal({
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid #F0EFEA', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleSave} disabled={saving}
             style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
               fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
@@ -287,7 +287,7 @@ function PermissionsModal({
           </button>
           <button onClick={onClose}
             style={{ width: '100%', padding: '9px 0', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-              color: '#888580', fontSize: 13, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+              color: '#5A5852', fontSize: 13, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
             Cancelar
           </button>
         </div>
@@ -713,7 +713,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
     setEditingMember(null)
   }
 
-  const ROLE_COLOR: Record<string, string> = { Admin: '#c9a84c', Manager: '#00d4aa', Technician: '#888580' }
+  const ROLE_COLOR: Record<string, string> = { Admin: '#c9a84c', Manager: '#00d4aa', Technician: '#5A5852' }
 
   return (
     <div>
@@ -728,7 +728,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
       {!isAdmin && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', borderRadius: 8,
           background: 'rgba(136,133,128,0.08)', border: '1px solid rgba(136,133,128,0.15)',
-          marginBottom: 20, fontSize: 12, color: '#888580' }}>
+          marginBottom: 20, fontSize: 12, color: '#5A5852' }}>
           🔒 <span>{t('readOnly')}</span>
         </div>
       )}
@@ -798,7 +798,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
                 <option value="Technician">Technician</option>
               </select>
             </div>
-            <div style={{ fontSize: 11, color: '#888580', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, padding: '8px 12px' }}>
+            <div style={{ fontSize: 11, color: '#5A5852', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, padding: '8px 12px' }}>
               Se asignarán permisos predeterminados según el rol seleccionado.
             </div>
             {inviteError && (
@@ -1042,12 +1042,12 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
     showToast('Mensaje guardado ✓', 'success')
   }
 
-  const INP: React.CSSProperties = { width:'100%', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'10px 12px', color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box' }
-  const LBL: React.CSSProperties = { display:'block', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#888580', marginBottom:6 }
+  const INP: React.CSSProperties = { width:'100%', background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, padding:'10px 12px', color:'#0B2A4A', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box' }
+  const LBL: React.CSSProperties = { display:'block', fontSize:11, fontWeight:600, textTransform:'uppercase', letterSpacing:'0.08em', color:'#5A5852', marginBottom:6 }
   function SaveBtn({ loading, onClick, label = 'Guardar' }: { loading: boolean; onClick: () => void; label?: string }) {
     return (
       <button onClick={onClick} disabled={loading}
-        style={{ padding:'10px 20px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:loading?'default':'pointer', opacity:loading?0.7:1 }}>
+        style={{ padding:'10px 20px', borderRadius:8, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:loading?'default':'pointer', opacity:loading?0.7:1 }}>
         {loading ? 'Guardando…' : label}
       </button>
     )
@@ -1056,25 +1056,25 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
   return (
     <>
       <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.55)', zIndex:700 }} onClick={onClose} />
-      <div style={{ position:'fixed', top:0, right:0, width:500, height:'100vh', zIndex:800, background:'#141416', borderLeft:'1px solid rgba(255,255,255,0.08)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+      <div style={{ position:'fixed', top:0, right:0, width:500, height:'100vh', zIndex:800, background:'#FFFFFF', borderLeft:'1px solid #F0EFEA', display:'flex', flexDirection:'column', overflow:'hidden' }}>
 
         {/* Header */}
-        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid rgba(255,255,255,0.08)', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+        <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #F0EFEA', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <div style={{ width:36, height:36, borderRadius:8, background:'rgba(34,197,94,0.15)', border:'1px solid rgba(34,197,94,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:'#22c55e' }}>WA</div>
             <div>
-              <div style={{ fontSize:15, fontWeight:700, color:'#f0ede8' }}>WhatsApp Business</div>
-              <div style={{ fontSize:11, color:'#888580' }}>Configuración y automatización</div>
+              <div style={{ fontSize:15, fontWeight:700, color:'#0B2A4A' }}>WhatsApp Business</div>
+              <div style={{ fontSize:11, color:'#5A5852' }}>Configuración y automatización</div>
             </div>
           </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#5A5852', padding:4, display:'flex' }}><X size={18}/></button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display:'flex', borderBottom:'1px solid rgba(255,255,255,0.06)', padding:'0 24px', flexShrink:0 }}>
+        <div style={{ display:'flex', borderBottom:'1px solid #F0EFEA', padding:'0 24px', flexShrink:0 }}>
           {WA_TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              style={{ background:'transparent', border:'none', cursor:'pointer', padding:'12px 14px', fontSize:12, fontFamily:'Outfit,sans-serif', fontWeight:tab===t.key?700:400, color:tab===t.key?'#c9a84c':'#888580', borderBottom:`2px solid ${tab===t.key?'#c9a84c':'transparent'}`, marginBottom:-1, transition:'all 0.15s', whiteSpace:'nowrap' }}>
+              style={{ background:'transparent', border:'none', cursor:'pointer', padding:'12px 14px', fontSize:12, fontFamily:'Outfit,sans-serif', fontWeight:tab===t.key?700:500, color:tab===t.key?'#0B2A4A':'#5A5852', borderBottom:`2px solid ${tab===t.key?'#0B2A4A':'transparent'}`, marginBottom:-1, transition:'all 0.15s', whiteSpace:'nowrap' }}>
               {t.label}
             </button>
           ))}
@@ -1094,11 +1094,11 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
                     <div>
                       <div style={{ fontSize:14, fontWeight:700, color:'#22c55e' }}>WhatsApp conectado</div>
                       {waPhoneNumber && (
-                        <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>{waPhoneNumber}</div>
+                        <div style={{ fontSize:12, color:'#5A5852', marginTop:3 }}>{waPhoneNumber}</div>
                       )}
                     </div>
                   </div>
-                  <div style={{ fontSize:12, color:'#888580', lineHeight:1.6 }}>
+                  <div style={{ fontSize:12, color:'#5A5852', lineHeight:1.6 }}>
                     Tu número está activo y recibiendo mensajes. El bot responderá automáticamente a tus clientes.
                   </div>
                   <button onClick={disconnectWhatsApp}
@@ -1109,11 +1109,11 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
               ) : (
                 /* ── Estado: No conectado ── */
                 <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-                  <div style={{ fontSize:12, color:'#888580', lineHeight:1.7 }}>
+                  <div style={{ fontSize:12, color:'#5A5852', lineHeight:1.7 }}>
                     Conecta tu número de WhatsApp Business directamente desde Meta. No necesitas copiar tokens ni IDs manualmente.
                   </div>
-                  <div style={{ padding:'16px 18px', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.06)', borderRadius:10, fontSize:11, color:'#888580', lineHeight:1.7 }}>
-                    <strong style={{ color:'#f0ede8' }}>Cómo funciona:</strong><br/>
+                  <div style={{ padding:'16px 18px', background:'#F5F4EF', border:'1px solid #F0EFEA', borderRadius:10, fontSize:11, color:'#0B2A4A', lineHeight:1.7 }}>
+                    <strong style={{ color:'#5A5852', fontWeight:600 }}>Cómo funciona:</strong><br/>
                     1. Haz clic en "Conectar WhatsApp"<br/>
                     2. Inicia sesión con tu cuenta de Meta Business<br/>
                     3. Selecciona tu número de WhatsApp Business<br/>
@@ -1135,16 +1135,16 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
           {/* ── Horario ── */}
           {tab === 'hours' && (
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <div style={{ fontSize:12, color:'#888580' }}>Define el horario de atención. Fuera de este horario el bot puede responder automáticamente.</div>
-              <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', background:'#1a1a1e', borderBottom:'1px solid rgba(255,255,255,0.06)', padding:'8px 14px', gap:8 }}>
+              <div style={{ fontSize:12, color:'#5A5852' }}>Define el horario de atención. Fuera de este horario el bot puede responder automáticamente.</div>
+              <div style={{ borderRadius:10, overflow:'hidden', border:'1px solid #F0EFEA' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', background:'#FFFFFF', borderBottom:'1px solid #F0EFEA', padding:'8px 14px', gap:8 }}>
                   {['Día','Abierto','Apertura','Cierre'].map(h => (
-                    <div key={h} style={{ fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
+                    <div key={h} style={{ fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.06em' }}>{h}</div>
                   ))}
                 </div>
                 {hours.map((h, i) => (
-                  <div key={h.day} style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', alignItems:'center', padding:'10px 14px', gap:8, background:i%2===0?'#141416':'#1a1a1e', borderBottom:i<6?'1px solid rgba(255,255,255,0.04)':'none' }}>
-                    <span style={{ fontSize:13, color:'#f0ede8', fontWeight:500 }}>{h.label}</span>
+                  <div key={h.day} style={{ display:'grid', gridTemplateColumns:'110px 64px 1fr 1fr', alignItems:'center', padding:'10px 14px', gap:8, background:i%2===0?'#FFFFFF':'#FFFFFF', borderBottom:i<6?'1px solid #F5F4EF':'none' }}>
+                    <span style={{ fontSize:13, color:'#0B2A4A', fontWeight:500 }}>{h.label}</span>
                     <Toggle on={h.is_open} onChange={() => setHours(prev => prev.map((d,j) => j===i ? {...d, is_open:!d.is_open} : d))} />
                     <input type="time" disabled={!h.is_open} value={h.start_time}
                       onChange={e => setHours(prev => prev.map((d,j) => j===i ? {...d, start_time:e.target.value} : d))}
@@ -1162,28 +1162,28 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
           {/* ── Zonas ── */}
           {tab === 'zones' && (
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <div style={{ fontSize:12, color:'#888580' }}>Define las zonas de cobertura del servicio.</div>
+              <div style={{ fontSize:12, color:'#5A5852' }}>Define las zonas de cobertura del servicio.</div>
               <div style={{ display:'flex', gap:8 }}>
                 <input style={{ ...INP, flex:1 }} value={newZone} onChange={e => setNewZone(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addZone()}
                   placeholder="ej. Dubai Marina, Palm Jumeirah…" />
                 <button onClick={addZone}
-                  style={{ padding:'10px 16px', borderRadius:8, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
+                  style={{ padding:'10px 16px', borderRadius:8, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
                   + Agregar
                 </button>
               </div>
               {zones.length === 0 ? (
-                <div style={{ padding:'24px 0', textAlign:'center', color:'#3a3836', fontSize:12 }}>No hay zonas. Agrega la primera zona de cobertura.</div>
+                <div style={{ padding:'24px 0', textAlign:'center', color:'#A8A6A0', fontSize:12 }}>No hay zonas. Agrega la primera zona de cobertura.</div>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
                   {zones.map((z, i) => (
-                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8 }}>
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8 }}>
                       <Toggle on={z.is_active} onChange={() => setZones(prev => prev.map((x,j) => j===i ? {...x, is_active:!x.is_active} : x))} />
-                      <span style={{ flex:1, fontSize:13, color:z.is_active?'#f0ede8':'#888580' }}>{z.name}</span>
+                      <span style={{ flex:1, fontSize:13, color:z.is_active?'#0B2A4A':'#5A5852' }}>{z.name}</span>
                       <button onClick={() => deleteZone(i)}
-                        style={{ background:'none', border:'none', cursor:'pointer', color:'#3a3836', padding:4, display:'flex', alignItems:'center', transition:'color 0.15s' }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'#A8A6A0', padding:4, display:'flex', alignItems:'center', transition:'color 0.15s' }}
                         onMouseEnter={e => (e.currentTarget.style.color='#ff4f4f')}
-                        onMouseLeave={e => (e.currentTarget.style.color='#3a3836')}>
+                        onMouseLeave={e => (e.currentTarget.style.color='#A8A6A0')}>
                         <Trash2 size={14}/>
                       </button>
                     </div>
@@ -1197,14 +1197,14 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
           {/* ── Bienvenida ── */}
           {tab === 'welcome' && (
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-              <div style={{ fontSize:12, color:'#888580' }}>Este mensaje se envía automáticamente cuando un cliente escribe por primera vez.</div>
+              <div style={{ fontSize:12, color:'#5A5852' }}>Este mensaje se envía automáticamente cuando un cliente escribe por primera vez.</div>
               <div>
                 <label style={LBL}>Mensaje de bienvenida</label>
                 <textarea value={welcome} onChange={e => setWelcome(e.target.value)} rows={8}
                   placeholder="Hola! 👋 Bienvenido a NOIREM. ¿En qué podemos ayudarte hoy?"
                   style={{ ...INP, resize:'vertical', lineHeight:1.6 }} />
               </div>
-              <div style={{ padding:'12px 16px', background:'rgba(201,168,76,0.06)', border:'1px solid rgba(201,168,76,0.15)', borderRadius:8, fontSize:11, color:'#888580', lineHeight:1.7 }}>
+              <div style={{ padding:'12px 16px', background:'rgba(201,168,76,0.06)', border:'1px solid rgba(201,168,76,0.15)', borderRadius:8, fontSize:11, color:'#5A5852', lineHeight:1.7 }}>
                 <strong style={{ color:'#c9a84c' }}>Variables disponibles:</strong><br/>
                 <code style={{ color:'#c9a84c' }}>{'{{name}}'}</code> — Nombre del cliente &nbsp;|&nbsp;
                 <code style={{ color:'#c9a84c' }}>{'{{date}}'}</code> — Fecha actual &nbsp;|&nbsp;
