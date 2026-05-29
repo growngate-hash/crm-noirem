@@ -69,19 +69,20 @@ export default function HRPage() {
         <div style={{ display: 'flex', gap: 12 }}>
           <Link href="/hr/payroll" style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: 'transparent',
-            border: '1.5px solid var(--color-border)',
-            color: 'var(--color-text-primary)',
+            background: '#F5B544',
+            border: 'none',
+            color: '#1A1A1A',
             padding: '10px 20px', borderRadius: 8,
-            fontSize: 14, fontWeight: 600, textDecoration: 'none',
+            fontSize: 14, fontWeight: 700, textDecoration: 'none',
           }}>
             <DollarSign size={16} /> Nómina
           </Link>
           <Link href="/hr/employees/new" style={{
             display: 'flex', alignItems: 'center', gap: 8,
-            background: 'var(--color-accent)', color: '#000',
+            background: '#F5B544', border: 'none',
+            color: '#1A1A1A',
             padding: '10px 20px', borderRadius: 8,
-            fontSize: 14, fontWeight: 600, textDecoration: 'none',
+            fontSize: 14, fontWeight: 700, textDecoration: 'none',
           }}>
             <Plus size={16} /> Nuevo empleado
           </Link>
@@ -94,7 +95,7 @@ export default function HRPage() {
           const Icon = k.icon
           return (
             <div key={k.label} style={{
-              background: 'var(--color-card)', border: '1px solid var(--color-border)',
+              background: 'var(--color-card)', border: '1px solid #0B2A4A',
               borderRadius: 12, padding: '20px 24px',
               display: 'flex', alignItems: 'center', gap: 16,
               boxShadow: '0 2px 8px rgba(11,42,74,0.07)',
@@ -186,7 +187,7 @@ export default function HRPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <div style={{
                           width: 3, height: 36, borderRadius: 2,
-                          background: 'var(--color-accent, #F5B544)',
+                          background: '#0B2A4A',
                           flexShrink: 0,
                         }} />
                         <div>
