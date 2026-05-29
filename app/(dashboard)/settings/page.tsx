@@ -115,20 +115,20 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
 function PermChips({ perms }: { perms: Permissions | undefined }) {
   const info = permChipInfo(perms)
   if (info.type === 'all') return (
-    <span style={{ fontSize: 10, fontWeight: 700, color: '#34d399', background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.2)', borderRadius: 20, padding: '2px 8px' }}>Acceso total</span>
+    <span style={{ fontSize: 10, fontWeight: 700, color: '#1A6B40', background: '#E6F4EE', border: '1px solid #A3D4B5', borderRadius: 20, padding: '2px 8px' }}>Acceso total</span>
   )
   if (info.type === 'readonly') return (
-    <span style={{ fontSize: 10, fontWeight: 700, color: '#888580', background: 'rgba(136,133,128,0.12)', border: '1px solid rgba(136,133,128,0.2)', borderRadius: 20, padding: '2px 8px' }}>Solo lectura</span>
+    <span style={{ fontSize: 10, fontWeight: 700, color: '#5A5852', background: '#F0EFEA', border: '1px solid #CBD8E8', borderRadius: 20, padding: '2px 8px' }}>Solo lectura</span>
   )
-  if (info.chips.length === 0) return <span style={{ fontSize: 11, color: '#3a3836' }}>Sin acceso</span>
+  if (info.chips.length === 0) return <span style={{ fontSize: 11, color: '#A8A6A0' }}>Sin acceso</span>
   const visible = info.chips.slice(0, 3)
   const extra = info.chips.length - 3
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
       {visible.map(c => (
-        <span key={c} style={{ fontSize: 10, color: '#c9a84c', background: 'rgba(201,168,76,0.12)', borderRadius: 20, padding: '2px 8px' }}>{c}</span>
+        <span key={c} style={{ fontSize: 10, fontWeight: 600, color: '#0B2A4A', background: '#E6F0FA', border: '1px solid #CBD8E8', borderRadius: 20, padding: '2px 8px' }}>{c}</span>
       ))}
-      {extra > 0 && <span style={{ fontSize: 10, color: '#888580' }}>+{extra} más</span>}
+      {extra > 0 && <span style={{ fontSize: 10, color: '#5A5852' }}>+{extra} más</span>}
     </div>
   )
 }
@@ -760,15 +760,15 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => setEditingMember(m)}
                           style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
-                            border: '1px solid rgba(201,168,76,0.25)', background: '#1a1a1e', color: '#c9a84c',
-                            fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                            border: '1px solid #0B2A4A', background: '#FFFFFF', color: '#0B2A4A',
+                            fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                           ✏️ {t('permissions')}
                         </button>
                         {m.email !== currentUserEmail && (
                           <button onClick={() => removeTeam(m.id)}
                             style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 6,
-                              border: '1px solid rgba(255,79,79,0.25)', background: 'rgba(255,79,79,0.1)', color: '#ff4f4f',
-                              fontSize: 11, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                              border: '1px solid #F5B8AE', background: '#FBE7E2', color: '#D9533D',
+                              fontSize: 11, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                             🗑 {t('remove')}
                           </button>
                         )}
@@ -1439,8 +1439,8 @@ export default function SettingsPage() {
                   borderRadius: isMobile ? 20 : 8,
                   border: isMobile ? `1px solid ${active ? 'rgba(11,42,74,0.3)' : '#F0EFEA'}` : 'none',
                   cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
-                  background: active ? 'var(--gold-dim)' : 'transparent',
-                  color: active ? 'var(--gold)' : 'var(--text2)',
+                  background: active ? 'rgba(11,42,74,0.08)' : 'transparent',
+                  color: active ? '#0B2A4A' : 'var(--text2)',
                   textAlign: 'left', whiteSpace: 'nowrap',
                   ...(isMobile ? {} : { width: '100%' }),
                   transition: 'all 0.15s' }}>
