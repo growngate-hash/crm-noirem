@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { X, Pencil, Plus, Trash2 } from 'lucide-react'
@@ -9,25 +9,25 @@ import { EmptyState } from '@/components/ui/EmptyState'
 
 // ─── modal inputs ─────────────────────────────────────────────────────────────
 const INP_BASE: React.CSSProperties = {
-  width:'100%', background:'#1a1a1e', borderRadius:8, padding:'10px 12px',
-  color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
+  width:'100%', background:'#FFFFFF', borderRadius:8, padding:'10px 12px',
+  color:'#0B2A4A', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
 }
 function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [foc, setFoc] = useState(false)
-  return <input {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`, ...props.style}} />
+  return <input {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#3DD9D6':'#F0EFEA'}`, ...props.style}} />
 }
 function MTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const [foc, setFoc] = useState(false)
-  return <textarea {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`,resize:'vertical',...props.style}} />
+  return <textarea {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#3DD9D6':'#F0EFEA'}`,resize:'vertical',...props.style}} />
 }
 function MSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const [foc, setFoc] = useState(false)
-  return <select {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`,cursor:'pointer',...props.style}} />
+  return <select {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}} style={{...INP_BASE,border:`1px solid ${foc?'#3DD9D6':'#F0EFEA'}`,cursor:'pointer',...props.style}} />
 }
 function MLabel({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
-    <label style={{display:'block',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',color:'#888580',marginBottom:6}}>
-      {children}{sub && <span style={{fontWeight:400,textTransform:'none',letterSpacing:0,color:'#888580',marginLeft:4}}>{sub}</span>}
+    <label style={{display:'block',fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.08em',color:'#5A5852',marginBottom:6}}>
+      {children}{sub && <span style={{fontWeight:400,textTransform:'none',letterSpacing:0,color:'#5A5852',marginLeft:4}}>{sub}</span>}
     </label>
   )
 }
@@ -40,7 +40,7 @@ function PillSelector({ options, value, onChange }: { options: string[]; value: 
         const active = value === o
         return (
           <button key={o} type="button" onClick={() => onChange(o)}
-            style={{padding:'7px 16px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',transition:'all 0.15s',background:active?'#c9a84c':'#1a1a1e',color:active?'#0d0d0f':'#888580',border:active?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.1)'}}
+            style={{padding:'7px 16px',borderRadius:99,cursor:'pointer',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',transition:'all 0.15s',background:active?'#F5B544':'#FFFFFF',color:active?'#1A1A1A':'#5A5852',border:active?'1px solid #F5B544':'1px solid #E5E7EB'}}
           >{o}</button>
         )
       })}
@@ -52,10 +52,10 @@ function PillSelector({ options, value, onChange }: { options: string[]; value: 
 function SModal({ title, onClose, maxWidth=520, children }: { title: string; onClose: () => void; maxWidth?: number; children: React.ReactNode }) {
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={onClose}>
-      <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:28,width:'100%',maxWidth,maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+      <div style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:14,padding:28,width:'100%',maxWidth,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 24px 48px rgba(11,42,74,0.12)'}} onClick={e=>e.stopPropagation()}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24}}>
-          <span style={{fontSize:18,fontWeight:700,color:'#f0ede8'}}>{title}</span>
-          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex',alignItems:'center'}}><X size={18}/></button>
+          <span style={{fontSize:18,fontWeight:700,color:'#0B2A4A'}}>{title}</span>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex',alignItems:'center'}}><X size={18}/></button>
         </div>
         {children}
       </div>
@@ -70,7 +70,7 @@ type Toast = { id: number; msg: string; type: 'success' | 'error' }
 const MAT_CAT: Record<string,{bg:string;border:string;color:string}> = {
   'Químico':     {bg:'rgba(79,163,255,0.1)',  border:'rgba(79,163,255,0.3)',  color:'#4fa3ff'},
   'Consumible':  {bg:'rgba(52,211,153,0.1)',  border:'rgba(52,211,153,0.3)',  color:'#34d399'},
-  'Herramienta': {bg:'rgba(201,168,76,0.12)', border:'rgba(201,168,76,0.3)', color:'#c9a84c'},
+  'Herramienta': {bg:'rgba(201,168,76,0.12)', border:'rgba(201,168,76,0.3)', color:'#F5B544'},
 }
 function MatCatBadge({ cat }: { cat: string }) {
   const s = MAT_CAT[cat] ?? MAT_CAT.Consumible
@@ -83,8 +83,8 @@ function StockBar({ current, minimum }: { current: number; minimum: number }) {
   const maxRef = Math.max(current, minimum * 5, 1)
   const pct   = Math.min((current / maxRef) * 100, 100)
   return (
-    <div style={{width:120,height:4,borderRadius:2,background:'#1a1a1e',flexShrink:0}}>
-      <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:isLow?'#ff4f4f':'#c9a84c'}} />
+    <div style={{width:120,height:4,borderRadius:2,background:'#FFFFFF',flexShrink:0}}>
+      <div style={{width:`${pct}%`,height:'100%',borderRadius:2,background:isLow?'#ff4f4f':'#F5B544'}} />
     </div>
   )
 }
@@ -94,7 +94,7 @@ function ABtn({ children, onClick, size=28 }: { children: React.ReactNode; onCli
   const [hov, setHov] = useState(false)
   return (
     <button onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{width:size,height:size,borderRadius:'50%',background:'#1a1a1e',border:`1px solid ${hov?'#c9a84c':'rgba(255,255,255,0.1)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:hov?'#c9a84c':'#888580',transition:'all 0.15s',flexShrink:0}}
+      style={{width:size,height:size,borderRadius:'50%',background:'#FFFFFF',border:`1px solid ${hov?'#F5B544':'#E5E7EB'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:hov?'#F5B544':'#5A5852',transition:'all 0.15s',flexShrink:0}}
     >{children}</button>
   )
 }
@@ -119,47 +119,47 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
     : s.base_price != null ? `AED ${Number(s.base_price).toLocaleString('en-AE')}` : '—'
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{position:'relative',background:'#141416',border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s',overflow:'hidden'}}
+      style={{position:'relative',background:'#FFFFFF',border:`1px solid ${hov?'rgba(61,217,214,0.3)':'#F0EFEA'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s',overflow:'hidden',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
     >
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <span style={{color:'#c9a84c',fontSize:18,lineHeight:1,flexShrink:0}}>◈</span>
-          <span style={{fontSize:16,fontWeight:700,color:'#f0ede8'}}>{s.name}</span>
+          <span style={{color:'#F5B544',fontSize:18,lineHeight:1,flexShrink:0}}>◈</span>
+          <span style={{fontSize:16,fontWeight:700,color:'#0B2A4A'}}>{s.name}</span>
         </div>
-        <span style={{fontSize:13,fontWeight:700,color:'#c9a84c',whiteSpace:'nowrap',marginLeft:12}}>{priceStr}</span>
+        <span style={{fontSize:13,fontWeight:700,color:'#F5B544',whiteSpace:'nowrap',marginLeft:12}}>{priceStr}</span>
       </div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginLeft:26,marginBottom:14}}>
-        <span style={{fontSize:11,color:'#888580'}}>{s.code ?? s.category ?? ''}</span>
+        <span style={{fontSize:11,color:'#5A5852'}}>{s.code ?? s.category ?? ''}</span>
         {(s.duration_minutes || s.duration || s.duration_hrs) && (
-          <span style={{fontSize:11,color:'#888580',textTransform:'uppercase'}}>
+          <span style={{fontSize:11,color:'#5A5852',textTransform:'uppercase'}}>
             ⏱ {s.duration_minutes
                 ? `${s.duration_minutes / 60} ${s.duration_minutes / 60 === 1 ? 'hora' : 'horas'}`
                 : formatDuration(s.duration || s.duration_hrs)}
           </span>
         )}
       </div>
-      {s.description && <div style={{fontSize:13,color:'#888580',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
+      {s.description && <div style={{fontSize:13,color:'#5A5852',lineHeight:1.65,marginBottom:14}}>{s.description}</div>}
       {pills.length > 0 && (
         <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:4}}>
           {pills.map((p: string, i: number) => (
-            <span key={i} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#888580'}}>{p}</span>
+            <span key={i} style={{background:'#FFFFFF',border:'1px solid #E5E7EB',borderRadius:20,padding:'3px 10px',fontSize:11,color:'#5A5852'}}>{p}</span>
           ))}
         </div>
       )}
-      <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid #2a2a30'}}>
+      <div style={{marginTop:16,paddingTop:14,borderTop:'1px solid #F0EFEA'}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <span style={{padding:'5px 12px',borderRadius:20,fontSize:10,fontWeight:800,letterSpacing:'0.5px',background:s.is_active!==false?'#22c55e15':'#ef444415',border:`1px solid ${s.is_active!==false?'#22c55e40':'#ef444440'}`,color:s.is_active!==false?'#22c55e':'#ef4444',whiteSpace:'nowrap',flexShrink:0}}>
             {s.is_active!==false?'ACTIVO':'INACTIVO'}
           </span>
-          <div style={{width:1,height:20,background:'#2a2a30',flexShrink:0}}/>
+          <div style={{width:1,height:20,background:'#F0EFEA',flexShrink:0}}/>
           <div style={{display:'flex',gap:6,marginLeft:'auto'}}>
-            <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 14px',background:'#c9a84c20',border:'1px solid #c9a84c40',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onInsumos()}} style={{padding:'6px 14px',background:'#E6F5EC',border:'1px solid rgba(31,143,92,0.2)',borderRadius:6,color:'#1F8F5C',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               INSUMOS
             </button>
-            <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 14px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onEditService()}} style={{padding:'6px 14px',background:'#F5B544',border:'none',borderRadius:6,color:'#1A1A1A',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               EDITAR
             </button>
-            <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 14px',background:s.is_active!==false?'#ef444410':'#22c55e10',border:`1px solid ${s.is_active!==false?'#ef444430':'#22c55e30'}`,borderRadius:6,color:s.is_active!==false?'#ef4444':'#22c55e',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
+            <button onClick={e=>{e.stopPropagation();onToggle()}} style={{padding:'6px 14px',background:s.is_active!==false?'#FBE7E2':'#E6F5EC',border:`1px solid ${s.is_active!==false?'rgba(217,83,61,0.2)':'rgba(31,143,92,0.2)'}`,borderRadius:6,color:s.is_active!==false?'#D9533D':'#1F8F5C',fontSize:11,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'Outfit,sans-serif'}}>
               {s.is_active!==false?'DESACTIVAR':'ACTIVAR'}
             </button>
           </div>
@@ -187,7 +187,7 @@ const MAT_CATS = ['Consumible','Químico','Herramienta']
 const EMPTY_SERVICE        = { name:'', category:'Lavado', base_price:'', description:'', duration_hrs:'', technician_count:'1', technician_level:'Junior' }
 const EMPTY_INVENTORY_FORM = { name:'', brand:'', stock_qty:'', min_stock:'', unit:'mL', unit_cost:'', supplier:'' }
 const EMPTY_ITEM           = { material_name:'', quantity:'', unit:'unit', unit_cost:'', category:'Consumible' }
-const SUBMIT_STYLE: React.CSSProperties = { width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer' }
+const SUBMIT_STYLE: React.CSSProperties = { width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,background:'#F5B544',color:'#1A1A1A',fontSize:14,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer' }
 
 type MatRow = { name: string; qty: string; unit: string }
 
@@ -686,8 +686,8 @@ export default function ServicesPage() {
   const costoTotal     = svcMaterials.reduce((s,m)=>(s + (m.quantity??0)*(m.unit_cost??0)),0)
   const alertas        = svcMaterials.filter(m=>{ const inv=getInvItem(m.material_name); return inv && (inv.stock_qty??0)<=(inv.min_stock??0) }).length
 
-  const BTN_OUTLINE: React.CSSProperties = {padding:'8px 16px',borderRadius:8,cursor:'pointer',background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.3)',color:'#c9a84c',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
-  const BTN_GOLD:    React.CSSProperties = {padding:'8px 16px',borderRadius:8,border:'none',cursor:'pointer',background:'#c9a84c',color:'#0d0d0f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
+  const BTN_OUTLINE: React.CSSProperties = {padding:'8px 16px',borderRadius:8,cursor:'pointer',background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.3)',color:'#F5B544',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
+  const BTN_GOLD:    React.CSSProperties = {padding:'8px 16px',borderRadius:8,border:'none',cursor:'pointer',background:'#F5B544',color:'#1A1A1A',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',whiteSpace:'nowrap'}
 
   return (
     <div style={{padding:24}}>
@@ -695,11 +695,11 @@ export default function ServicesPage() {
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:28}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('servicesInventory')}</div>
-          <div style={{fontSize:12,color:'#888580',marginTop:3}}>{new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#0B2A4A'}}>{t('servicesInventory')}</div>
+          <div style={{fontSize:12,color:'#5A5852',marginTop:3}}>{new Date().toLocaleDateString('es-AE',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
         </div>
         <div style={{display:'flex',gap:10}}>
-          <button style={BTN_OUTLINE} onClick={()=>setShowService(true)}>+ {t('addService')}</button>
+          <button style={BTN_GOLD} onClick={()=>setShowService(true)}>+ {t('addService')}</button>
         </div>
       </div>
 
@@ -708,18 +708,18 @@ export default function ServicesPage() {
 
         {/* Todos */}
         <div onClick={()=>setActiveCategory('all')}
-          style={{background:activeCategory==='all'?'linear-gradient(135deg, #1a1608 0%, #2a2010 100%)':'#1a1a1f',border:`1px solid ${activeCategory==='all'?'#c9a84c':'#2a2a30'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
+          style={{background:activeCategory==='all'?'#0B2A4A':'#FFFFFF',border:`1px solid ${activeCategory==='all'?'rgba(61,217,214,0.3)':'#F0EFEA'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
         >
           {activeCategory==='all' && (
             <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:'linear-gradient(90deg, transparent, #c9a84c, transparent)'}}/>
           )}
-          <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:'#c9a84c',opacity:activeCategory==='all'?0.08:0.04,lineHeight:1,userSelect:'none'}}>
+          <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:'#F5B544',opacity:activeCategory==='all'?0.08:0.04,lineHeight:1,userSelect:'none'}}>
             {srcServices.length}
           </div>
           <div style={{position:'relative'}}>
-            <div style={{color:activeCategory==='all'?'#c9a84c80':'#555',fontSize:'10px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px'}}>TODOS</div>
-            <div style={{color:activeCategory==='all'?'#c9a84c':'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px'}}>{srcServices.length}</div>
-            <div style={{color:activeCategory==='all'?'#c9a84c80':'#444',fontSize:'11px',fontWeight:600}}>{srcServices.length===1?'servicio':'servicios'}</div>
+            <div style={{color:activeCategory==='all'?'rgba(245,181,68,0.8)':'#5A5852',fontSize:'10px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px'}}>TODOS</div>
+            <div style={{color:activeCategory==='all'?'#FAFAF7':'#0B2A4A',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px'}}>{srcServices.length}</div>
+            <div style={{color:activeCategory==='all'?'rgba(245,181,68,0.6)':'#5A5852',fontSize:'11px',fontWeight:600}}>{srcServices.length===1?'servicio':'servicios'}</div>
           </div>
         </div>
 
@@ -729,7 +729,7 @@ export default function ServicesPage() {
           const isActive = activeCategory===cat.name
           return (
             <div key={cat.id} onClick={()=>setActiveCategory(cat.name)}
-              style={{background:isActive?`linear-gradient(135deg, ${cat.color}18 0%, ${cat.color}08 100%)`:'#1a1a1f',border:`1px solid ${isActive?cat.color+'80':'#2a2a30'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
+              style={{background:isActive?`linear-gradient(135deg, ${cat.color}18 0%, ${cat.color}08 100%)`:'#FAFAF7',border:`1px solid ${isActive?cat.color+'80':'#F0EFEA'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
             >
               <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:isActive?`linear-gradient(90deg, transparent, ${cat.color}, transparent)`:'transparent',transition:'background 0.2s'}}/>
               <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:cat.color,opacity:isActive?0.08:0.03,lineHeight:1,userSelect:'none',transition:'opacity 0.2s'}}>{count}</div>
@@ -737,7 +737,7 @@ export default function ServicesPage() {
               <div style={{position:'absolute',top:'8px',right:'8px',display:'flex',gap:'4px',zIndex:2}}>
                 <button
                   onClick={e=>{ e.stopPropagation(); setEditingCatDesc({...cat}); setCatDescForm(cat.description||'') }}
-                  style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:'6px',color:'#555',fontSize:'11px',padding:'2px 7px',cursor:'pointer',lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
+                  style={{background:'transparent',border:'1px solid #F0EFEA',borderRadius:'6px',color:'#555',fontSize:'11px',padding:'2px 7px',cursor:'pointer',lineHeight:'16px',fontFamily:'Outfit,sans-serif'}}
                   title="Editar categoría"
                 >✎</button>
                 {count===0 && (
@@ -758,8 +758,8 @@ export default function ServicesPage() {
               </div>
               <div style={{position:'relative'}}>
                 <div style={{color:isActive?cat.color+'99':'#555',fontSize:'9px',fontWeight:700,letterSpacing:'2px',marginBottom:'10px',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:'44px'}}>{cat.name.toUpperCase()}</div>
-                <div style={{color:isActive?cat.color:'#fff',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px',transition:'color 0.2s'}}>{count}</div>
-                <div style={{color:isActive?cat.color+'80':'#444',fontSize:'11px',fontWeight:600}}>{count===1?'servicio':'servicios'}</div>
+                <div style={{color:isActive?cat.color:'#0B2A4A',fontSize:'32px',fontWeight:900,lineHeight:1,marginBottom:'4px',transition:'color 0.2s'}}>{count}</div>
+                <div style={{color:isActive?cat.color+'80':'#5A5852',fontSize:'11px',fontWeight:600}}>{count===1?'servicio':'servicios'}</div>
               </div>
             </div>
           )
@@ -771,7 +771,7 @@ export default function ServicesPage() {
       <div style={{marginBottom:40}}>
         {loadingS ? (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-            {[1,2,3,4].map(i=><div key={i} style={{background:'#141416',border:'1px solid rgba(255,255,255,0.06)',borderRadius:12,padding:20,height:180}} className="skeleton"/>)}
+            {[1,2,3,4].map(i=><div key={i} style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:12,padding:20,height:180}} className="skeleton"/>)}
           </div>
         ) : srcServices.length === 0 ? (
           <EmptyState
@@ -791,11 +791,11 @@ export default function ServicesPage() {
                 <div key={cat.id} style={{marginBottom:'32px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
                     <div style={{width:'4px',height:'24px',background:cat.color,borderRadius:'2px'}}/>
-                    <div style={{color:'#fff',fontSize:'16px',fontWeight:800}}>{cat.name}</div>
+                    <div style={{color:'#0B2A4A',fontSize:'16px',fontWeight:800}}>{cat.name}</div>
                     <span style={{background:cat.color+'20',color:cat.color,borderRadius:'10px',padding:'2px 10px',fontSize:'11px',fontWeight:700}}>
                       {catServices.length} servicio{catServices.length!==1?'s':''}
                     </span>
-                    <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
+                    <div style={{flex:1,height:'1px',background:'#F0EFEA'}}/>
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(420px, 1fr))',gap:'16px'}}>
                     {catServices.map((s:any)=>(
@@ -814,7 +814,7 @@ export default function ServicesPage() {
                   <div style={{display:'flex',alignItems:'center',gap:'10px',marginBottom:'16px'}}>
                     <div style={{width:'4px',height:'24px',background:'#555',borderRadius:'2px'}}/>
                     <div style={{color:'#888',fontSize:'16px',fontWeight:800}}>Sin categoría</div>
-                    <div style={{flex:1,height:'1px',background:'#2a2a30'}}/>
+                    <div style={{flex:1,height:'1px',background:'#F0EFEA'}}/>
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill, minmax(420px, 1fr))',gap:'16px'}}>
                     {uncategorized.map((s:any)=>(
@@ -839,8 +839,8 @@ export default function ServicesPage() {
       <div>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
           <div>
-            <div style={{fontSize:18,fontWeight:700,color:'#f0ede8'}}>Inventario</div>
-            <div style={{fontSize:12,color:'#888580',marginTop:2}}>Control de stock de productos</div>
+            <div style={{fontSize:18,fontWeight:700,color:'#0B2A4A'}}>Inventario</div>
+            <div style={{fontSize:12,color:'#5A5852',marginTop:2}}>Control de stock de productos</div>
           </div>
           <button style={BTN_GOLD} onClick={()=>setShowInv(true)}>+ Agregar Inventario</button>
         </div>
@@ -848,29 +848,29 @@ export default function ServicesPage() {
           /* ── MOBILE: cards ── */
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {loadingI ? (
-              <div style={{padding:32,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
+              <div style={{padding:32,textAlign:'center',color:'#5A5852',fontSize:13}}>Cargando…</div>
             ) : srcInventory.map((item:any)=>{
               const isLow = (item.stock_qty??0)<=(item.min_stock??0)
               return (
                 <div key={item.id}
-                  style={{background:'#1a1a1e',border:`1px solid ${isLow?'rgba(255,79,79,0.25)':'rgba(255,255,255,0.06)'}`,borderRadius:12,padding:16}}>
+                  style={{background:'#FFFFFF',border:`1px solid ${isLow?'rgba(255,79,79,0.25)':'#F0EFEA'}`,borderRadius:12,padding:16}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer',marginBottom:10}} onClick={()=>setSelectedInventoryItem(item)}>
                     <div>
-                      <div style={{color:'#f0ede8',fontWeight:700,fontSize:14,marginBottom:3}}>{item.name}</div>
-                      <div style={{color:'#888580',fontSize:12}}>{item.brand||'—'} · {item.unit||'mL'}</div>
+                      <div style={{color:'#0B2A4A',fontWeight:700,fontSize:14,marginBottom:3}}>{item.name}</div>
+                      <div style={{color:'#5A5852',fontSize:12}}>{item.brand||'—'} · {item.unit||'mL'}</div>
                     </div>
                     <div style={{textAlign:'right',flexShrink:0,marginLeft:12}}>
-                      <div style={{color:isLow?'#ff4f4f':'#c9a84c',fontWeight:800,fontSize:22,lineHeight:1}}>{item.stock_qty??0}</div>
+                      <div style={{color:isLow?'#ff4f4f':'#F5B544',fontWeight:800,fontSize:22,lineHeight:1}}>{item.stock_qty??0}</div>
                       <div style={{color:isLow?'#ff4f4f':'#22c55e',fontSize:10,fontWeight:700,textTransform:'uppercase',marginTop:3}}>{isLow?'LOW':'OK'}</div>
                     </div>
                   </div>
                   <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
-                    style={{width:'100%',padding:'9px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    style={{width:'100%',padding:'9px',background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                     ± AJUSTAR STOCK
                   </button>
                   <button
                     onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||item.unit_cost||0, sku:item.sku||'', supplier:item.supplier||'' }) }}
-                    style={{width:'100%',marginTop:10,padding:'9px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                    style={{width:'100%',marginTop:10,padding:'9px',background:'#F0EFEA',border:'1px solid #E5E7EB',borderRadius:8,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                   >
                     EDITAR
                   </button>
@@ -880,7 +880,7 @@ export default function ServicesPage() {
                   >
                     DESPACHAR AL MÓVIL
                   </button>
-                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid #2a2a30',marginTop:8}}>
+                  <div style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderTop:'1px solid #F0EFEA',marginTop:8}}>
                     <div style={{textAlign:'center'}}>
                       <div style={{color:'#666',fontSize:9,fontWeight:700,letterSpacing:'1px',marginBottom:4}}>COSTO UNIT.</div>
                       <input
@@ -891,7 +891,7 @@ export default function ServicesPage() {
                           await createClient().from('inventory_items').update({unit_price:newPrice}).eq('id',item.id)
                           setInventory(prev=>prev.map(i=>i.id===item.id?{...i,unit_price:newPrice}:i))
                         }}
-                        style={{width:70,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#c9a84c',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
+                        style={{width:70,padding:'4px 8px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:6,color:'#F5B544',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
                       />
                     </div>
                     <div style={{textAlign:'center'}}>
@@ -902,9 +902,9 @@ export default function ServicesPage() {
                 </div>
               )
             })}
-            <div style={{background:'#1a1a1f',border:'2px solid #c9a84c40',borderRadius:12,padding:16,display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
+            <div style={{background:'#FAFAF7',border:'2px solid #F5B54440',borderRadius:12,padding:16,display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:8}}>
               <span style={{color:'#888',fontSize:12,fontWeight:700}}>COSTO TOTAL INVENTARIO</span>
-              <span style={{color:'#c9a84c',fontSize:20,fontWeight:900}}>
+              <span style={{color:'#F5B544',fontSize:20,fontWeight:900}}>
                 AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
               </span>
             </div>
@@ -914,28 +914,28 @@ export default function ServicesPage() {
           <div className="glass" style={{overflowX:'auto'}}>
             <table style={{width:'100%',borderCollapse:'collapse',minWidth:720}}>
               <thead>
-                <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                <tr style={{borderBottom:'1px solid #F0EFEA'}}>
                   {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste','Editar','Despacho'].map(h=>(
-                    <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
+                    <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loadingI ? (
-                  <tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
+                  <tr><td colSpan={5} style={{padding:40,textAlign:'center',color:'#5A5852'}}>Cargando…</td></tr>
                 ) : srcInventory.map((item:any)=>{
                   const isLow = (item.stock_qty??0)<=(item.min_stock??0)
                   return (
-                    <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                      <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{item.name}</td>
-                      <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.brand||'—'}</td>
+                    <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid #F0EFEA'}}>
+                      <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#0B2A4A'}}>{item.name}</td>
+                      <td style={{padding:'14px 16px',fontSize:13,color:'#5A5852'}}>{item.brand||'—'}</td>
                       <td style={{padding:'14px 16px'}}>
                         <div style={{display:'flex',alignItems:'center',gap:8}}>
-                          <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#f0ede8'}}>{item.stock_qty??0}</span>
+                          <span style={{fontSize:13,fontWeight:700,color:isLow?'#ff4f4f':'#0B2A4A'}}>{item.stock_qty??0}</span>
                           {isLow && <span style={{fontSize:9,fontWeight:700,padding:'2px 7px',borderRadius:99,background:'rgba(255,79,79,0.12)',border:'1px solid rgba(255,79,79,0.3)',color:'#ff4f4f'}}>▲ BAJO</span>}
                         </div>
                       </td>
-                      <td style={{padding:'14px 16px',fontSize:13,color:'#888580'}}>{item.unit||'mL'}</td>
+                      <td style={{padding:'14px 16px',fontSize:13,color:'#5A5852'}}>{item.unit||'mL'}</td>
                       <td style={{padding:'14px 16px'}}><StockBar current={item.stock_qty??0} minimum={item.min_stock??0}/></td>
                       <td style={{padding:'14px 16px'}}>
                         <div style={{display:'flex',alignItems:'center',gap:4}}>
@@ -948,7 +948,7 @@ export default function ServicesPage() {
                               await createClient().from('inventory_items').update({unit_price:newPrice}).eq('id',item.id)
                               setInventory(prev=>prev.map(i=>i.id===item.id?{...i,unit_price:newPrice}:i))
                             }}
-                            style={{width:70,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#c9a84c',fontSize:12,outline:'none',textAlign:'right',fontFamily:'Outfit,sans-serif'}}
+                            style={{width:70,padding:'4px 8px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:6,color:'#F5B544',fontSize:12,outline:'none',textAlign:'right',fontFamily:'Outfit,sans-serif'}}
                           />
                         </div>
                       </td>
@@ -957,14 +957,14 @@ export default function ServicesPage() {
                       </td>
                       <td style={{padding:'14px 16px'}}>
                         <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
-                          style={{padding:'5px 12px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:6,color:'#c9a84c',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
+                          style={{padding:'5px 12px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:6,color:'#F5B544',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
                           ± AJUSTAR
                         </button>
                       </td>
                       <td style={{padding:'12px 14px'}}>
                         <button
                           onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||item.unit_cost||0, sku:item.sku||'', supplier:item.supplier||'' }) }}
-                          style={{padding:'5px 12px',background:'#2a2a30',border:'1px solid #3a3a40',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                          style={{padding:'5px 12px',background:'#F0EFEA',border:'1px solid #E5E7EB',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                         >
                           EDITAR
                         </button>
@@ -982,13 +982,13 @@ export default function ServicesPage() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{background:'#1a1a1f',borderTop:'2px solid #c9a84c40'}}>
+                <tr style={{background:'#FAFAF7',borderTop:'2px solid #F5B54440'}}>
                   <td colSpan={5} style={{padding:'12px 16px',color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px'}}>COSTO TOTAL DE INVENTARIO</td>
-                  <td style={{padding:'12px 16px',color:'#c9a84c',fontSize:12,fontWeight:700}}>
+                  <td style={{padding:'12px 16px',color:'#F5B544',fontSize:12,fontWeight:700}}>
                     AED {srcInventory.reduce((s:number,i:any)=>s+(i.unit_price||0),0).toFixed(2)} prom.
                   </td>
                   <td style={{padding:'12px 16px'}}>
-                    <span style={{color:'#c9a84c',fontSize:16,fontWeight:900}}>
+                    <span style={{color:'#F5B544',fontSize:16,fontWeight:900}}>
                       AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
                     </span>
                   </td>
@@ -1007,8 +1007,8 @@ export default function ServicesPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
           onClick={()=>setEditingItem(null)}>
           <div onClick={e=>e.stopPropagation()}
-            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto'}}>
-            <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>INVENTARIO</div>
+            style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:16,padding:32,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{color:'#F5B544',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>INVENTARIO</div>
             <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:24}}>Editar Item</div>
 
             {/* Nombre y Marca */}
@@ -1016,12 +1016,12 @@ export default function ServicesPage() {
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>NOMBRE *</div>
                 <input value={editItemForm.name} onChange={e=>setEditItemForm(p=>({...p,name:e.target.value}))}
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>MARCA</div>
                 <input value={editItemForm.brand} onChange={e=>setEditItemForm(p=>({...p,brand:e.target.value}))} placeholder="ej. Meguiars"
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
             </div>
 
@@ -1030,12 +1030,12 @@ export default function ServicesPage() {
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>CATEGORÍA</div>
                 <input value={editItemForm.category} onChange={e=>setEditItemForm(p=>({...p,category:e.target.value}))} placeholder="ej. Consumible, Herramienta"
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>UNIDAD</div>
                 <input value={editItemForm.unit} onChange={e=>setEditItemForm(p=>({...p,unit:e.target.value}))} placeholder="ej. ml, kg, unit"
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
             </div>
 
@@ -1044,17 +1044,17 @@ export default function ServicesPage() {
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>STOCK ACTUAL</div>
                 <input type="number" min="0" value={editItemForm.stock_qty} onChange={e=>setEditItemForm(p=>({...p,stock_qty:e.target.value as any}))}
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>STOCK MÍNIMO</div>
                 <input type="number" min="0" value={editItemForm.min_stock} onChange={e=>setEditItemForm(p=>({...p,min_stock:e.target.value as any}))}
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO UNIT. (AED)</div>
                 <input type="number" min="0" step="0.01" value={editItemForm.unit_price} onChange={e=>setEditItemForm(p=>({...p,unit_price:e.target.value as any}))}
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#c9a84c',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#F5B544',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
             </div>
 
@@ -1063,19 +1063,19 @@ export default function ServicesPage() {
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>SKU</div>
                 <input value={editItemForm.sku} onChange={e=>setEditItemForm(p=>({...p,sku:e.target.value}))} placeholder="ej. CER-001"
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
               <div>
                 <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>PROVEEDOR</div>
                 <input value={editItemForm.supplier} onChange={e=>setEditItemForm(p=>({...p,supplier:e.target.value}))} placeholder="ej. Meguiars UAE"
-                  style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#fff',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}/>
               </div>
             </div>
 
             {/* Preview costo total */}
-            <div style={{background:'#0d0d0f',borderRadius:8,padding:'12px 16px',marginBottom:20,display:'flex',justifyContent:'space-between'}}>
+            <div style={{background:'#F4F6F8',borderRadius:8,padding:'12px 16px',marginBottom:20,display:'flex',justifyContent:'space-between'}}>
               <span style={{color:'#666',fontSize:12}}>Costo total en inventario</span>
-              <span style={{color:'#c9a84c',fontWeight:800,fontSize:14}}>
+              <span style={{color:'#F5B544',fontWeight:800,fontSize:14}}>
                 AED {((parseFloat(editItemForm.unit_price)||0)*(parseFloat(editItemForm.stock_qty)||0)).toFixed(2)}
               </span>
             </div>
@@ -1083,11 +1083,11 @@ export default function ServicesPage() {
             {/* Botones */}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setEditingItem(null)}
-                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #F0EFEA',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
               <button onClick={handleSaveEditItem} disabled={savingItem||!editItemForm.name.trim()}
-                style={{flex:2,padding:13,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',opacity:savingItem||!editItemForm.name.trim()?0.6:1,fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:2,padding:13,background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',opacity:savingItem||!editItemForm.name.trim()?0.6:1,fontFamily:'Outfit,sans-serif'}}>
                 {savingItem ? 'GUARDANDO...' : 'GUARDAR CAMBIOS'}
               </button>
             </div>
@@ -1100,14 +1100,14 @@ export default function ServicesPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
           onClick={()=>setAdjustItem(null)}>
           <div onClick={e=>e.stopPropagation()}
-            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:400}}>
+            style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:16,padding:32,width:'100%',maxWidth:400}}>
 
             {/* Header */}
             <div style={{marginBottom:24}}>
-              <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>AJUSTE DE INVENTARIO</div>
-              <div style={{color:'#f0ede8',fontSize:20,fontWeight:800}}>{adjustItem.name}</div>
-              <div style={{color:'#888580',fontSize:13,marginTop:4}}>
-                Stock actual: <span style={{color:'#f0ede8',fontWeight:700}}>{adjustItem.stock_qty ?? 0} {adjustItem.unit || 'u'}</span>
+              <div style={{color:'#F5B544',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>AJUSTE DE INVENTARIO</div>
+              <div style={{color:'#0B2A4A',fontSize:20,fontWeight:800}}>{adjustItem.name}</div>
+              <div style={{color:'#5A5852',fontSize:13,marginTop:4}}>
+                Stock actual: <span style={{color:'#0B2A4A',fontWeight:700}}>{adjustItem.stock_qty ?? 0} {adjustItem.unit || 'u'}</span>
               </div>
             </div>
 
@@ -1117,10 +1117,10 @@ export default function ServicesPage() {
                 <button key={type} onClick={()=>setAdjustType(type)}
                   style={{
                     padding:12,
-                    background: adjustType===type ? (type==='add' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)') : '#0d0d0f',
-                    border: `2px solid ${adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#2a2a30'}`,
+                    background: adjustType===type ? (type==='add' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)') : '#F4F6F8',
+                    border: `2px solid ${adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#F0EFEA'}`,
                     borderRadius:10,
-                    color: adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#888580',
+                    color: adjustType===type ? (type==='add' ? '#22c55e' : '#ef4444') : '#5A5852',
                     fontSize:13,fontWeight:800,cursor:'pointer',
                     display:'flex',alignItems:'center',justifyContent:'center',gap:6,
                     fontFamily:'Outfit,sans-serif',
@@ -1133,27 +1133,27 @@ export default function ServicesPage() {
 
             {/* Cantidad */}
             <div style={{marginBottom:16}}>
-              <div style={{color:'#888580',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
+              <div style={{color:'#5A5852',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
                 CANTIDAD A {adjustType==='add' ? 'AGREGAR' : 'RETIRAR'}
               </div>
               <div style={{display:'flex',gap:6,marginBottom:10}}>
                 {[1,5,10,25].map(n=>(
                   <button key={n} onClick={()=>setAdjustAmount(String(n))}
-                    style={{flex:1,padding:'8px',background:adjustAmount===String(n)?'#c9a84c':'#0d0d0f',border:`1px solid ${adjustAmount===String(n)?'#c9a84c':'#2a2a30'}`,borderRadius:6,color:adjustAmount===String(n)?'#0d0d0f':'#888580',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    style={{flex:1,padding:'8px',background:adjustAmount===String(n)?'#F5B544':'#F4F6F8',border:`1px solid ${adjustAmount===String(n)?'#F5B544':'#F0EFEA'}`,borderRadius:6,color:adjustAmount===String(n)?'#1A1A1A':'#5A5852',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                     {n}
                   </button>
                 ))}
               </div>
               <input type="number" value={adjustAmount} onChange={e=>setAdjustAmount(e.target.value)}
                 placeholder="O ingresa cantidad manual" min="1" autoFocus
-                style={{width:'100%',padding:'12px 16px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#f0ede8',fontSize:14,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
+                style={{width:'100%',padding:'12px 16px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#0B2A4A',fontSize:14,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
             </div>
 
             {/* Preview */}
             {adjustAmount && Number(adjustAmount) > 0 && (
-              <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,padding:'12px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{color:'#888580',fontSize:13}}>Nuevo stock:</span>
-                <span style={{color:'#c9a84c',fontSize:18,fontWeight:800}}>
+              <div style={{background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,padding:'12px 16px',marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{color:'#5A5852',fontSize:13}}>Nuevo stock:</span>
+                <span style={{color:'#F5B544',fontSize:18,fontWeight:800}}>
                   {adjustType==='add'
                     ? (adjustItem.stock_qty??0) + Number(adjustAmount)
                     : Math.max(0,(adjustItem.stock_qty??0) - Number(adjustAmount))
@@ -1164,18 +1164,18 @@ export default function ServicesPage() {
 
             {/* Nota */}
             <div style={{marginBottom:20}}>
-              <div style={{color:'#888580',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
+              <div style={{color:'#5A5852',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:8}}>
                 NOTA <span style={{color:'#555',fontWeight:400,textTransform:'none',letterSpacing:0}}>(opcional)</span>
               </div>
               <input type="text" value={adjustNote} onChange={e=>setAdjustNote(e.target.value)}
                 placeholder="ej. Compra proveedor, uso en servicio..."
-                style={{width:'100%',padding:'10px 16px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:'#f0ede8',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
+                style={{width:'100%',padding:'10px 16px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:'#0B2A4A',fontSize:13,outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}} />
             </div>
 
             {/* Botones */}
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setAdjustItem(null)}
-                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888580',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #F0EFEA',borderRadius:10,color:'#5A5852',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
               <button onClick={handleAdjustStock} disabled={adjusting || !adjustAmount || Number(adjustAmount)<=0}
@@ -1195,11 +1195,11 @@ export default function ServicesPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:500,display:'flex',alignItems:'flex-end'}}
           onClick={()=>setSelectedInventoryItem(null)}>
           <div onClick={e=>e.stopPropagation()}
-            style={{background:'#1a1a1e',borderRadius:'20px 20px 0 0',padding:'24px',width:'100%',borderTop:'2px solid #c9a84c',maxHeight:'80vh',overflowY:'auto'}}>
+            style={{background:'#FFFFFF',borderRadius:'20px 20px 0 0',padding:'24px',width:'100%',borderTop:'2px solid #F5B544',maxHeight:'80vh',overflowY:'auto'}}>
             {/* Handle */}
             <div style={{width:40,height:4,background:'#333',borderRadius:2,margin:'0 auto 20px'}}/>
-            <div style={{color:'#c9a84c',fontSize:10,fontWeight:700,letterSpacing:'0.15em',marginBottom:6}}>INVENTARIO</div>
-            <div style={{color:'#f0ede8',fontSize:20,fontWeight:800,marginBottom:20}}>{selectedInventoryItem.name}</div>
+            <div style={{color:'#F5B544',fontSize:10,fontWeight:700,letterSpacing:'0.15em',marginBottom:6}}>INVENTARIO</div>
+            <div style={{color:'#0B2A4A',fontSize:20,fontWeight:800,marginBottom:20}}>{selectedInventoryItem.name}</div>
             {[
               {label:'MARCA',        value: selectedInventoryItem.brand     || '—'},
               {label:'STOCK',        value: selectedInventoryItem.stock_qty ?? 0},
@@ -1208,13 +1208,13 @@ export default function ServicesPage() {
               {label:'CATEGORÍA',    value: selectedInventoryItem.category  || '—'},
               {label:'NOTAS',        value: selectedInventoryItem.notes     || '—'},
             ].map(field=>(
-              <div key={field.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
-                <span style={{color:'#888580',fontSize:11,fontWeight:600}}>{field.label}</span>
-                <span style={{color:'#f0ede8',fontSize:14,fontWeight:600}}>{String(field.value)}</span>
+              <div key={field.label} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 0',borderBottom:'1px solid #F0EFEA'}}>
+                <span style={{color:'#5A5852',fontSize:11,fontWeight:600}}>{field.label}</span>
+                <span style={{color:'#0B2A4A',fontSize:14,fontWeight:600}}>{String(field.value)}</span>
               </div>
             ))}
             <button onClick={()=>setSelectedInventoryItem(null)}
-              style={{width:'100%',marginTop:20,padding:14,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+              style={{width:'100%',marginTop:20,padding:14,background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:10,fontSize:14,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
               CERRAR
             </button>
           </div>
@@ -1234,7 +1234,7 @@ export default function ServicesPage() {
                     {categories.map((cat:any)=>(
                       <button key={cat.id} type="button"
                         onClick={()=>setServiceForm({...serviceForm,category:cat.name})}
-                        style={{padding:'8px 16px',background:serviceForm.category===cat.name?cat.color+'25':'#0d0d0f',border:`2px solid ${serviceForm.category===cat.name?cat.color:'#2a2a30'}`,borderRadius:8,color:serviceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                        style={{padding:'8px 16px',background:serviceForm.category===cat.name?cat.color+'25':'#F4F6F8',border:`2px solid ${serviceForm.category===cat.name?cat.color:'#F0EFEA'}`,borderRadius:8,color:serviceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                       >{cat.name}</button>
                     ))}
                     <button type="button"
@@ -1242,7 +1242,7 @@ export default function ServicesPage() {
                         const name = window.prompt('Nombre de la nueva categoría:')
                         if (!name?.trim()) return
                         const { error } = await createClient().from('service_categories').insert({
-                          name: name.trim(), color: '#c9a84c', sort_order: categories.length + 1
+                          name: name.trim(), color: '#F5B544', sort_order: categories.length + 1
                         })
                         if (error) { addToast('Error: ' + error.message, 'error'); return }
                         await loadCategories()
@@ -1295,29 +1295,29 @@ export default function ServicesPage() {
       {/* ── Panel: Control de Insumos y Materiales ── */}
       {selectedSvc && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.7)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={closeMaterials}>
-          <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,padding:28,width:'100%',maxWidth:760,maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:14,padding:28,width:'100%',maxWidth:760,maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
 
             {/* Panel header */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
               <div>
-                <div style={{fontSize:16,fontWeight:700,color:'#f0ede8',marginBottom:4}}>Control de Insumos y Materiales</div>
-                <div style={{fontSize:12,color:'#888580'}}>{selectedSvc.name}{selectedSvc.code?` · ${selectedSvc.code}`:''}</div>
+                <div style={{fontSize:16,fontWeight:700,color:'#0B2A4A',marginBottom:4}}>Control de Insumos y Materiales</div>
+                <div style={{fontSize:12,color:'#5A5852'}}>{selectedSvc.name}{selectedSvc.code?` · ${selectedSvc.code}`:''}</div>
               </div>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <button onClick={()=>setShowAddItem(!showAddItem)} style={{...BTN_GOLD,fontSize:12,padding:'6px 14px'}}>+ Agregar Ítem</button>
-                <button onClick={closeMaterials} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}><X size={18}/></button>
+                <button onClick={closeMaterials} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}><X size={18}/></button>
               </div>
             </div>
 
             {/* KPI row */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:20}}>
               {[
-                {label:'Total Artículos',   value:String(totalArticulos), color:'#f0ede8'},
-                {label:'Costo Est. / Serv.',value:`AED ${costoTotal.toLocaleString('en-AE')}`, color:'#c9a84c'},
-                {label:'Alertas',           value:String(alertas),        color:alertas>0?'#ff4f4f':'#f0ede8'},
+                {label:'Total Artículos',   value:String(totalArticulos), color:'#0B2A4A'},
+                {label:'Costo Est. / Serv.',value:`AED ${costoTotal.toLocaleString('en-AE')}`, color:'#F5B544'},
+                {label:'Alertas',           value:String(alertas),        color:alertas>0?'#ff4f4f':'#0B2A4A'},
               ].map(k=>(
-                <div key={k.label} style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:'14px 16px'}}>
-                  <div style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
+                <div key={k.label} style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:10,padding:'14px 16px'}}>
+                  <div style={{fontSize:10,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:6}}>{k.label}</div>
                   <div style={{fontSize:22,fontWeight:700,color:k.color}}>{k.value}</div>
                 </div>
               ))}
@@ -1325,8 +1325,8 @@ export default function ServicesPage() {
 
             {/* Inline add item form */}
             {showAddItem && (
-              <div style={{background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.2)',borderRadius:10,padding:16,marginBottom:16}}>
-                <div style={{fontSize:12,fontWeight:600,color:'#c9a84c',marginBottom:12}}>Agregar Material</div>
+              <div style={{background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.2)',borderRadius:10,padding:16,marginBottom:16}}>
+                <div style={{fontSize:12,fontWeight:600,color:'#F5B544',marginBottom:12}}>Agregar Material</div>
                 <div style={{display:'grid',gridTemplateColumns:'2fr 1fr 80px 1fr 1fr',gap:8,alignItems:'end',marginBottom:10}}>
                   <div><MLabel>Nombre</MLabel><MInput placeholder="Nombre del ítem" value={newItem.material_name} onChange={e=>setNewItem({...newItem,material_name:e.target.value})}/></div>
                   <div><MLabel>Categoría</MLabel><MSelect value={newItem.category} onChange={e=>setNewItem({...newItem,category:e.target.value})}>{MAT_CATS.map(c=><option key={c} value={c}>{c}</option>)}</MSelect></div>
@@ -1335,8 +1335,8 @@ export default function ServicesPage() {
                   <div><MLabel>Costo Unit.</MLabel><MInput type="number" min={0} placeholder="0" value={newItem.unit_cost} onChange={e=>setNewItem({...newItem,unit_cost:e.target.value})}/></div>
                 </div>
                 <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-                  <button onClick={()=>{setShowAddItem(false);setNewItem({...EMPTY_ITEM})}} style={{padding:'8px 16px',borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',background:'transparent',color:'#888580',fontSize:12,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Cancelar</button>
-                  <button onClick={saveItem} disabled={savingItem||!newItem.material_name.trim()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                  <button onClick={()=>{setShowAddItem(false);setNewItem({...EMPTY_ITEM})}} style={{padding:'8px 16px',borderRadius:8,border:'1px solid #E5E7EB',background:'transparent',color:'#5A5852',fontSize:12,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Cancelar</button>
+                  <button onClick={saveItem} disabled={savingItem||!newItem.material_name.trim()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#F5B544',color:'#1A1A1A',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                     {savingItem?'Guardando…':'Agregar'}
                   </button>
                 </div>
@@ -1344,20 +1344,20 @@ export default function ServicesPage() {
             )}
 
             {/* Materials table */}
-            <div style={{overflow:'hidden',borderRadius:10,border:'1px solid rgba(255,255,255,0.06)'}}>
+            <div style={{overflow:'hidden',borderRadius:10,border:'1px solid #F0EFEA'}}>
               <table style={{width:'100%',borderCollapse:'collapse'}}>
                 <thead>
-                  <tr style={{borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                  <tr style={{borderBottom:'1px solid #F0EFEA'}}>
                     {['Ítem','Categoría','Cant. x Servicio','Stock','Costo Unit.','Estado',''].map(h=>(
-                      <th key={h} style={{padding:'10px 14px',fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.07em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
+                      <th key={h} style={{padding:'10px 14px',fontSize:10,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.07em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loadingMat ? (
-                    <tr><td colSpan={7} style={{padding:32,textAlign:'center',color:'#888580'}}>Cargando…</td></tr>
+                    <tr><td colSpan={7} style={{padding:32,textAlign:'center',color:'#5A5852'}}>Cargando…</td></tr>
                   ) : svcMaterials.length===0 ? (
-                    <tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'#888580',fontSize:13}}>Sin materiales registrados</td></tr>
+                    <tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'#5A5852',fontSize:13}}>Sin materiales registrados</td></tr>
                   ) : svcMaterials.map((m:any)=>{
                     const inv     = getInvItem(m.material_name)
                     const stock   = inv?.stock_qty ?? '—'
@@ -1365,17 +1365,17 @@ export default function ServicesPage() {
                     const stockNum = typeof stock === 'number' ? stock : -1
                     const estado = stockNum < 0 ? null : stockNum===0 ? 'sin' : stockNum<=minimum ? 'bajo' : 'ok'
                     return (
-                      <tr key={m.id} className="row-hover" style={{borderBottom:'1px solid rgba(255,255,255,0.04)'}}>
-                        <td style={{padding:'12px 14px',fontSize:13,fontWeight:500,color:'#f0ede8'}}>{m.material_name}</td>
+                      <tr key={m.id} className="row-hover" style={{borderBottom:'1px solid #F0EFEA'}}>
+                        <td style={{padding:'12px 14px',fontSize:13,fontWeight:500,color:'#0B2A4A'}}>{m.material_name}</td>
                         <td style={{padding:'12px 14px'}}><MatCatBadge cat={m.category||'Consumible'}/></td>
-                        <td style={{padding:'12px 14px',fontSize:13,color:'#888580'}}>{m.quantity} {m.unit}</td>
-                        <td style={{padding:'12px 14px',fontSize:13,color:'#f0ede8'}}>{typeof stock==='number'?stock:'—'}</td>
-                        <td style={{padding:'12px 14px',fontSize:13,color:'#c9a84c',fontWeight:600}}>{m.unit_cost?`AED ${m.unit_cost}`:'—'}</td>
+                        <td style={{padding:'12px 14px',fontSize:13,color:'#5A5852'}}>{m.quantity} {m.unit}</td>
+                        <td style={{padding:'12px 14px',fontSize:13,color:'#0B2A4A'}}>{typeof stock==='number'?stock:'—'}</td>
+                        <td style={{padding:'12px 14px',fontSize:13,color:'#F5B544',fontWeight:600}}>{m.unit_cost?`AED ${m.unit_cost}`:'—'}</td>
                         <td style={{padding:'12px 14px'}}>
                           {estado==='ok'   && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#34d399'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#34d399',display:'inline-block'}}/>OK</span>}
                           {estado==='bajo' && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#fbbf24'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#fbbf24',display:'inline-block'}}/>Bajo</span>}
                           {estado==='sin'  && <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#ff4f4f'}}><span style={{width:6,height:6,borderRadius:'50%',background:'#ff4f4f',display:'inline-block'}}/>Sin Stock</span>}
-                          {!estado && <span style={{fontSize:12,color:'#888580'}}>—</span>}
+                          {!estado && <span style={{fontSize:12,color:'#5A5852'}}>—</span>}
                         </td>
                         <td style={{padding:'12px 14px'}}>
                           <ABtn size={26} onClick={()=>openEditMat(m)}><Pencil size={10}/></ABtn>
@@ -1392,13 +1392,13 @@ export default function ServicesPage() {
 
       {/* ── Modal: Editar Material ── */}
       {editMat && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:700,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={closeEditMat}>
-          <div style={{background:'#141416',border:'1px solid rgba(201,168,76,0.25)',borderRadius:12,padding:20,width:'100%',maxWidth:480}} onClick={e=>e.stopPropagation()}>
+        <div style={{position:'fixed',inset:0,background:'rgba(11,42,74,0.12)',zIndex:700,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={closeEditMat}>
+          <div style={{background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.25)',borderRadius:12,padding:20,width:'100%',maxWidth:480}} onClick={e=>e.stopPropagation()}>
 
             {/* Header */}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-              <span style={{fontSize:15,fontWeight:700,color:'#f0ede8'}}>Editar Material</span>
-              <button onClick={closeEditMat} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex',alignItems:'center'}}><X size={16}/></button>
+              <span style={{fontSize:15,fontWeight:700,color:'#0B2A4A'}}>Editar Material</span>
+              <button onClick={closeEditMat} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex',alignItems:'center'}}><X size={16}/></button>
             </div>
 
             {/* Fields */}
@@ -1440,7 +1440,7 @@ export default function ServicesPage() {
               <div style={{marginTop:16,padding:12,background:'rgba(255,79,79,0.08)',border:'1px solid rgba(255,79,79,0.25)',borderRadius:8,display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                 <span style={{fontSize:12,color:'#ff4f4f'}}>¿Eliminar este material?</span>
                 <div style={{display:'flex',gap:6}}>
-                  <button onClick={()=>setShowMatDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
+                  <button onClick={()=>setShowMatDeleteConfirm(false)} style={{padding:'5px 12px',borderRadius:6,border:'1px solid #E5E7EB',background:'#FFFFFF',color:'#5A5852',fontSize:11,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>No</button>
                   <button onClick={deleteMatItem} style={{padding:'5px 12px',borderRadius:6,border:'none',background:'#ff4f4f',color:'#fff',fontSize:11,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>Sí, eliminar</button>
                 </div>
               </div>
@@ -1452,10 +1452,10 @@ export default function ServicesPage() {
                 Eliminar material
               </button>
               <div style={{display:'flex',gap:8}}>
-                <button onClick={closeEditMat} style={{padding:'8px 16px',borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',background:'#1a1a1e',color:'#888580',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                <button onClick={closeEditMat} style={{padding:'8px 16px',borderRadius:8,border:'1px solid #E5E7EB',background:'#FFFFFF',color:'#5A5852',fontSize:13,fontWeight:600,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                   Cancelar
                 </button>
-                <button onClick={saveEditMat} disabled={editMatSaving||!editMatForm.material_name?.trim()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer',opacity:editMatForm.material_name?.trim()?1:0.5}}>
+                <button onClick={saveEditMat} disabled={editMatSaving||!editMatForm.material_name?.trim()} style={{padding:'8px 16px',borderRadius:8,border:'none',background:'#F5B544',color:'#1A1A1A',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer',opacity:editMatForm.material_name?.trim()?1:0.5}}>
                   {editMatSaving?'Guardando…':'Guardar'}
                 </button>
               </div>
@@ -1467,7 +1467,7 @@ export default function ServicesPage() {
       {/* ── Confirm Toggle Modal ── */}
       {confirmToggle && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-          <div style={{background:'#1a1a1f',border:`1px solid ${confirmToggle.is_active!==false?'#ef444440':'#22c55e40'}`,borderRadius:16,padding:32,width:'100%',maxWidth:420,textAlign:'center'}}>
+          <div style={{background:'#FAFAF7',border:`1px solid ${confirmToggle.is_active!==false?'#ef444440':'#22c55e40'}`,borderRadius:16,padding:32,width:'100%',maxWidth:420,textAlign:'center'}}>
             <div style={{fontSize:40,marginBottom:16}}>{confirmToggle.is_active!==false?'⚠️':'✅'}</div>
             <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:8}}>
               {confirmToggle.is_active!==false?'Desactivar Servicio':'Activar Servicio'}
@@ -1479,7 +1479,7 @@ export default function ServicesPage() {
                 :'Este servicio estará disponible para nuevas reservas.'}
             </div>
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setConfirmToggle(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+              <button onClick={()=>setConfirmToggle(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #F0EFEA',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
               <button onClick={()=>handleToggleService(confirmToggle)} style={{flex:1,padding:13,background:confirmToggle.is_active!==false?'#ef4444':'#22c55e',border:'none',borderRadius:10,color:'#fff',fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
@@ -1493,8 +1493,8 @@ export default function ServicesPage() {
       {/* ── Edit Service Modal ── */}
       {editingService && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:500,maxHeight:'90vh',overflowY:'auto'}}>
-            <div style={{color:'#c9a84c',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>SERVICIOS</div>
+          <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:16,padding:32,width:'100%',maxWidth:500,maxHeight:'90vh',overflowY:'auto'}}>
+            <div style={{color:'#F5B544',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>SERVICIOS</div>
             <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:24}}>Editar Servicio</div>
 
             <div style={{marginBottom:16}}>
@@ -1525,7 +1525,7 @@ export default function ServicesPage() {
                   {categories.map((cat:any)=>(
                     <button key={cat.id} type="button"
                       onClick={()=>setEditServiceForm(p=>({...p,category:cat.name}))}
-                      style={{padding:'8px 16px',background:editServiceForm.category===cat.name?cat.color+'25':'#0d0d0f',border:`2px solid ${editServiceForm.category===cat.name?cat.color:'#2a2a30'}`,borderRadius:8,color:editServiceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                      style={{padding:'8px 16px',background:editServiceForm.category===cat.name?cat.color+'25':'#F4F6F8',border:`2px solid ${editServiceForm.category===cat.name?cat.color:'#F0EFEA'}`,borderRadius:8,color:editServiceForm.category===cat.name?cat.color:'#666',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                     >{cat.name}</button>
                   ))}
                 </div>
@@ -1535,10 +1535,10 @@ export default function ServicesPage() {
             </div>
 
             <div style={{display:'flex',gap:10}}>
-              <button onClick={()=>setEditingService(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+              <button onClick={()=>setEditingService(null)} style={{flex:1,padding:13,background:'transparent',border:'1px solid #F0EFEA',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
-              <button onClick={handleSaveEditService} disabled={savingService||!editServiceForm.name.trim()} style={{flex:2,padding:13,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif',opacity:savingService||!editServiceForm.name.trim()?0.6:1}}>
+              <button onClick={handleSaveEditService} disabled={savingService||!editServiceForm.name.trim()} style={{flex:2,padding:13,background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:10,fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif',opacity:savingService||!editServiceForm.name.trim()?0.6:1}}>
                 {savingService?'GUARDANDO...':'GUARDAR CAMBIOS'}
               </button>
             </div>
@@ -1549,10 +1549,10 @@ export default function ServicesPage() {
       {/* ── Control de Insumos Modal ── */}
       {showInsumos && insumoService && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
-          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,width:'100%',maxWidth:700,maxHeight:'90vh',overflowY:'auto'}}>
+          <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:16,width:'100%',maxWidth:700,maxHeight:'90vh',overflowY:'auto'}}>
 
             {/* Header */}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'24px 24px 20px',borderBottom:'1px solid #2a2a30'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'24px 24px 20px',borderBottom:'1px solid #F0EFEA'}}>
               <div>
                 <div style={{color:'#fff',fontSize:18,fontWeight:800}}>Control de Insumos y Materiales</div>
                 <div style={{color:'#666',fontSize:12,marginTop:3}}>{insumoService.name?.toUpperCase()}</div>
@@ -1560,13 +1560,13 @@ export default function ServicesPage() {
               <div style={{display:'flex',gap:10,alignItems:'center'}}>
                 <button
                   onClick={()=>{ if(insumoSelectVal) { handleAddServiceInsumo(insumoSelectVal) } }}
-                  style={{padding:'8px 16px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  style={{padding:'8px 16px',background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:8,fontSize:12,fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                 >
                   + Agregar Item
                 </button>
                 <button
                   onClick={()=>{ setShowInsumos(false); setInsumoService(null); setServiceInventory([]) }}
-                  style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:8,color:'#888',fontSize:18,padding:'4px 10px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                  style={{background:'transparent',border:'1px solid #F0EFEA',borderRadius:8,color:'#888',fontSize:18,padding:'4px 10px',cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                 >
                   ×
                 </button>
@@ -1574,11 +1574,11 @@ export default function ServicesPage() {
             </div>
 
             {/* Selector */}
-            <div style={{padding:'16px 24px',borderBottom:'1px solid #2a2a30'}}>
+            <div style={{padding:'16px 24px',borderBottom:'1px solid #F0EFEA'}}>
               <select
                 value={insumoSelectVal}
                 onChange={e=>setInsumoSelectVal(e.target.value)}
-                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:insumoSelectVal?'#fff':'#555',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}
+                style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:insumoSelectVal?'#fff':'#555',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}
               >
                 <option value="">Seleccionar item del inventario para agregar...</option>
                 {inventory.filter(item=>!serviceInventory.find(s=>s.inventory_item_id===item.id)).map(item=>(
@@ -1593,16 +1593,16 @@ export default function ServicesPage() {
               const costoInsumos = serviceInventory.reduce((s,i)=>s+((parseFloat(i.quantity)||0)*(parseFloat(i.item?.unit_price)||0)),0)
               const costoTotal   = costoInsumos + (parseFloat(String(costoHoraHombre))||0)
               return (
-                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,padding:'20px 24px',borderBottom:'1px solid #2a2a30'}}>
-                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16}}>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16,padding:'20px 24px',borderBottom:'1px solid #F0EFEA'}}>
+                  <div style={{background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:12,padding:16}}>
                     <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>TOTAL ARTÍCULOS</div>
                     <div style={{color:'#fff',fontSize:24,fontWeight:900}}>{totalItems}</div>
                   </div>
-                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16}}>
+                  <div style={{background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:12,padding:16}}>
                     <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO EST. / SERV.</div>
-                    <div style={{color:'#c9a84c',fontSize:24,fontWeight:900}}>AED {costoTotal.toFixed(2)}</div>
+                    <div style={{color:'#F5B544',fontSize:24,fontWeight:900}}>AED {costoTotal.toFixed(2)}</div>
                   </div>
-                  <div style={{background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:12,padding:16,position:'relative'}}>
+                  <div style={{background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:12,padding:16,position:'relative'}}>
                     <div style={{color:'#666',fontSize:10,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>COSTO HORA HOMBRE</div>
                     {editingCostoHH ? (
                       <div style={{display:'flex',gap:6,alignItems:'center'}}>
@@ -1616,7 +1616,7 @@ export default function ServicesPage() {
                             if(e.key==='Enter') handleSaveCostoHH(parseFloat((e.target as HTMLInputElement).value)||0)
                             if(e.key==='Escape') setEditingCostoHH(false)
                           }}
-                          style={{width:80,padding:'4px 8px',background:'#1a1a1f',border:'1px solid #3b82f6',borderRadius:6,color:'#3b82f6',fontSize:18,fontWeight:900,outline:'none',fontFamily:'Outfit,sans-serif'}}
+                          style={{width:80,padding:'4px 8px',background:'#FAFAF7',border:'1px solid #3b82f6',borderRadius:6,color:'#3b82f6',fontSize:18,fontWeight:900,outline:'none',fontFamily:'Outfit,sans-serif'}}
                         />
                       </div>
                     ) : (
@@ -1644,7 +1644,7 @@ export default function ServicesPage() {
                   <thead>
                     <tr>
                       {['ÍTEM','CATEGORÍA','CANT. X SERVICIO','COSTO UNIT.','COSTO TOTAL',''].map(h=>(
-                        <th key={h} style={{padding:'10px 12px',textAlign:'left',color:'#555',fontSize:10,letterSpacing:'1px',fontWeight:700,borderBottom:'1px solid #2a2a30'}}>{h}</th>
+                        <th key={h} style={{padding:'10px 12px',textAlign:'left',color:'#555',fontSize:10,letterSpacing:'1px',fontWeight:700,borderBottom:'1px solid #F0EFEA'}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1655,7 +1655,7 @@ export default function ServicesPage() {
                           <div style={{color:'#fff',fontWeight:700,fontSize:14}}>{insumo.item?.name?.toUpperCase()||'—'}</div>
                         </td>
                         <td style={{padding:'14px 12px'}}>
-                          <span style={{background:'#c9a84c20',border:'1px solid #c9a84c40',color:'#c9a84c',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:600}}>
+                          <span style={{background:'#c9a84c20',border:'1px solid #F5B54440',color:'#F5B544',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:600}}>
                             {insumo.item?.category||'Consumible'}
                           </span>
                         </td>
@@ -1665,13 +1665,13 @@ export default function ServicesPage() {
                               type="number" min="0.1" step="0.1"
                               value={insumo.quantity}
                               onChange={e=>handleUpdateInsumoQty(insumo.id,parseFloat(e.target.value)||1)}
-                              style={{width:60,padding:'4px 8px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#fff',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
+                              style={{width:60,padding:'4px 8px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:6,color:'#fff',fontSize:13,outline:'none',textAlign:'center',fontFamily:'Outfit,sans-serif'}}
                             />
                             <span style={{color:'#666',fontSize:12}}>{insumo.item?.unit||'unit'}</span>
                           </div>
                         </td>
                         <td style={{padding:'14px 12px'}}>
-                          <span style={{color:'#c9a84c',fontSize:13,fontWeight:600}}>
+                          <span style={{color:'#F5B544',fontSize:13,fontWeight:600}}>
                             {insumo.item?.unit_price != null && parseFloat(insumo.item.unit_price) > 0
                               ? `AED ${parseFloat(insumo.item.unit_price).toFixed(2)}`
                               : '—'}
@@ -1688,18 +1688,18 @@ export default function ServicesPage() {
                           <button
                             onClick={()=>handleRemoveInsumo(insumo.id)}
                             title="Quitar insumo"
-                            style={{background:'transparent',border:'1px solid #2a2a30',borderRadius:6,color:'#555',padding:'4px 10px',fontSize:16,cursor:'pointer',lineHeight:1,fontFamily:'Outfit,sans-serif'}}
+                            style={{background:'transparent',border:'1px solid #F0EFEA',borderRadius:6,color:'#555',padding:'4px 10px',fontSize:16,cursor:'pointer',lineHeight:1,fontFamily:'Outfit,sans-serif'}}
                           >×</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{borderTop:'2px solid #2a2a30',background:'#0d0d0f'}}>
+                    <tr style={{borderTop:'2px solid #F0EFEA',background:'#F4F6F8'}}>
                       <td colSpan={3} style={{padding:12,color:'#888',fontSize:11,fontWeight:700}}>COSTO TOTAL INSUMOS</td>
-                      <td style={{padding:12,color:'#c9a84c',fontSize:11}}>—</td>
+                      <td style={{padding:12,color:'#F5B544',fontSize:11}}>—</td>
                       <td style={{padding:12}}>
-                        <span style={{color:'#c9a84c',fontSize:16,fontWeight:900}}>
+                        <span style={{color:'#F5B544',fontSize:16,fontWeight:900}}>
                           AED {serviceInventory.reduce((s,i)=>s+((parseFloat(i.quantity)||0)*(parseFloat(i.item?.unit_price)||0)),0).toFixed(2)}
                         </span>
                       </td>
@@ -1718,7 +1718,7 @@ export default function ServicesPage() {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}
           onClick={()=>setShowDespacho(false)}>
           <div onClick={e=>e.stopPropagation()}
-            style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:16,padding:32,width:'100%',maxWidth:420}}>
+            style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:16,padding:32,width:'100%',maxWidth:420}}>
             <div style={{color:'#3b82f6',fontSize:11,fontWeight:700,letterSpacing:'2px',marginBottom:6}}>DESPACHO DE BODEGA</div>
             <div style={{color:'#fff',fontSize:20,fontWeight:800,marginBottom:4}}>{despachoItem.name}</div>
             <div style={{color:'#666',fontSize:13,marginBottom:24}}>
@@ -1729,7 +1729,7 @@ export default function ServicesPage() {
             <div style={{marginBottom:16}}>
               <div style={{color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px',marginBottom:6}}>DESPACHAR A</div>
               <select value={despachoForm.vehicle_id} onChange={e=>setDespachoForm(p=>({...p,vehicle_id:e.target.value}))}
-                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:8,color:despachoForm.vehicle_id?'#fff':'#666',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}>
+                style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:8,color:despachoForm.vehicle_id?'#fff':'#666',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}>
                 <option value="">Seleccionar móvil...</option>
                 {vehicles.map((v:any)=>(
                   <option key={v.id} value={v.id}>{v.license_plate||v.vin} — {v.make} {v.model}</option>
@@ -1743,20 +1743,20 @@ export default function ServicesPage() {
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 {[1,5,10].map(n=>(
                   <button key={n} onClick={()=>setDespachoForm(p=>({...p,quantity:n}))}
-                    style={{padding:'8px 16px',background:despachoForm.quantity===n?'#3b82f6':'#0d0d0f',border:`1px solid ${despachoForm.quantity===n?'#3b82f6':'#2a2a30'}`,borderRadius:6,color:despachoForm.quantity===n?'#fff':'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                    style={{padding:'8px 16px',background:despachoForm.quantity===n?'#3b82f6':'#F4F6F8',border:`1px solid ${despachoForm.quantity===n?'#3b82f6':'#F0EFEA'}`,borderRadius:6,color:despachoForm.quantity===n?'#fff':'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                     {n}
                   </button>
                 ))}
                 <input type="number" min="1" value={despachoForm.quantity}
                   onChange={e=>setDespachoForm(p=>({...p,quantity:parseFloat(e.target.value)||1}))}
-                  style={{flex:1,padding:'8px 12px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:6,color:'#fff',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}/>
+                  style={{flex:1,padding:'8px 12px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:6,color:'#fff',fontSize:13,outline:'none',fontFamily:'Outfit,sans-serif'}}/>
                 <span style={{color:'#666',fontSize:13}}>{despachoItem.unit||'u'}</span>
               </div>
             </div>
 
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>setShowDespacho(false)}
-                style={{flex:1,padding:13,background:'transparent',border:'1px solid #2a2a30',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:1,padding:13,background:'transparent',border:'1px solid #F0EFEA',borderRadius:10,color:'#888',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
               <button onClick={handleDespachar} disabled={!despachoForm.vehicle_id}
@@ -1772,9 +1772,9 @@ export default function ServicesPage() {
       {editingCatDesc && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px'}}
           onClick={()=>setEditingCatDesc(null)}>
-          <div style={{background:'#1a1a1f',border:'1px solid #2a2a30',borderRadius:'16px',padding:'32px',width:'100%',maxWidth:'420px'}}
+          <div style={{background:'#FAFAF7',border:'1px solid #F0EFEA',borderRadius:'16px',padding:'32px',width:'100%',maxWidth:'420px'}}
             onClick={e=>e.stopPropagation()}>
-            <div style={{color:'#c9a84c',fontSize:'11px',fontWeight:700,letterSpacing:'2px',marginBottom:'6px'}}>CATEGORÍA</div>
+            <div style={{color:'#F5B544',fontSize:'11px',fontWeight:700,letterSpacing:'2px',marginBottom:'6px'}}>CATEGORÍA</div>
             <div style={{color:'#fff',fontSize:'20px',fontWeight:800,marginBottom:'24px'}}>Editar — {editingCatDesc.name}</div>
 
             <div style={{marginBottom:'16px'}}>
@@ -1782,7 +1782,7 @@ export default function ServicesPage() {
               <input
                 value={editingCatDesc.name}
                 onChange={e=>setEditingCatDesc((p:any)=>({...p,name:e.target.value}))}
-                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+                style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
               />
             </div>
 
@@ -1795,14 +1795,14 @@ export default function ServicesPage() {
                 onChange={e=>setCatDescForm(e.target.value)}
                 placeholder="ej. Servicios completos de detailing para vehículos premium"
                 rows={3}
-                style={{width:'100%',padding:'10px 14px',background:'#0d0d0f',border:'1px solid #2a2a30',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',resize:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
+                style={{width:'100%',padding:'10px 14px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:'8px',color:'#fff',fontSize:'13px',outline:'none',resize:'none',boxSizing:'border-box',fontFamily:'Outfit,sans-serif'}}
               />
             </div>
 
             <div style={{marginBottom:'24px'}}>
               <div style={{color:'#888',fontSize:'11px',fontWeight:700,letterSpacing:'1px',marginBottom:'8px'}}>COLOR</div>
               <div style={{display:'flex',gap:'8px'}}>
-                {['#c9a84c','#3b82f6','#22c55e','#8b5cf6','#ef4444','#f59e0b','#06b6d4','#ec4899'].map(color=>(
+                {['#F5B544','#3b82f6','#22c55e','#8b5cf6','#ef4444','#f59e0b','#06b6d4','#ec4899'].map(color=>(
                   <div key={color} onClick={()=>setEditingCatDesc((p:any)=>({...p,color}))}
                     style={{width:'28px',height:'28px',borderRadius:'50%',background:color,cursor:'pointer',border:editingCatDesc.color===color?'3px solid #fff':'3px solid transparent',transition:'border 0.2s'}}
                   />
@@ -1812,7 +1812,7 @@ export default function ServicesPage() {
 
             <div style={{display:'flex',gap:'10px'}}>
               <button onClick={()=>setEditingCatDesc(null)}
-                style={{flex:1,padding:'13px',background:'transparent',border:'1px solid #2a2a30',borderRadius:'10px',color:'#888',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:1,padding:'13px',background:'transparent',border:'1px solid #F0EFEA',borderRadius:'10px',color:'#888',fontSize:'13px',fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 CANCELAR
               </button>
               <button
@@ -1827,7 +1827,7 @@ export default function ServicesPage() {
                   setEditingCatDesc(null)
                   await loadCategories()
                 }}
-                style={{flex:2,padding:'13px',background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:'10px',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
+                style={{flex:2,padding:'13px',background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:'10px',fontSize:'13px',fontWeight:800,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>
                 GUARDAR
               </button>
             </div>
