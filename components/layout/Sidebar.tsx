@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { LayoutDashboard, Users, Users2, Wrench, Car, CalendarCheck, DollarSign, BookOpen, BarChart2, Settings, LogOut, User as UserIcon, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -115,8 +115,8 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
             : <svg width="22" height="36" viewBox="-25 -50 50 100"><path d="M 0 -45 C 3 -15, 7 -7, 24 0 C 7 7, 3 15, 0 45 C -3 15, -7 7, -24 0 C -7 -7, -3 -15, 0 -45 Z" fill="#FAFAF7"/><path d="M 0 -18 C 1.5 -6, 3 -2, 10 0 C 3 2, 1.5 6, 0 18 C -1.5 6, -3 2, -10 0 C -3 -2, -1.5 -6, 0 -18 Z" fill="#3DD9D6"/></svg>}
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#FAFAF7', letterSpacing: '0.08em' }}>{companyName}</div>
-          <div style={{ fontSize: 8, color: '#B8D4ED', letterSpacing: '0.05em', marginTop: 1 }}>{companySubtitle}</div>
+          <div style={{ fontFamily: 'Geist, sans-serif', fontSize: 18, fontWeight: 500, color: '#FAFAF7', letterSpacing: '-0.04em', lineHeight: 1 }}>saffi</div>
+          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9, color: '#3DD9D6', letterSpacing: '1px', textTransform: 'uppercase' }}>ERP</span>
         </div>
       </div>
 
@@ -125,18 +125,27 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
         {NAV.map(({ labelKey, href, icon: Icon }) => {
           const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
           return (
-            <Link key={href} href={href} style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 10px', borderRadius: 8,
-              fontSize: 11, fontWeight: isActive ? 600 : 400,
-              color: isActive ? '#F5B544' : '#B8D4ED',
-              background: isActive ? 'rgba(245,181,68,0.12)' : 'transparent',
-              border: `1px solid ${isActive ? 'rgba(245,181,68,0.25)' : 'transparent'}`,
-              textDecoration: 'none', transition: 'all 0.15s',
-            }}>
-              <Icon size={14} strokeWidth={isActive ? 2 : 1.5} />
-              {t(labelKey)}
-            </Link>
+            <Fragment key={href}>
+              {href === '/finance' && (
+                <div style={{ borderTop: '1px solid rgba(61,217,214,0.1)', marginTop: 8, marginBottom: 8 }} />
+              )}
+              <Link href={href} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '8px 10px', paddingLeft: 8, borderRadius: 8,
+                fontSize: 13, letterSpacing: '0.2px',
+                fontWeight: isActive ? 600 : 400,
+                color: isActive ? '#F5B544' : '#B8D4ED',
+                background: isActive ? 'rgba(245,181,68,0.15)' : 'transparent',
+                borderLeft: isActive ? '3px solid #F5B544' : '3px solid transparent',
+                textDecoration: 'none', transition: 'all 0.15s',
+              }}
+                onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#FAFAF7' } }}
+                onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#B8D4ED' } }}
+              >
+                <Icon size={18} color={isActive ? '#F5B544' : '#B8D4ED'} strokeWidth={isActive ? 2 : 1.5} />
+                {t(labelKey)}
+              </Link>
+            </Fragment>
           )
         })}
       </nav>
