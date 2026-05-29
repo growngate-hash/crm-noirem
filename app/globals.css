@@ -94,7 +94,7 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .tab-btn:hover { color: var(--text); }
 
 .row-hover { transition: background 0.15s; cursor: pointer; }
-.row-hover:hover { background: rgba(255,255,255,0.02); }
+.row-hover:hover { background: #FAFAF7; }
 
 .badge {
   display: inline-flex; align-items: center; gap: 4px;

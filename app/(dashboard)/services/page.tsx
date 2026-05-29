@@ -119,7 +119,7 @@ function ServiceCard({ s, onEditService, onToggle, onInsumos }: { s: any; onEdit
     : s.base_price != null ? `AED ${Number(s.base_price).toLocaleString('en-AE')}` : '—'
   return (
     <div onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-      style={{position:'relative',background:'#FFFFFF',border:`1px solid ${hov?'rgba(61,217,214,0.3)':'#F0EFEA'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s',overflow:'hidden',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
+      style={{position:'relative',background:'#FFFFFF',border:`1px solid ${hov?'rgba(11,42,74,0.3)':'rgba(11,42,74,0.15)'}`,borderRadius:12,padding:20,display:'flex',flexDirection:'column',transition:'border-color 0.15s',overflow:'hidden',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
     >
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:4}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -708,7 +708,7 @@ export default function ServicesPage() {
 
         {/* Todos */}
         <div onClick={()=>setActiveCategory('all')}
-          style={{background:activeCategory==='all'?'#0B2A4A':'#FFFFFF',border:`1px solid ${activeCategory==='all'?'rgba(61,217,214,0.3)':'#F0EFEA'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
+          style={{background:activeCategory==='all'?'#0B2A4A':'#FFFFFF',border:`1px solid ${activeCategory==='all'?'#0B2A4A':'rgba(11,42,74,0.15)'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
         >
           {activeCategory==='all' && (
             <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:'linear-gradient(90deg, transparent, #c9a84c, transparent)'}}/>
@@ -729,7 +729,7 @@ export default function ServicesPage() {
           const isActive = activeCategory===cat.name
           return (
             <div key={cat.id} onClick={()=>setActiveCategory(cat.name)}
-              style={{background:isActive?`linear-gradient(135deg, ${cat.color}18 0%, ${cat.color}08 100%)`:'#FAFAF7',border:`1px solid ${isActive?cat.color+'80':'#F0EFEA'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s'}}
+              style={{background:isActive?`linear-gradient(135deg, ${cat.color}18 0%, ${cat.color}08 100%)`:'#FFFFFF',border:`1px solid ${isActive?cat.color+'80':'rgba(11,42,74,0.15)'}`,borderRadius:'14px',padding:'20px 16px',cursor:'pointer',position:'relative',overflow:'hidden',transition:'all 0.2s',boxShadow:'0 4px 12px rgba(11,42,74,0.06)'}}
             >
               <div style={{position:'absolute',top:0,left:0,right:0,height:'2px',background:isActive?`linear-gradient(90deg, transparent, ${cat.color}, transparent)`:'transparent',transition:'background 0.2s'}}/>
               <div style={{position:'absolute',right:'-8px',bottom:'-12px',fontSize:'64px',fontWeight:900,color:cat.color,opacity:isActive?0.08:0.03,lineHeight:1,userSelect:'none',transition:'opacity 0.2s'}}>{count}</div>
@@ -916,7 +916,7 @@ export default function ServicesPage() {
               <thead>
                 <tr style={{borderBottom:'1px solid #F0EFEA'}}>
                   {['Producto','Marca','Stock','Unidad','Nivel','Costo Unit.','Costo Total','Ajuste','Editar','Despacho'].map(h=>(
-                    <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.08em',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
+                    <th key={h} style={{padding:'12px 16px',fontSize:11,fontWeight:600,color:'#5A5852',textTransform:'uppercase',letterSpacing:'0.5px',textAlign:'left',whiteSpace:'nowrap'}}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -927,7 +927,7 @@ export default function ServicesPage() {
                   const isLow = (item.stock_qty??0)<=(item.min_stock??0)
                   return (
                     <tr key={item.id} className="row-hover" style={{borderBottom:'1px solid #F0EFEA'}}>
-                      <td style={{padding:'14px 16px',fontSize:13,fontWeight:500,color:'#0B2A4A'}}>{item.name}</td>
+                      <td style={{padding:'14px 16px',fontSize:13,fontWeight:600,color:'#0B2A4A'}}>{item.name}</td>
                       <td style={{padding:'14px 16px',fontSize:13,color:'#5A5852'}}>{item.brand||'—'}</td>
                       <td style={{padding:'14px 16px'}}>
                         <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -948,23 +948,23 @@ export default function ServicesPage() {
                               await createClient().from('inventory_items').update({unit_price:newPrice}).eq('id',item.id)
                               setInventory(prev=>prev.map(i=>i.id===item.id?{...i,unit_price:newPrice}:i))
                             }}
-                            style={{width:70,padding:'4px 8px',background:'#F4F6F8',border:'1px solid #F0EFEA',borderRadius:6,color:'#F5B544',fontSize:12,outline:'none',textAlign:'right',fontFamily:'Outfit,sans-serif'}}
+                            style={{width:70,padding:'4px 8px',background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:6,color:'#0B2A4A',fontSize:12,outline:'none',textAlign:'right',fontFamily:'Outfit,sans-serif'}}
                           />
                         </div>
                       </td>
                       <td style={{padding:'14px 16px'}}>
-                        <span style={{color:'#fff',fontWeight:700,fontSize:13}}>AED {((item.unit_price||0)*(item.stock_qty||0)).toFixed(2)}</span>
+                        <span style={{color:'#0B2A4A',fontWeight:700,fontSize:13}}>AED {((item.unit_price||0)*(item.stock_qty||0)).toFixed(2)}</span>
                       </td>
                       <td style={{padding:'14px 16px'}}>
                         <button onClick={()=>{ setAdjustItem(item); setAdjustType('add'); setAdjustAmount('') }}
-                          style={{padding:'5px 12px',background:'rgba(201,168,76,0.12)',border:'1px solid rgba(201,168,76,0.3)',borderRadius:6,color:'#F5B544',fontSize:11,fontWeight:700,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
+                          style={{padding:'5px 12px',background:'#FFFFFF',border:'1px solid rgba(11,42,74,0.15)',borderRadius:6,color:'#0B2A4A',fontSize:11,fontWeight:600,cursor:'pointer',letterSpacing:'0.5px',fontFamily:'Outfit,sans-serif'}}>
                           ± AJUSTAR
                         </button>
                       </td>
                       <td style={{padding:'12px 14px'}}>
                         <button
                           onClick={()=>{ setEditingItem(item); setEditItemForm({ name:item.name||'', brand:item.brand||'', category:item.category||'', stock_qty:item.stock_qty||0, min_stock:item.min_stock||0, unit:item.unit||'', unit_price:item.unit_price||item.unit_cost||0, sku:item.sku||'', supplier:item.supplier||'' }) }}
-                          style={{padding:'5px 12px',background:'#F0EFEA',border:'1px solid #E5E7EB',borderRadius:6,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                          style={{padding:'5px 12px',background:'#F5B544',border:'none',borderRadius:6,color:'#1A1A1A',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                         >
                           EDITAR
                         </button>
@@ -972,7 +972,7 @@ export default function ServicesPage() {
                       <td style={{padding:'12px 14px'}}>
                         <button
                           onClick={()=>{ setDespachoItem(item); setDespachoForm({vehicle_id:'',quantity:1}); setShowDespacho(true) }}
-                          style={{padding:'5px 10px',background:'#3b82f620',border:'1px solid #3b82f640',borderRadius:6,color:'#3b82f6',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
+                          style={{padding:'5px 10px',background:'#0B2A4A',border:'none',borderRadius:6,color:'#FAFAF7',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'Outfit,sans-serif'}}
                         >
                           DESPACHAR
                         </button>
@@ -983,12 +983,12 @@ export default function ServicesPage() {
               </tbody>
               <tfoot>
                 <tr style={{background:'#FAFAF7',borderTop:'2px solid #F5B54440'}}>
-                  <td colSpan={5} style={{padding:'12px 16px',color:'#888',fontSize:11,fontWeight:700,letterSpacing:'1px'}}>COSTO TOTAL DE INVENTARIO</td>
+                  <td colSpan={5} style={{padding:'12px 16px',color:'#5A5852',fontSize:11,fontWeight:700,letterSpacing:'1px'}}>COSTO TOTAL DE INVENTARIO</td>
                   <td style={{padding:'12px 16px',color:'#F5B544',fontSize:12,fontWeight:700}}>
                     AED {srcInventory.reduce((s:number,i:any)=>s+(i.unit_price||0),0).toFixed(2)} prom.
                   </td>
                   <td style={{padding:'12px 16px'}}>
-                    <span style={{color:'#F5B544',fontSize:16,fontWeight:900}}>
+                    <span style={{color:'#0B2A4A',fontSize:16,fontWeight:700}}>
                       AED {srcInventory.reduce((s:number,i:any)=>s+((i.unit_price||0)*(i.stock_qty||0)),0).toFixed(2)}
                     </span>
                   </td>
