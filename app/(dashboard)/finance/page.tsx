@@ -55,7 +55,7 @@ const MAIN_TABS = ['Costs & Expenses', 'Banks', 'Facturas', 'Compras']
 // â”€â”€â”€ category pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const CAT_STYLE: Record<string, { bg: string; border: string; color: string }> = {
   Fixed:       { bg: 'rgba(79,163,255,0.1)',    border: 'rgba(79,163,255,0.3)',    color: '#3DD9D6' },
-  Variable:    { bg: 'rgba(201,168,76,0.12)',   border: 'rgba(201,168,76,0.3)',   color: '#F5B544' },
+  Variable:    { bg: '#E6F0FA',                  border: '#CBD8E8',                color: '#0B2A4A' },
   Operational: { bg: 'rgba(136,133,128,0.12)',  border: 'rgba(136,133,128,0.3)',  color: '#5A5852' },
 }
 function CatPill({ cat }: { cat: string }) {
@@ -67,7 +67,7 @@ const aed = (v: number) => `AED ${(v ?? 0).toLocaleString('en-US', { minimumFrac
 
 // â”€â”€â”€ account type badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const ACC_STYLE: Record<string, { bg: string; color: string; icon: string }> = {
-  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#F5B544', icon: 'CC' },
+  'Credit Card': { bg: 'rgba(201,168,76,0.12)',  color: '#0B2A4A', icon: 'CC' },
   'Bank':        { bg: 'rgba(79,163,255,0.12)',  color: '#3DD9D6', icon: 'BK' },
   'Cash':        { bg: 'rgba(52,211,153,0.12)',  color: '#34d399', icon: 'CA' },
 }
@@ -449,7 +449,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: isMobile ? 8 : 10, marginBottom: 22 }}>
         {[
           { icon: <BarChart2 size={14} color="#3DD9D6" />, iconBg: 'rgba(79,163,255,0.15)',   label: t('fixedCosts'),    sub: `${fixedCosts.pct}% of expenses`,    value: aed(fixedCosts.amount),    bar: '#3DD9D6', pct: fixedCosts.pct    },
-          { icon: <Droplets  size={14} color="#F5B544" />, iconBg: 'rgba(201,168,76,0.15)',  label: t('variableCosts'), sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#F5B544', pct: variableCosts.pct },
+          { icon: <Droplets  size={14} color="#0B2A4A" />, iconBg: 'rgba(201,168,76,0.15)',  label: t('variableCosts'), sub: `${variableCosts.pct}% of expenses`,  value: aed(variableCosts.amount), bar: '#0B2A4A', pct: variableCosts.pct },
           { icon: <Settings  size={14} color="#5A5852" />, iconBg: 'rgba(136,133,128,0.12)', label: t('operational'),   sub: `${operational.pct}% of expenses`,    value: aed(operational.amount),   bar: '#0B2A4A', pct: operational.pct   },
         ].map(k => (
           <div key={k.label} style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 10, padding: '14px 16px' }}>
@@ -461,7 +461,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   <div style={{ fontSize: 10, color: '#5A5852' }}>{k.sub}</div>
                 </div>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#F5B544', whiteSpace: 'nowrap' }}>{k.value}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#0B2A4A', whiteSpace: 'nowrap' }}>{k.value}</div>
             </div>
             <div style={{ height: 3, borderRadius: 2, background: '#F0EFEA', overflow: 'hidden' }}>
               <div style={{ width: `${k.pct}%`, height: '100%', borderRadius: 2, background: k.bar }} />
@@ -539,7 +539,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   </div>
                   {e.receipt_url && (
                     <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
-                      title="Ver comprobante" style={{ color: '#F5B544', fontSize: 16, textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
+                      title="Ver comprobante" style={{ color: '#0B2A4A', fontSize: 16, textDecoration: 'none', display: 'inline-block', marginTop: 4 }}>
                       VER SOPORTE
                     </a>
                   )}
@@ -577,7 +577,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       <td style={{ padding: '12px 16px' }}><CatPill cat={e.category ?? 'Operational'} /></td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: '#5A5852' }}>
                         {e.account?.code
-                          ? <><span style={{ color: '#F5B544', fontFamily: 'monospace', marginRight: 4 }}>{e.account.code}</span>{e.account.name}</>
+                          ? <><span style={{ color: '#0B2A4A', fontWeight: 600, fontFamily: 'monospace', marginRight: 4 }}>{e.account.code}</span>{e.account.name}</>
                           : e.subcat ?? '—'}
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: '#0B2A4A', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
@@ -592,7 +592,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                         {e.receipt_url && (
                           <a href={e.receipt_url} target="_blank" rel="noopener noreferrer"
                             title="Ver comprobante"
-                            style={{ color: '#F5B544', fontSize: 17, textDecoration: 'none', lineHeight: 1 }}>
+                            style={{ color: '#0B2A4A', fontSize: 17, textDecoration: 'none', lineHeight: 1 }}>
                             VER SOPORTE
                           </a>
                         )}
@@ -621,7 +621,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
             <span style={{ fontSize: 15, fontWeight: 700, color: '#0B2A4A' }}>
               {lang === 'es' ? 'Facturas Generadas' : 'Generated Invoices'}
             </span>
-            <span style={{ background: 'rgba(201,168,76,0.12)', color: '#F5B544', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
+            <span style={{ background: '#E6F0FA', border: '1px solid #CBD8E8', color: '#0B2A4A', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
               {invoices.length}
             </span>
           </div>
@@ -651,7 +651,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   <div key={inv.id} style={{ background: '#1a1a1f', border: `1px solid ${inv.status === 'anulada' ? 'rgba(239,68,68,0.2)' : '#F0EFEA'}`, borderRadius: 10, padding: 14 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                       <div>
-                        <div style={{ fontFamily: 'monospace', color: '#F5B544', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
+                        <div style={{ fontFamily: 'monospace', color: '#0B2A4A', fontWeight: 700, fontSize: 13 }}>{inv.invoice_no}</div>
                         <div style={{ color: '#5A5852', fontSize: 12, marginTop: 2 }}>{(inv as any).contacts?.name ?? '—'}</div>
                       </div>
                       <span style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color, borderRadius: 6, padding: '3px 10px', fontSize: 11, fontWeight: 700 }}>
@@ -693,7 +693,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       </div>
                     )}
                     <button onClick={() => setViewingInvoice(inv)}
-                      style={{ width: '100%', padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#F5B544', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
+                      style={{ width: '100%', padding: '8px 0', background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.25)', color: '#0B2A4A', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit,sans-serif' }}>
                       VER FACTURA
                     </button>
                   </div>
@@ -716,7 +716,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   .filter(inv => invoiceFilter === 'all' || inv.status === invoiceFilter)
                   .map((inv: any) => (
                   <tr key={inv.id} style={{ borderBottom: '1px solid #F0EFEA' }}>
-                    <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#F5B544', fontWeight: 600 }}>{inv.invoice_no}</td>
+                    <td style={{ padding: '12px 0', fontFamily: 'monospace', fontSize: 12, color: '#0B2A4A', fontWeight: 600 }}>{inv.invoice_no}</td>
                     <td style={{ padding: '12px 8px', fontSize: 13, color: '#0B2A4A' }}>{(inv as any).contacts?.name ?? '—'}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#5A5852' }}>AED {Number(inv.subtotal ?? 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 8px', fontSize: 12, color: '#5A5852' }}>AED {Number(inv.tax ?? 0).toFixed(2)}</td>
@@ -958,7 +958,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                       color: cuentaSeleccionada ? '#0B2A4A' : '#3a3836' }}>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
                       {cuentaSeleccionada
-                        ? <><span style={{ fontFamily: 'monospace', color: '#F5B544', marginRight: 6 }}>{cuentaSeleccionada.code}</span>{cuentaSeleccionada.name}</>
+                        ? <><span style={{ fontFamily: 'monospace', color: '#0B2A4A', marginRight: 6 }}>{cuentaSeleccionada.code}</span>{cuentaSeleccionada.name}</>
                         : 'Seleccionar cuenta…'}
                     </span>
                     <span style={{ color: '#5A5852', fontSize: 10, flexShrink: 0, marginLeft: 8,
@@ -1026,7 +1026,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                                         borderBottom: '1px solid rgba(255,255,255,0.03)',
                                         background: selected ? 'rgba(201,168,76,0.1)' : 'transparent',
                                         transition: 'background 0.15s' }}>
-                                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#F5B544', minWidth: 44, flexShrink: 0 }}>
+                                      <span style={{ fontFamily: 'monospace', fontSize: 11, color: '#0B2A4A', minWidth: 44, flexShrink: 0 }}>
                                         {cuenta.code}
                                       </span>
                                       <span style={{ color: '#3a3836', fontSize: 10 }}>—</span>
@@ -1035,7 +1035,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                                         color: cuenta.level === 2 ? '#0B2A4A' : '#c0bdb8', flex: 1 }}>
                                         {cuenta.name}
                                       </span>
-                                      {selected && <span style={{ color: '#F5B544', fontSize: 12, flexShrink: 0 }}>✓</span>}
+                                      {selected && <span style={{ color: '#0B2A4A', fontSize: 12, flexShrink: 0 }}>✓</span>}
                                     </div>
                                   )
                                 })}
@@ -1072,7 +1072,7 @@ function CostsTab({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
                   ) : receiptFile ? (
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ fontSize: 28, marginBottom: 4 }}>[doc]</div>
-                      <div style={{ color: '#F5B544', fontSize: 12, fontWeight: 600 }}>{receiptFile.name}</div>
+                      <div style={{ color: '#0B2A4A', fontSize: 12, fontWeight: 600 }}>{receiptFile.name}</div>
                       <div style={{ color: '#5A5852', fontSize: 11 }}>{(receiptFile.size / 1024).toFixed(0)} KB</div>
                     </div>
                   ) : (
@@ -1472,7 +1472,7 @@ function BanksTab() {
                   {/* name */}
                   <td style={{ padding: '12px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#F5B544', flexShrink: 0 }}>âŠ™</span>
+                      <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(201,168,76,0.15)', border: '1px solid rgba(201,168,76,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#0B2A4A', flexShrink: 0 }}>âŠ™</span>
                       <span style={{ fontSize: 13, fontWeight: 600, color: '#0B2A4A', cursor: 'pointer' }}>{acc.name}</span>
                     </div>
                   </td>
@@ -1488,7 +1488,7 @@ function BanksTab() {
                   </td>
                   {/* reconciliation */}
                   <td style={{ padding: '12px 16px' }}>
-                    <button style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', background: '#FFFFFF', border: '1px solid rgba(201,168,76,0.25)', color: '#F5B544' }}>
+                    <button style={{ padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer', background: '#FFFFFF', border: '1px solid rgba(201,168,76,0.25)', color: '#0B2A4A' }}>
                       {t('reconcile')}
                     </button>
                   </td>
@@ -1633,7 +1633,7 @@ function BanksTab() {
             padding: 32,
             width: '100%', maxWidth: 460,
           }} onClick={e => e.stopPropagation()}>
-            <div style={{ color: '#F5B544', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
+            <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
             <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Editar Cuenta</div>
             {/* Nombre */}
             <div style={{ marginBottom: 16 }}>
@@ -1651,7 +1651,7 @@ function BanksTab() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
                 {([
                   { value: 'Cash',        label: 'Efectivo / Caja',     color: '#22c55e' },
-                  { value: 'Bank',        label: 'Cuenta Bancaria',     color: '#F5B544' },
+                  { value: 'Bank',        label: 'Cuenta Bancaria',     color: '#0B2A4A' },
                   { value: 'Transfer',    label: 'Transfer / IBAN',     color: '#3b82f6' },
                   { value: 'Credit Card', label: 'Tarjeta de Credito',  color: '#ef4444' },
                 ] as const).map(type => (
@@ -1724,7 +1724,7 @@ function BanksTab() {
       {showNewBankAccount && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} onClick={() => setShowNewBankAccount(false)}>
           <div style={{ background: '#1a1a1f', border: '1px solid #F0EFEA', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460 }} onClick={e => e.stopPropagation()}>
-            <div style={{ color: '#F5B544', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
+            <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>CUENTA BANCARIA</div>
             <div style={{ color: '#fff', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Cuenta</div>
             {/* Nombre */}
             <div style={{ marginBottom: 16 }}>
@@ -1738,7 +1738,7 @@ function BanksTab() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
                 {([
                   { value: 'Cash',        label: 'Efectivo / Caja',    color: '#22c55e' },
-                  { value: 'Bank',        label: 'Cuenta Bancaria',    color: '#F5B544' },
+                  { value: 'Bank',        label: 'Cuenta Bancaria',    color: '#0B2A4A' },
                   { value: 'Transfer',    label: 'Transfer / IBAN',    color: '#3b82f6' },
                   { value: 'Credit Card', label: 'Tarjeta de Crédito', color: '#ef4444' },
                 ] as const).map(type => (
@@ -2019,7 +2019,7 @@ function ComprasTab() {
                   : { label: 'PENDIENTE',color: '#f59e0b', bg: '#f59e0b20' }
                 return (
                   <tr key={inv.id} style={{ borderBottom: '1px solid #1a1a1e' }}>
-                    <td style={{ padding: '12px 14px', color: '#F5B544', fontWeight: 700, fontSize: 13 }}>{inv.invoice_number || inv.id.slice(0,8).toUpperCase()}</td>
+                    <td style={{ padding: '12px 14px', color: '#0B2A4A', fontWeight: 700, fontSize: 13 }}>{inv.invoice_number || inv.id.slice(0,8).toUpperCase()}</td>
                     <td style={{ padding: '12px 14px', color: '#0B2A4A', fontSize: 13 }}>{inv.supplier_name || inv.contacts?.name || '—'}</td>
                     <td style={{ padding: '12px 14px', color: '#5A5852', fontSize: 12 }}>{inv.issue_date ? new Date(inv.issue_date + 'T00:00:00+04:00').toLocaleDateString('en-AE') : '—'}</td>
                     <td style={{ padding: '12px 14px', fontSize: 12 }}>
@@ -2031,7 +2031,7 @@ function ComprasTab() {
                     </td>
                     <td style={{ padding: '12px 14px', color: '#0B2A4A', fontSize: 13 }}>AED {parseFloat(inv.subtotal || 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 14px', color: '#0B2A4A', fontSize: 13 }}>AED {parseFloat(inv.tax || 0).toFixed(2)}</td>
-                    <td style={{ padding: '12px 14px', color: '#F5B544', fontSize: 13, fontWeight: 700 }}>AED {parseFloat(inv.total || 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 14px', color: '#0B2A4A', fontSize: 13, fontWeight: 700 }}>AED {parseFloat(inv.total || 0).toFixed(2)}</td>
                     <td style={{ padding: '12px 14px' }}>
                       <span style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.color}40`, borderRadius: 6, padding: '3px 10px', fontSize: 10, fontWeight: 700 }}>{sc.label}</span>
                     </td>
@@ -2059,7 +2059,7 @@ function ComprasTab() {
           <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 16, padding: 28, width: '100%', maxWidth: 480 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
               <div>
-                <div style={{ color: '#F5B544', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 4 }}>FACTURA DE COMPRA</div>
+                <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 4 }}>FACTURA DE COMPRA</div>
                 <div style={{ color: '#0B2A4A', fontSize: 20, fontWeight: 800 }}>{viewingPurchase.invoice_number || viewingPurchase.id.slice(0,8).toUpperCase()}</div>
               </div>
               <button onClick={() => setViewingPurchase(null)} style={{ background: 'none', border: 'none', color: '#5A5852', cursor: 'pointer', fontSize: 20 }}>×</button>
@@ -2090,7 +2090,7 @@ function ComprasTab() {
       {showNewPurchase && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <div style={{ background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 16, padding: 32, width: '100%', maxWidth: 780, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ color: '#F5B544', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>FACTURA DE COMPRA</div>
+            <div style={{ color: '#0B2A4A', fontSize: 11, fontWeight: 700, letterSpacing: '2px', marginBottom: 6 }}>FACTURA DE COMPRA</div>
             <div style={{ color: '#0B2A4A', fontSize: 20, fontWeight: 800, marginBottom: 24 }}>Nueva Compra</div>
 
             {/* Proveedor + N° */}
@@ -2207,7 +2207,7 @@ function ComprasTab() {
                             placeholder="0"
                             style={{ width: 55, padding: '6px 8px', background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 6, color: '#0B2A4A', fontSize: 12, outline: 'none', fontFamily: 'Outfit,sans-serif' }} />
                         </td>
-                        <td style={{ padding: '6px 8px', color: '#F5B544', fontWeight: 700, fontSize: 12 }}>AED {lineTotal.toFixed(2)}</td>
+                        <td style={{ padding: '6px 8px', color: '#0B2A4A', fontWeight: 700, fontSize: 12 }}>AED {lineTotal.toFixed(2)}</td>
                         <td style={{ padding: '6px 8px' }}>
                           {purchaseForm.lines.length > 1 && (
                             <button onClick={() => setPurchaseForm((p: any) => ({ ...p, lines: p.lines.filter((_: any, idx: number) => idx !== i) }))}
@@ -2243,7 +2243,7 @@ function ComprasTab() {
                   { label: 'Subtotal',   value: subtotalLineas,                         color: '#0B2A4A', prefix: ''  },
                   { label: 'Descuento',  value: parseFloat(purchaseForm.discount) || 0, color: '#22c55e', prefix: '-' },
                   { label: 'VAT 5%',     value: formVAT,                                color: '#0B2A4A', prefix: ''  },
-                  { label: 'TOTAL',      value: formTotal,                              color: '#F5B544', prefix: ''  },
+                  { label: 'TOTAL',      value: formTotal,                              color: '#0B2A4A', prefix: ''  },
                 ].map(row => (
                   <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', borderBottom: row.label === 'TOTAL' ? 'none' : '1px solid #1a1a1e', marginTop: row.label === 'TOTAL' ? 6 : 0 }}>
                     <span style={{ color: '#A8A6A0', fontSize: 12 }}>{row.label}</span>
