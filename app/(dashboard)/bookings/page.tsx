@@ -146,24 +146,29 @@ function GanttBlock({leftPct,widthPct,timeLabel,client,service,status,onClick}:{
 }) {
   const [hov,setHov] = useState(false)
   const BG:Record<string,string>={
-    confirmed:'rgba(201,168,76,0.87)',pending:'rgba(251,191,36,0.78)',
-    completed:'rgba(52,211,153,0.80)',cancelled:'rgba(255,79,79,0.68)',in_progress:'rgba(79,163,255,0.85)',
+    confirmed:   'rgba(245,181,68,0.92)',
+    pending:     'rgba(245,181,68,0.55)',
+    completed:   'rgba(52,211,153,0.82)',
+    cancelled:   'rgba(255,79,79,0.70)',
+    in_progress: 'rgba(61,217,214,0.82)',
   }
   const bg=BG[status?.toLowerCase()]??BG['confirmed']
+  const isConfirmed = status?.toLowerCase()==='confirmed'
   return (
     <div onClick={onClick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
       style={{position:'absolute',left:leftPct,width:widthPct,top:4,bottom:4,
         background:bg,borderRadius:6,padding:'4px 8px',cursor:'pointer',overflow:'hidden',
         transition:'filter 0.15s,box-shadow 0.15s',minWidth:20,
+        border:isConfirmed?'1px solid rgba(245,181,68,0.35)':'none',
         filter:hov?'brightness(1.12)':'brightness(1)',
-        boxShadow:hov?'0 4px 14px rgba(0,0,0,0.45)':'0 2px 6px rgba(0,0,0,0.3)'}}>
-      <div style={{fontSize:10,fontWeight:600,color:'rgba(0,0,0,0.65)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+        boxShadow:hov?'0 4px 14px rgba(11,42,74,0.18)':'0 2px 6px rgba(11,42,74,0.10)'}}>
+      <div style={{fontSize:10,fontWeight:600,color:'rgba(11,42,74,0.75)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
         {timeLabel}
       </div>
-      <div style={{fontSize:12,fontWeight:700,color:'#1A1A1A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#0B2A4A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
         {client}
       </div>
-      <div style={{fontSize:11,color:'rgba(11,42,74,0.4)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+      <div style={{fontSize:11,color:'rgba(11,42,74,0.65)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
         {service}
       </div>
     </div>
