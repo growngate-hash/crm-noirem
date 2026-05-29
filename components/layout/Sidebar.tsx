@@ -85,8 +85,8 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
     )}
     <div style={{
       width: 200, minWidth: 200, height: '100dvh',
-      background: 'var(--bg2)',
-      borderRight: '1px solid var(--border)',
+      background: '#0B2A4A',
+      borderRight: '1px solid rgba(61,217,214,0.15)',
       display: 'flex', flexDirection: 'column',
       overflow: 'hidden',
       ...(isMobile && {
@@ -99,26 +99,24 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
     }}>
       {/* Mobile close button */}
       {isMobile && (
-        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28 }}>
+        <button onClick={onClose} style={{ position: 'absolute', top: 14, right: 14, background: 'transparent', border: '1px solid rgba(61,217,214,0.2)', borderRadius: 6, color: '#B8D4ED', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28 }}>
           <X size={14} />
         </button>
       )}
 
       {/* Logo */}
-      <div style={{ padding: '18px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+      <div style={{ padding: '18px 16px', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid rgba(61,217,214,0.15)', flexShrink: 0 }}>
         <div style={{
-          width: 32, height: 32, background: 'var(--gold)', borderRadius: 6,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontWeight: 900, color: '#000', fontSize: 16, flexShrink: 0,
-          overflow: 'hidden',
+          width: 32, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, overflow: 'hidden',
         }}>
           {logoUrl
             ? <img src={logoUrl} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-            : companyName.charAt(0)}
+            : <svg width="22" height="36" viewBox="-25 -50 50 100"><path d="M 0 -45 C 3 -15, 7 -7, 24 0 C 7 7, 3 15, 0 45 C -3 15, -7 7, -24 0 C -7 -7, -3 -15, 0 -45 Z" fill="#FAFAF7"/><path d="M 0 -18 C 1.5 -6, 3 -2, 10 0 C 3 2, 1.5 6, 0 18 C -1.5 6, -3 2, -10 0 C -3 -2, -1.5 -6, 0 -18 Z" fill="#3DD9D6"/></svg>}
         </div>
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.08em' }}>{companyName}</div>
-          <div style={{ fontSize: 8, color: 'var(--text2)', letterSpacing: '0.05em', marginTop: 1 }}>{companySubtitle}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#FAFAF7', letterSpacing: '0.08em' }}>{companyName}</div>
+          <div style={{ fontSize: 8, color: '#B8D4ED', letterSpacing: '0.05em', marginTop: 1 }}>{companySubtitle}</div>
         </div>
       </div>
 
@@ -131,9 +129,9 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 10px', borderRadius: 8,
               fontSize: 11, fontWeight: isActive ? 600 : 400,
-              color: isActive ? 'var(--gold)' : 'var(--text2)',
-              background: isActive ? 'var(--gold-dim)' : 'transparent',
-              border: `1px solid ${isActive ? 'var(--gold-b)' : 'transparent'}`,
+              color: isActive ? '#F5B544' : '#B8D4ED',
+              background: isActive ? 'rgba(245,181,68,0.12)' : 'transparent',
+              border: `1px solid ${isActive ? 'rgba(245,181,68,0.25)' : 'transparent'}`,
               textDecoration: 'none', transition: 'all 0.15s',
             }}>
               <Icon size={14} strokeWidth={isActive ? 2 : 1.5} />
@@ -149,13 +147,13 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
           flexShrink: 0,
           padding: '12px 14px',
           paddingBottom: 'calc(8px + env(safe-area-inset-bottom, 0px))',
-          borderTop: '1px solid var(--border)',
-          background: 'var(--bg2)',
+          borderTop: '1px solid rgba(61,217,214,0.15)',
+          background: '#0B2A4A',
         }}>
           <button onClick={handleLogout} style={{
             width: '100%', padding: '12px 14px', borderRadius: 10,
-            background: 'transparent', border: '1px solid rgba(255,79,79,0.35)',
-            color: '#ff4f4f', fontSize: 13, fontWeight: 700,
+            background: 'transparent', border: '1px solid rgba(217,83,61,0.3)',
+            color: '#D9533D', fontSize: 13, fontWeight: 700,
             fontFamily: 'Outfit, sans-serif', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
             letterSpacing: '0.05em',
@@ -171,32 +169,32 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
         {showMenu && (
           <div style={{
             position: 'absolute', bottom: 'calc(100% + 6px)', left: 10, right: 10, zIndex: 300,
-            background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.08)',
+            background: '#0B2A4A', border: '1px solid rgba(61,217,214,0.2)',
             borderRadius: 10, overflow: 'hidden',
-            boxShadow: '0 -8px 24px rgba(0,0,0,0.5)',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
           }}>
             <Link href="/settings" onClick={() => setShowMenu(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                fontSize: 12, color: 'var(--text)', textDecoration: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <UserIcon size={13} color="var(--text2)"/> {t('myProfile')}
+                fontSize: 12, color: '#B8D4ED', textDecoration: 'none',
+                borderBottom: '1px solid rgba(61,217,214,0.1)', transition: 'all 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.color = '#FFFFFF' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#B8D4ED' }}>
+              <UserIcon size={13} color="#B8D4ED"/> {t('myProfile')}
             </Link>
             <Link href="/settings" onClick={() => setShowMenu(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-                fontSize: 12, color: 'var(--text)', textDecoration: 'none',
-                borderBottom: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              <Settings size={13} color="var(--text2)"/> {t('configuration')}
+                fontSize: 12, color: '#B8D4ED', textDecoration: 'none',
+                borderBottom: '1px solid rgba(61,217,214,0.1)', transition: 'all 0.1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)'; (e.currentTarget as HTMLElement).style.color = '#FFFFFF' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#B8D4ED' }}>
+              <Settings size={13} color="#B8D4ED"/> {t('configuration')}
             </Link>
             <button onClick={handleLogout}
               style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                 padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 12, color: '#ff4f4f', fontFamily: 'Outfit, sans-serif', textAlign: 'left',
+                fontSize: 12, color: '#D9533D', fontFamily: 'Outfit, sans-serif', textAlign: 'left',
                 transition: 'background 0.1s' }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,79,79,0.05)')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(217,83,61,0.08)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
               <LogOut size={13}/> {t('logOut')}
             </button>
@@ -205,21 +203,21 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
 
         {/* User pill */}
         <button onClick={() => setShowMenu(v => !v)}
-          style={{ width: '100%', padding: '12px 14px', borderTop: '1px solid var(--border)',
+          style={{ width: '100%', padding: '12px 14px', borderTop: '1px solid rgba(61,217,214,0.15)',
             display: 'flex', gap: 10, alignItems: 'center',
-            background: showMenu ? 'rgba(255,255,255,0.02)' : 'none',
+            background: showMenu ? 'rgba(255,255,255,0.05)' : 'none',
             border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s' }}>
           <div style={{
             width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-            background: 'linear-gradient(135deg, #c9a84c, #8b6914)',
+            background: 'linear-gradient(135deg, #3DD9D6, #1A8A87)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 11, fontWeight: 700, color: '#000',
+            fontSize: 11, fontWeight: 700, color: '#fff',
           }}>{initials}</div>
           <div style={{ overflow: 'hidden', flex: 1 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
-            <div style={{ fontSize: 9, color: 'var(--text2)', textTransform: 'capitalize' }}>{displayRole}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#FAFAF7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{displayName}</div>
+            <div style={{ fontSize: 9, color: '#B8D4ED', textTransform: 'capitalize' }}>{displayRole}</div>
           </div>
-          <span style={{ fontSize: 9, color: 'var(--text2)', flexShrink: 0 }}>{showMenu ? '▴' : '▾'}</span>
+          <span style={{ fontSize: 9, color: '#B8D4ED', flexShrink: 0 }}>{showMenu ? '▴' : '▾'}</span>
         </button>
       </div>
     </div>

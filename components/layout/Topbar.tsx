@@ -51,11 +51,11 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
 
   if (isMobile) {
     return (
-      <div style={{ height: 52, flexShrink: 0, background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-        <button onClick={onMenuOpen} style={{ width: 34, height: 34, background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: 'var(--text2)', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <div style={{ height: 52, flexShrink: 0, background: '#0B2A4A', borderBottom: '1px solid rgba(61,217,214,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+        <button onClick={onMenuOpen} style={{ width: 34, height: 34, background: 'transparent', border: '1px solid rgba(61,217,214,0.2)', borderRadius: 8, color: '#B8D4ED', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           ☰
         </button>
-        <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: 15 }}>{pageLabel}</span>
+        <span style={{ fontWeight: 700, color: '#FAFAF7', fontSize: 15 }}>{pageLabel}</span>
         <NotificationsPanel />
       </div>
     )
@@ -64,15 +64,15 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
   return (
     <div style={{
       height: 64, flexShrink: 0,
-      background: 'var(--bg2)',
-      borderBottom: '1px solid var(--border)',
+      background: '#0B2A4A',
+      borderBottom: '1px solid rgba(61,217,214,0.15)',
       display: 'flex', alignItems: 'center',
       padding: '0 24px', gap: 16,
     }}>
       {/* Left: title + date */}
       <div style={{ flexShrink: 0 }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{pageLabel}</div>
-        <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, textTransform: 'capitalize' }}>{todayStr}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#FAFAF7', lineHeight: 1.2 }}>{pageLabel}</div>
+        <div style={{ fontSize: 12, color: '#B8D4ED', marginTop: 2, textTransform: 'capitalize' }}>{todayStr}</div>
       </div>
 
       {/* Spacer */}
@@ -83,7 +83,7 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
 
         {/* Language toggle */}
         <div style={{
-          display: 'flex', background: 'var(--bg3)',
+          display: 'flex', background: 'rgba(255,255,255,0.08)',
           borderRadius: 8, padding: 3, gap: 2,
         }}>
           {(['en', 'es'] as const).map(l => (
@@ -93,8 +93,8 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
               style={{
                 padding: '3px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
                 fontSize: 11, fontWeight: 600,
-                background: lang === l ? 'var(--gold)' : 'transparent',
-                color: lang === l ? '#0d0d0f' : 'var(--text2)',
+                background: lang === l ? '#F5B544' : 'transparent',
+                color: lang === l ? '#0B2A4A' : '#B8D4ED',
                 fontFamily: 'Outfit, sans-serif',
                 transition: 'all 0.15s',
               }}
@@ -109,9 +109,9 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
           <button
             onClick={() => setShowCurrency(!showCurrency)}
             style={{
-              background: 'var(--bg3)', border: 'none', borderRadius: 8,
+              background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8,
               padding: '5px 10px', cursor: 'pointer',
-              fontSize: 11, fontWeight: 700, color: 'var(--gold)',
+              fontSize: 11, fontWeight: 700, color: '#F5B544',
               fontFamily: 'Outfit, sans-serif', display: 'flex', alignItems: 'center', gap: 4,
             }}
           >
@@ -120,9 +120,9 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
           {showCurrency && (
             <div style={{
               position: 'absolute', top: '110%', right: 0, zIndex: 200,
-              background: 'var(--bg3)', border: '1px solid var(--border)',
+              background: '#0B2A4A', border: '1px solid rgba(61,217,214,0.2)',
               borderRadius: 8, padding: 4, minWidth: 70,
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
             }}>
               {CURRENCIES.map(c => (
                 <button
@@ -130,10 +130,10 @@ export default function TopBar({ onMenuOpen }: TopBarProps) {
                   onClick={() => { setCurrency(c); setShowCurrency(false) }}
                   style={{
                     display: 'block', width: '100%', padding: '6px 12px',
-                    background: c === currency ? 'var(--gold-dim)' : 'transparent',
+                    background: c === currency ? 'rgba(245,181,68,0.12)' : 'transparent',
                     border: 'none', cursor: 'pointer', textAlign: 'left',
                     fontSize: 11, fontWeight: 600,
-                    color: c === currency ? 'var(--gold)' : 'var(--text2)',
+                    color: c === currency ? '#F5B544' : '#B8D4ED',
                     borderRadius: 6, fontFamily: 'Outfit, sans-serif',
                   }}
                 >
