@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
@@ -20,7 +20,7 @@ const aed = (v: number) => `AED ${(v || 0).toLocaleString('en-US', { minimumFrac
 // ─── catalogue ────────────────────────────────────────────────────────────────
 const CATEGORIES: Category[] = [
   {
-    id: 'ventas', label: 'Ventas', icon: <DollarSign size={18}/>, iconBg: 'rgba(52,211,153,0.15)', count: 6,
+    id: 'ventas', label: 'Ventas', icon: <DollarSign size={18}/>, iconBg: 'rgba(26,107,64,0.10)', count: 6,
     reports: [],
     richReports: [
       { icon: '📊', name: 'Reporte de Ventas por Período', previewId: 'ventas-periodo',
@@ -44,7 +44,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'administrativos', label: 'Administrativos', icon: <BarChart2 size={18}/>, iconBg: 'rgba(0,212,170,0.15)', count: 7,
+    id: 'administrativos', label: 'Administrativos', icon: <BarChart2 size={18}/>, iconBg: 'rgba(61,217,214,0.10)', count: 7,
     reports: [
       { name: 'Agenda del Día',             desc: 'Reservas y trabajos programados para hoy' },
       { name: 'Ocupación de Vehículos',     desc: 'Horas activas vs. disponibles por unidad' },
@@ -56,7 +56,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'financieros', label: 'Financieros', icon: <FileText size={18}/>, iconBg: 'rgba(251,146,60,0.15)', count: 4,
+    id: 'financieros', label: 'Financieros', icon: <FileText size={18}/>, iconBg: 'rgba(245,181,68,0.10)', count: 4,
     reports: [],
     richReports: [
       {
@@ -82,7 +82,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'contables', label: 'Contables', icon: <BookOpen size={18}/>, iconBg: 'rgba(251,146,60,0.15)', count: 4, badge: '¡Nuevo!',
+    id: 'contables', label: 'Contables', icon: <BookOpen size={18}/>, iconBg: 'rgba(245,181,68,0.10)', count: 4, badge: '¡Nuevo!',
     reports: [
       { name: 'Balance General',            desc: 'Activos, pasivos y patrimonio a la fecha' },
       { name: 'Libro Diario',               desc: 'Registro cronológico de transacciones contables' },
@@ -91,7 +91,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'fiscales', label: 'Fiscales', icon: <Receipt size={18}/>, iconBg: 'rgba(255,79,79,0.15)', count: 4,
+    id: 'fiscales', label: 'Fiscales', icon: <Receipt size={18}/>, iconBg: 'rgba(217,83,61,0.10)', count: 4,
     reports: [
       { name: 'Declaración IVA — UAE VAT',  desc: 'Reporte periódico para presentación ante la FTA' },
       { name: 'Gastos Deducibles',          desc: 'Listado de gastos aplicables a declaración fiscal' },
@@ -100,7 +100,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'trabajar', label: 'Para trabajar', icon: <Package size={18}/>, iconBg: 'rgba(167,139,250,0.15)', count: 3,
+    id: 'trabajar', label: 'Para trabajar', icon: <Package size={18}/>, iconBg: 'rgba(107,70,193,0.10)', count: 3,
     reports: [
       { name: 'Órdenes de Trabajo del Día', desc: 'Servicios asignados con técnico y dirección del cliente' },
       { name: 'Lista de Materiales',        desc: 'Inventario necesario para los trabajos del día' },
@@ -108,7 +108,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'exogena', label: 'Información exógena', icon: <Database size={18}/>, iconBg: 'rgba(99,102,241,0.15)', count: 8,
+    id: 'exogena', label: 'Información exógena', icon: <Database size={18}/>, iconBg: 'rgba(11,42,74,0.10)', count: 8,
     reports: [
       { name: 'Reporte de Clientes Nuevos', desc: 'Datos de contacto y primera transacción en el período' },
       { name: 'Información de Proveedores', desc: 'ID fiscal, pagos realizados y saldos pendientes' },
@@ -121,15 +121,15 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: 'favoritos', label: 'Favoritos', icon: <Star size={18}/>, iconBg: '#1a1a1e', count: 0, dim: true,
+    id: 'favoritos', label: 'Favoritos', icon: <Star size={18}/>, iconBg: 'rgba(90,88,82,0.10)', count: 0, dim: true,
     reports: [],
   },
 ]
 
 const ICON_COLOR: Record<string, string> = {
   ventas: '#34d399', administrativos: '#00d4aa', financieros: '#fb923c',
-  contables: '#fb923c', fiscales: '#ff4f4f', trabajar: '#a78bfa',
-  exogena: '#6366f1', favoritos: '#888580',
+  contables: '#fb923c', fiscales: '#D9533D', trabajar: '#a78bfa',
+  exogena: '#6366f1', favoritos: '#5A5852',
 }
 
 const EXPORT_OPTIONS = [
@@ -157,16 +157,16 @@ function CategoryCard({ cat, active, onClick }: { cat: Category; active: boolean
   const label = LABEL_MAP[cat.id] ?? cat.label
   return (
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ position:'relative', background: hov||active?'#1a1a1e':'#141416', cursor:'pointer', transition:'all 0.2s ease',
-        border:`1px solid ${active?'rgba(201,168,76,0.4)':hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}`,
+      style={{ position:'relative', background: hov&&!active?'#F5F4EF':'#FFFFFF', cursor:'pointer', transition:'all 0.2s ease',
+        border:`1px solid ${active?'#0B2A4A':hov?'#CBD8E8':'#F0EFEA'}`,
         borderRadius:12, padding:20, transform: hov&&!active?'translateY(-2px)':'none', opacity: cat.dim?0.55:1 }}>
       {cat.badge && (
-        <span style={{ position:'absolute', top:10, right:10, background:'rgba(167,139,250,0.2)', color:'#a78bfa', borderRadius:20, fontSize:10, fontWeight:700, padding:'2px 8px' }}>{cat.badge}</span>
+        <span style={{ position:'absolute', top:10, right:10, background:'rgba(61,217,214,0.12)', color:'#0B6B69', borderRadius:20, fontSize:10, fontWeight:700, padding:'2px 8px' }}>{cat.badge}</span>
       )}
-      {active && <span style={{ position:'absolute', top:10, right: cat.badge?80:10, width:6, height:6, borderRadius:'50%', background:'#c9a84c' }}/>}
+      {active && <span style={{ position:'absolute', top:10, right: cat.badge?80:10, width:6, height:6, borderRadius:'50%', background:'#0B2A4A' }}/>}
       <div style={{ width:42, height:42, borderRadius:'50%', background:cat.iconBg, display:'flex', alignItems:'center', justifyContent:'center', color, marginBottom:14 }}>{cat.icon}</div>
-      <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8', marginBottom:4 }}>{label}</div>
-      <div style={{ fontSize:12, color:'#888580' }}>{cat.count===0 ? t('noSavedReports') : `${cat.count} ${cat.count===1 ? t('reporte') : t('reportes')}`}</div>
+      <div style={{ fontSize:16, fontWeight:700, color:'#0B2A4A', marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:12, color:'#5A5852' }}>{cat.count===0 ? t('noSavedReports') : `${cat.count} ${cat.count===1 ? t('reporte') : t('reportes')}`}</div>
     </div>
   )
 }
@@ -178,13 +178,13 @@ function ReportRow({ report, color }: { report: Report; color: string }) {
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:16, padding:'14px 20px',
-        borderBottom:'1px solid rgba(255,255,255,0.04)', background: hov?'rgba(255,255,255,0.02)':'transparent', transition:'background 0.12s' }}>
+        borderBottom:'1px solid #F0EFEA', background: hov?'#F5F4EF':'transparent', transition:'background 0.12s' }}>
       <div style={{ minWidth:0 }}>
-        <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8', marginBottom:2 }}>{report.name}</div>
-        <div style={{ fontSize:11, color:'#888580', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{report.desc}</div>
+        <div style={{ fontSize:13, fontWeight:600, color:'#0B2A4A', marginBottom:2 }}>{report.name}</div>
+        <div style={{ fontSize:11, color:'#5A5852', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{report.desc}</div>
       </div>
       <button style={{ padding:'6px 14px', borderRadius:7, border:`1px solid ${hov?color:'rgba(255,255,255,0.08)'}`,
-        background: hov?`${color}18`:'transparent', color: hov?color:'#888580',
+        background: hov?`${color}18`:'transparent', color: hov?color:'#5A5852',
         fontSize:11, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap', transition:'all 0.15s', flexShrink:0 }}>
         {t('generate')} ↗
       </button>
@@ -193,42 +193,42 @@ function ReportRow({ report, color }: { report: Report; color: string }) {
 }
 
 // ─── rich report card (for financieros) ───────────────────────────────────────
-function RichReportCard({ report, onGenerate, iconBg = 'rgba(251,146,60,0.15)' }: { report: RichReport; onGenerate: (id: string) => void; iconBg?: string }) {
+function RichReportCard({ report, onGenerate, iconBg = 'rgba(245,181,68,0.10)' }: { report: RichReport; onGenerate: (id: string) => void; iconBg?: string }) {
   const { t } = useLanguage()
   const [hov, setHov] = useState(false)
   const [fav, setFav] = useState(false)
   return (
     <div onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ display:'flex', alignItems:'center', gap:16, padding:16, borderRadius:10, marginBottom:8,
-        background:'#1a1a1e', cursor:'default', transition:'border-color 0.15s',
-        border:`1px solid ${hov?'rgba(201,168,76,0.25)':'rgba(255,255,255,0.06)'}` }}>
+        background:'#FFFFFF', cursor:'default', transition:'border-color 0.15s',
+        border:`1px solid ${hov?'#CBD8E8':'#F0EFEA'}` }}>
       {/* icon */}
       <div style={{ width:40, height:40, borderRadius:10, background:iconBg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>
         {report.icon}
       </div>
       {/* text */}
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:14, fontWeight:600, color:'#f0ede8' }}>{report.name}</div>
-        <div style={{ fontSize:12, color:'#888580', marginTop:3 }}>{report.desc}</div>
+        <div style={{ fontSize:14, fontWeight:600, color:'#0B2A4A' }}>{report.name}</div>
+        <div style={{ fontSize:12, color:'#5A5852', marginTop:3 }}>{report.desc}</div>
         <div style={{ display:'flex', flexWrap:'wrap', gap:5, marginTop:7 }}>
           {report.tags.map(t => (
-            <span key={t} style={{ fontSize:10, color:'#888580', background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:20, padding:'2px 8px' }}>{t}</span>
+            <span key={t} style={{ fontSize:10, color:'#5A5852', background:'#FFFFFF', border:'1px solid rgba(255,255,255,0.08)', borderRadius:20, padding:'2px 8px' }}>{t}</span>
           ))}
         </div>
       </div>
       {/* buttons */}
       <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
         <button onClick={() => setFav(f => !f)}
-          style={{ width:30, height:30, borderRadius:'50%', background:'#141416', border:`1px solid ${fav?'#c9a84c':'rgba(255,255,255,0.08)'}`,
-            display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color: fav?'#c9a84c':'#888580', transition:'all 0.15s' }}>
-          <Star size={13} fill={fav?'#c9a84c':'none'}/>
+          style={{ width:30, height:30, borderRadius:'50%', background:'#FFFFFF', border:`1px solid ${fav?'#F5B544':'rgba(255,255,255,0.08)'}`,
+            display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color: fav?'#F5B544':'#5A5852', transition:'all 0.15s' }}>
+          <Star size={13} fill={fav?'#F5B544':'none'}/>
         </button>
         <button onClick={() => onGenerate(report.previewId)}
-          style={{ padding:'6px 14px', borderRadius:6, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
+          style={{ padding:'6px 14px', borderRadius:6, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer', whiteSpace:'nowrap' }}>
           {t('generate')}
         </button>
         <button
-          style={{ padding:'6px 10px', borderRadius:6, border:'1px solid rgba(255,255,255,0.1)', background:'transparent', color:'#888580', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+          style={{ padding:'6px 10px', borderRadius:6, border:'1px solid #E5E7EB', background:'transparent', color:'#5A5852', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
           ↓
         </button>
       </div>
@@ -241,19 +241,19 @@ function PreviewShell({ title, subtitle, onClose, children }: { title: string; s
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.75)', zIndex:700, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
       onClick={onClose}>
-      <div style={{ background:'#141416', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, width:'100%', maxWidth:820, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column' }}
+      <div style={{ background:'#FFFFFF', border:'1px solid rgba(255,255,255,0.08)', borderRadius:14, width:'100%', maxWidth:820, maxHeight:'90vh', overflow:'hidden', display:'flex', flexDirection:'column' }}
         onClick={e => e.stopPropagation()}>
         {/* modal header */}
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 24px', borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 24px', borderBottom:'1px solid #F0EFEA' }}>
           <div>
-            <div style={{ fontSize:16, fontWeight:700, color:'#f0ede8' }}>{title}</div>
-            <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>{subtitle}</div>
+            <div style={{ fontSize:16, fontWeight:700, color:'#0B2A4A' }}>{title}</div>
+            <div style={{ fontSize:12, color:'#5A5852', marginTop:2 }}>{subtitle}</div>
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <button style={{ padding:'6px 14px', borderRadius:7, border:'none', background:'#c9a84c', color:'#0d0d0f', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
+            <button style={{ padding:'6px 14px', borderRadius:7, border:'none', background:'#F5B544', color:'#1A1A1A', fontSize:12, fontWeight:700, fontFamily:'Outfit,sans-serif', cursor:'pointer' }}>
               ↓ Descargar
             </button>
-            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#888580', padding:4, display:'flex' }}><X size={18}/></button>
+            <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'#5A5852', padding:4, display:'flex' }}><X size={18}/></button>
           </div>
         </div>
         {/* modal body */}
@@ -287,19 +287,19 @@ function BalanceSheetModal({ onClose }: { onClose: () => void }) {
   const sepStyle: React.CSSProperties = { borderBottom:'1px solid rgba(255,255,255,0.08)', margin:'8px 0' }
   function AccRow({ label, value, bold }: { label: string; value: number; bold?: boolean }) {
     return (
-      <div style={{ display:'flex', justifyContent:'space-between', padding:'3px 0', fontSize: bold?13:12, fontWeight: bold?700:400, color: bold?'#f0ede8':'#888580' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', padding:'3px 0', fontSize: bold?13:12, fontWeight: bold?700:400, color: bold?'#0B2A4A':'#5A5852' }}>
         <span>{label}</span>
-        <span style={{ fontVariantNumeric:'tabular-nums', color: bold?'#c9a84c':'#888580' }}>{aed(value)}</span>
+        <span style={{ fontVariantNumeric:'tabular-nums', color: bold?'#F5B544':'#5A5852' }}>{aed(value)}</span>
       </div>
     )
   }
   function SectionHead({ label }: { label: string }) {
-    return <div style={{ fontSize:10, fontWeight:700, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', margin:'12px 0 6px' }}>{label}</div>
+    return <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', margin:'12px 0 6px' }}>{label}</div>
   }
 
   if (loading) return (
     <PreviewShell title="Estado de Situación Financiera" subtitle={`Al ${PREVIEW_DATE}`} onClose={onClose}>
-      <div style={{ textAlign:'center', padding:40, color:'#888580', fontSize:13 }}>Cargando datos contables…</div>
+      <div style={{ textAlign:'center', padding:40, color:'#5A5852', fontSize:13 }}>Cargando datos contables…</div>
     </PreviewShell>
   )
 
@@ -307,7 +307,7 @@ function BalanceSheetModal({ onClose }: { onClose: () => void }) {
     <PreviewShell title="Estado de Situación Financiera" subtitle={`Al ${PREVIEW_DATE} · IFRS/NIIF`} onClose={onClose}>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24 }}>
         {/* ACTIVOS */}
-        <div style={{ background:'#1a1a1e', borderRadius:10, padding:18, border:'1px solid rgba(0,212,170,0.15)' }}>
+        <div style={{ background:'#FFFFFF', borderRadius:10, padding:18, border:'1px solid rgba(0,212,170,0.15)' }}>
           <div style={{ fontSize:14, fontWeight:700, color:'#00d4aa', marginBottom:8 }}>ACTIVOS</div>
           <div style={sepStyle}/>
           <SectionHead label="Activos Corrientes"/>
@@ -321,8 +321,8 @@ function BalanceSheetModal({ onClose }: { onClose: () => void }) {
           <AccRow label="TOTAL ACTIVOS" value={totalActivos} bold/>
         </div>
         {/* PASIVOS + PATRIMONIO */}
-        <div style={{ background:'#1a1a1e', borderRadius:10, padding:18, border:'1px solid rgba(255,79,79,0.15)' }}>
-          <div style={{ fontSize:14, fontWeight:700, color:'#ff4f4f', marginBottom:8 }}>PASIVOS Y PATRIMONIO</div>
+        <div style={{ background:'#FFFFFF', borderRadius:10, padding:18, border:'1px solid rgba(255,79,79,0.15)' }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'#D9533D', marginBottom:8 }}>PASIVOS Y PATRIMONIO</div>
           <div style={sepStyle}/>
           <SectionHead label="Pasivos Corrientes"/>
           {l3('2.1').map((a: any) => <AccRow key={a.code} label={`  ${a.name}`} value={a.balance ?? 0}/>)}
@@ -349,25 +349,25 @@ function PLModal({ onClose }: { onClose: () => void }) {
   const opex = 4470, ebit = gross - opex
   const fin = 0, net = ebit - fin
   const margin = ((net / rev) * 100).toFixed(1)
-  function Row({ label, value, indent=false, bold=false, color='#888580' }: { label: string; value: number; indent?: boolean; bold?: boolean; color?: string }) {
+  function Row({ label, value, indent=false, bold=false, color='#5A5852' }: { label: string; value: number; indent?: boolean; bold?: boolean; color?: string }) {
     return (
-      <div style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', fontSize: bold?13:12, fontWeight: bold?700:400, color: bold?'#f0ede8':color, paddingLeft: indent?16:0 }}>
+      <div style={{ display:'flex', justifyContent:'space-between', padding:'5px 0', fontSize: bold?13:12, fontWeight: bold?700:400, color: bold?'#0B2A4A':color, paddingLeft: indent?16:0 }}>
         <span>{label}</span>
-        <span style={{ fontVariantNumeric:'tabular-nums', color: bold?'#c9a84c':color }}>{aed(value)}</span>
+        <span style={{ fontVariantNumeric:'tabular-nums', color: bold?'#F5B544':color }}>{aed(value)}</span>
       </div>
     )
   }
   const sep = <div style={{ borderBottom:'1px solid rgba(255,255,255,0.08)', margin:'8px 0' }}/>
   return (
     <PreviewShell title="Estado de Resultados (P&L)" subtitle={`Período: Mayo 2026 · MTD`} onClose={onClose}>
-      <div style={{ background:'#1a1a1e', borderRadius:10, padding:20, border:'1px solid rgba(201,168,76,0.15)', maxWidth:520, margin:'0 auto' }}>
-        <div style={{ fontSize:14, fontWeight:700, color:'#f0ede8', marginBottom:12 }}>Resultados del Período</div>
+      <div style={{ background:'#FFFFFF', borderRadius:10, padding:20, border:'1px solid rgba(201,168,76,0.15)', maxWidth:520, margin:'0 auto' }}>
+        <div style={{ fontSize:14, fontWeight:700, color:'#0B2A4A', marginBottom:12 }}>Resultados del Período</div>
         {sep}
-        <div style={{ fontSize:10, fontWeight:700, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Ingresos</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Ingresos</div>
         <Row label="Ventas de Servicios" value={rev} indent color="#f0ede8"/>
         <Row label="INGRESOS TOTALES" value={rev} bold/>
         {sep}
-        <div style={{ fontSize:10, fontWeight:700, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Costos de Ventas</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Costos de Ventas</div>
         <Row label="Costo de Materiales" value={cogs} indent color="#f0ede8"/>
         <Row label="TOTAL COSTOS" value={cogs} bold/>
         {sep}
@@ -375,7 +375,7 @@ function PLModal({ onClose }: { onClose: () => void }) {
         <Row label="Margen bruto" value={0} indent color="#888580"/>
         <div style={{ textAlign:'right', fontSize:11, color:'#34d399', marginTop:-16, paddingBottom:8 }}>{((gross/rev)*100).toFixed(1)}%</div>
         {sep}
-        <div style={{ fontSize:10, fontWeight:700, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Gastos Operacionales</div>
+        <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Gastos Operacionales</div>
         <Row label="Gastos Administrativos" value={opex} indent color="#f0ede8"/>
         <Row label="TOTAL GASTOS" value={opex} bold/>
         {sep}
@@ -383,7 +383,7 @@ function PLModal({ onClose }: { onClose: () => void }) {
         <Row label="Gastos Financieros" value={fin} indent color="#f0ede8"/>
         {sep}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 0', background:'rgba(52,211,153,0.06)', borderRadius:7, paddingLeft:10, paddingRight:10 }}>
-          <span style={{ fontSize:14, fontWeight:800, color:'#f0ede8' }}>UTILIDAD NETA</span>
+          <span style={{ fontSize:14, fontWeight:800, color:'#0B2A4A' }}>UTILIDAD NETA</span>
           <div style={{ textAlign:'right' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#34d399', fontVariantNumeric:'tabular-nums' }}>{aed(net)}</div>
             <div style={{ fontSize:11, color:'#34d399' }}>Margen {margin}%</div>
@@ -408,7 +408,7 @@ function CashFlowModal({ onClose }: { onClose: () => void }) {
       total: 716050,
     },
     {
-      label: 'Actividades de Inversión', color: '#c9a84c',
+      label: 'Actividades de Inversión', color: '#F5B544',
       items: [
         { name: 'Compra de equipos y herramientas',     value: -12000 },
         { name: 'Mantenimiento de flota',               value:  -3200 },
@@ -431,30 +431,30 @@ function CashFlowModal({ onClose }: { onClose: () => void }) {
     <PreviewShell title="Flujo de Caja" subtitle="Mayo 2026 · Método Indirecto" onClose={onClose}>
       <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
         {sections.map(sec => (
-          <div key={sec.label} style={{ background:'#1a1a1e', borderRadius:10, padding:16, border:`1px solid ${sec.color}22` }}>
+          <div key={sec.label} style={{ background:'#FFFFFF', borderRadius:10, padding:16, border:`1px solid ${sec.color}22` }}>
             <div style={{ fontSize:12, fontWeight:700, color:sec.color, marginBottom:10 }}>{sec.label}</div>
             {sec.items.map(item => (
-              <div key={item.name} style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#888580', padding:'4px 0' }}>
+              <div key={item.name} style={{ display:'flex', justifyContent:'space-between', fontSize:12, color:'#5A5852', padding:'4px 0' }}>
                 <span style={{ paddingLeft:12 }}>{item.name}</span>
-                <span style={{ fontVariantNumeric:'tabular-nums', color: item.value >= 0 ? '#34d399' : '#ff4f4f' }}>
+                <span style={{ fontVariantNumeric:'tabular-nums', color: item.value >= 0 ? '#34d399' : '#D9533D' }}>
                   {item.value >= 0 ? '+' : ''}{aed(item.value)}
                 </span>
               </div>
             ))}
-            <div style={{ borderTop:'1px solid rgba(255,255,255,0.06)', marginTop:8, paddingTop:8, display:'flex', justifyContent:'space-between', fontSize:13, fontWeight:700, color:'#f0ede8' }}>
+            <div style={{ borderTop:'1px solid #F0EFEA', marginTop:8, paddingTop:8, display:'flex', justifyContent:'space-between', fontSize:13, fontWeight:700, color:'#0B2A4A' }}>
               <span>Flujo {sec.label.split(' ').slice(-1)[0]}</span>
-              <span style={{ fontVariantNumeric:'tabular-nums', color: sec.total >= 0 ? '#34d399' : '#ff4f4f' }}>{sec.total >= 0?'+':''}{aed(sec.total)}</span>
+              <span style={{ fontVariantNumeric:'tabular-nums', color: sec.total >= 0 ? '#34d399' : '#D9533D' }}>{sec.total >= 0?'+':''}{aed(sec.total)}</span>
             </div>
           </div>
         ))}
         <div style={{ background:'rgba(52,211,153,0.07)', border:'1px solid rgba(52,211,153,0.2)', borderRadius:10, padding:16, display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:12 }}>
           {[
-            { label: 'Saldo Inicial', value: openBal,  color: '#888580' },
-            { label: 'Variación Neta', value: netFlow, color: '#c9a84c' },
+            { label: 'Saldo Inicial', value: openBal,  color: '#5A5852' },
+            { label: 'Variación Neta', value: netFlow, color: '#F5B544' },
             { label: 'SALDO FINAL',   value: closeBal, color: '#34d399' },
           ].map(k => (
             <div key={k.label} style={{ textAlign:'center' }}>
-              <div style={{ fontSize:10, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>{k.label}</div>
+              <div style={{ fontSize:10, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>{k.label}</div>
               <div style={{ fontSize:18, fontWeight:800, color:k.color, fontVariantNumeric:'tabular-nums' }}>{aed(k.value)}</div>
             </div>
           ))}
@@ -477,26 +477,26 @@ function MovimientosModal({ onClose }: { onClose: () => void }) {
   return (
     <PreviewShell title="Movimientos por Cuenta Contable" subtitle={`Libro Mayor · ${PREVIEW_DATE}`} onClose={onClose}>
       {loading ? (
-        <div style={{ textAlign:'center', padding:40, color:'#888580', fontSize:13 }}>Cargando cuentas…</div>
+        <div style={{ textAlign:'center', padding:40, color:'#5A5852', fontSize:13 }}>Cargando cuentas…</div>
       ) : (
-        <div style={{ overflow:'hidden', borderRadius:10, border:'1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ overflow:'hidden', borderRadius:10, border:'1px solid #F0EFEA' }}>
           <table style={{ width:'100%', borderCollapse:'collapse' }}>
             <thead>
-              <tr style={{ borderBottom:'1px solid rgba(255,255,255,0.06)' }}>
+              <tr style={{ borderBottom:'1px solid #F0EFEA' }}>
                 {['Código','Cuenta','Tipo','Débito','Crédito','Saldo'].map(h => (
-                  <th key={h} style={{ padding:'10px 14px', fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
+                  <th key={h} style={{ padding:'10px 14px', fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', textAlign:'left', whiteSpace:'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {leafAccs.map(a => (
-                <tr key={a.code} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                  <td style={{ padding:'10px 14px', fontFamily:'monospace', fontSize:11, color:'#888580' }}>{a.code}</td>
-                  <td style={{ padding:'10px 14px', fontSize:12, color:'#f0ede8' }}>{a.name}</td>
-                  <td style={{ padding:'10px 14px', fontSize:11, color:'#888580' }}>{a.type}</td>
+                <tr key={a.code} style={{ borderBottom:'1px solid #F0EFEA' }}>
+                  <td style={{ padding:'10px 14px', fontFamily:'monospace', fontSize:11, color:'#5A5852' }}>{a.code}</td>
+                  <td style={{ padding:'10px 14px', fontSize:12, color:'#0B2A4A' }}>{a.name}</td>
+                  <td style={{ padding:'10px 14px', fontSize:11, color:'#5A5852' }}>{a.type}</td>
                   <td style={{ padding:'10px 14px', fontSize:12, color:'#34d399', fontVariantNumeric:'tabular-nums' }}>{aed(0)}</td>
-                  <td style={{ padding:'10px 14px', fontSize:12, color:'#ff4f4f', fontVariantNumeric:'tabular-nums' }}>{aed(0)}</td>
-                  <td style={{ padding:'10px 14px', fontSize:12, fontWeight:600, color:'#f0ede8', fontVariantNumeric:'tabular-nums' }}>{aed(a.balance ?? 0)}</td>
+                  <td style={{ padding:'10px 14px', fontSize:12, color:'#D9533D', fontVariantNumeric:'tabular-nums' }}>{aed(0)}</td>
+                  <td style={{ padding:'10px 14px', fontSize:12, fontWeight:600, color:'#0B2A4A', fontVariantNumeric:'tabular-nums' }}>{aed(a.balance ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
@@ -523,16 +523,16 @@ function RentabilidadModal({ onClose }: { onClose: () => void }) {
   const totO = rows.reduce((s, r) => s + r.mo, 0)
   const totG = rows.reduce((s, r) => s + r.margen, 0)
   const totP = ((totG / totI) * 100).toFixed(1)
-  function pctColor(p: number) { return p >= 55 ? '#34d399' : p >= 40 ? '#c9a84c' : '#ff4f4f' }
+  function pctColor(p: number) { return p >= 55 ? '#34d399' : p >= 40 ? '#F5B544' : '#D9533D' }
   const TH = ({ children, right }: { children: React.ReactNode; right?: boolean }) => (
-    <th style={{ padding:'10px 14px', fontSize:10, fontWeight:600, color:'#888580', textTransform:'uppercase', letterSpacing:'0.08em', textAlign: right?'right':'left', whiteSpace:'nowrap' }}>{children}</th>
+    <th style={{ padding:'10px 14px', fontSize:10, fontWeight:600, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.08em', textAlign: right?'right':'left', whiteSpace:'nowrap' }}>{children}</th>
   )
   return (
     <PreviewShell title="Rentabilidad por Servicio" subtitle="Mayo 2026 · Margen por línea de servicio" onClose={onClose}>
-      <div style={{ overflow:'hidden', borderRadius:10, border:'1px solid rgba(255,255,255,0.06)' }}>
+      <div style={{ overflow:'hidden', borderRadius:10, border:'1px solid #F0EFEA' }}>
         <table style={{ width:'100%', borderCollapse:'collapse' }}>
           <thead>
-            <tr style={{ background:'#1a1a1e', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
+            <tr style={{ background:'#FFFFFF', borderBottom:'1px solid rgba(255,255,255,0.08)' }}>
               <TH>Servicio</TH>
               <TH right>Ingresos</TH>
               <TH right>Costo Mat.</TH>
@@ -543,25 +543,25 @@ function RentabilidadModal({ onClose }: { onClose: () => void }) {
           </thead>
           <tbody>
             {rows.map(r => (
-              <tr key={r.servicio} style={{ borderBottom:'1px solid rgba(255,255,255,0.04)' }}>
-                <td style={{ padding:'11px 14px', fontSize:13, color:'#f0ede8', fontWeight:500 }}>{r.servicio}</td>
-                <td style={{ padding:'11px 14px', fontSize:12, color:'#f0ede8', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.ingresos)}</td>
-                <td style={{ padding:'11px 14px', fontSize:12, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mat)}</td>
-                <td style={{ padding:'11px 14px', fontSize:12, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mo)}</td>
+              <tr key={r.servicio} style={{ borderBottom:'1px solid #F0EFEA' }}>
+                <td style={{ padding:'11px 14px', fontSize:13, color:'#0B2A4A', fontWeight:500 }}>{r.servicio}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#0B2A4A', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.ingresos)}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#5A5852', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mat)}</td>
+                <td style={{ padding:'11px 14px', fontSize:12, color:'#5A5852', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.mo)}</td>
                 <td style={{ padding:'11px 14px', fontSize:13, fontWeight:700, color:'#34d399', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(r.margen)}</td>
                 <td style={{ padding:'11px 14px', textAlign:'right' }}>
                   <span style={{ fontSize:12, fontWeight:700, color:pctColor(r.pct), background:`${pctColor(r.pct)}18`, borderRadius:20, padding:'3px 10px' }}>{r.pct}%</span>
                 </td>
               </tr>
             ))}
-            <tr style={{ background:'rgba(201,168,76,0.06)', borderTop:'1px solid rgba(255,255,255,0.1)' }}>
-              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#c9a84c' }}>TOTAL</td>
-              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#f0ede8', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totI)}</td>
-              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totM)}</td>
-              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#888580', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totO)}</td>
+            <tr style={{ background:'rgba(201,168,76,0.06)', borderTop:'1px solid #E5E7EB' }}>
+              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#F5B544' }}>TOTAL</td>
+              <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#0B2A4A', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totI)}</td>
+              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#5A5852', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totM)}</td>
+              <td style={{ padding:'12px 14px', fontSize:12, fontWeight:700, color:'#5A5852', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totO)}</td>
               <td style={{ padding:'12px 14px', fontSize:13, fontWeight:700, color:'#34d399', textAlign:'right', fontVariantNumeric:'tabular-nums' }}>{aed(totG)}</td>
               <td style={{ padding:'12px 14px', textAlign:'right' }}>
-                <span style={{ fontSize:12, fontWeight:700, color:'#c9a84c', background:'rgba(201,168,76,0.15)', borderRadius:20, padding:'3px 10px' }}>{totP}%</span>
+                <span style={{ fontSize:12, fontWeight:700, color:'#F5B544', background:'rgba(201,168,76,0.15)', borderRadius:20, padding:'3px 10px' }}>{totP}%</span>
               </td>
             </tr>
           </tbody>
@@ -577,9 +577,9 @@ function ExportRow({ label, icon, onClick }: { label: string; icon: React.ReactN
   return (
     <div onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 16px', cursor:'pointer',
-        background: hov?'rgba(201,168,76,0.08)':'transparent', color: hov?'#c9a84c':'#f0ede8',
+        background: hov?'rgba(201,168,76,0.08)':'transparent', color: hov?'#F5B544':'#0B2A4A',
         fontSize:13, fontFamily:'Outfit,sans-serif', transition:'background 0.1s' }}>
-      <span style={{ color: hov?'#c9a84c':'#888580' }}>{icon}</span>
+      <span style={{ color: hov?'#F5B544':'#5A5852' }}>{icon}</span>
       {label}
     </div>
   )
@@ -649,16 +649,16 @@ export default function ReportsPage() {
       {/* header */}
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:28 }}>
         <div>
-          <div style={{ fontSize:24, fontWeight:700, color:'#f0ede8' }}>{t('reports')}</div>
-          <div style={{ fontSize:13, color:'#888580', marginTop:4 }}>{t('reportsSubtitle')}</div>
+          <div style={{ fontSize:24, fontWeight:700, color:'#0B2A4A' }}>{t('reports')}</div>
+          <div style={{ fontSize:13, color:'#5A5852', marginTop:4 }}>{t('reportsSubtitle')}</div>
         </div>
         <div ref={exportRef} style={{ position:'relative' }}>
           <button onClick={() => setShowExport(p => !p)}
-            style={{ padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer', background:'#c9a84c', color:'#0d0d0f', fontSize:13, fontWeight:700, fontFamily:'Outfit,sans-serif', display:'flex', alignItems:'center', gap:6 }}>
+            style={{ padding:'8px 18px', borderRadius:8, border:'none', cursor:'pointer', background:'#F5B544', color:'#1A1A1A', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
             <Download size={14}/> {t('export')} <span style={{ fontSize:10 }}>▾</span>
           </button>
           {showExport && (
-            <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:400, background:'#1a1a1e', border:'1px solid rgba(255,255,255,0.1)', borderRadius:10, overflow:'hidden', minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}>
+            <div style={{ position:'absolute', top:'calc(100% + 6px)', right:0, zIndex:400, background:'#FFFFFF', border:'1px solid #E5E7EB', borderRadius:10, overflow:'hidden', minWidth:160, boxShadow:'0 8px 24px rgba(0,0,0,0.5)' }}>
               {EXPORT_OPTIONS.map(opt => <ExportRow key={opt.label} label={opt.label} icon={opt.icon} onClick={() => setShowExport(false)}/>)}
             </div>
           )}
@@ -673,30 +673,30 @@ export default function ReportsPage() {
       </div>
 
       {/* Cuentas por Cobrar */}
-      <div style={{ background:'#141416', border:'1px solid rgba(245,158,11,0.25)', borderRadius:12, padding:20, marginTop:16, marginBottom: activeCat ? 0 : 0 }}>
+      <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:12, padding:20, marginTop:16, marginBottom: activeCat ? 0 : 0 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:10, fontWeight:700, color:'#f59e0b', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Cobrar</div>
-            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {(totalPorCobrar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Cobrar</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#0B2A4A' }}>AED {(totalPorCobrar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div style={{ fontSize:12, color:'#5A5852', marginTop:2 }}>
               {cuentasPorCobrar.length} factura{cuentasPorCobrar.length !== 1 ? 's' : ''} pendiente{cuentasPorCobrar.length !== 1 ? 's' : ''}
             </div>
           </div>
-          <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid rgba(245,158,11,0.25)', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
+          <div style={{ background:'rgba(245,158,11,0.12)', border:'1px solid #F0EFEA', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
         </div>
         {cuentasPorCobrar.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#888580' }}>✅ No hay cuentas pendientes por cobrar</div>
+          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#5A5852' }}>✅ No hay cuentas pendientes por cobrar</div>
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {cuentasPorCobrar.map(inv => (
-              <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background:'rgba(255,255,255,0.02)', border:'1px solid rgba(255,255,255,0.06)', borderRadius:8 }}>
+              <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background:'#F5F4EF', border:'1px solid #F0EFEA', borderRadius:8 }}>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{(inv as any).contacts?.name ?? '—'}</div>
-                  <div style={{ fontSize:11, color:'#888580', marginTop:2 }}>
+                  <div style={{ fontSize:13, fontWeight:600, color:'#0B2A4A' }}>{(inv as any).contacts?.name ?? '—'}</div>
+                  <div style={{ fontSize:11, color:'#5A5852', marginTop:2 }}>
                     {inv.invoice_no} · {new Date(inv.created_at).toLocaleDateString('en-AE', { timeZone: 'Asia/Dubai', day:'2-digit', month:'2-digit', year:'numeric' })}
                   </div>
                 </div>
-                <div style={{ color:'#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div style={{ color:'#F5B544', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
               </div>
             ))}
           </div>
@@ -704,34 +704,34 @@ export default function ReportsPage() {
       </div>
 
       {/* Cuentas por Pagar */}
-      <div style={{ background:'#141416', border:'1px solid rgba(255,79,79,0.25)', borderRadius:12, padding:20, marginTop:12, marginBottom: activeCat ? 0 : 0 }}>
+      <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:12, padding:20, marginTop:12, marginBottom: activeCat ? 0 : 0 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:10, fontWeight:700, color:'#ff4f4f', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Pagar</div>
-            <div style={{ fontSize:26, fontWeight:800, color:'#f0ede8' }}>AED {(totalPorPagar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <div style={{ fontSize:12, color:'#888580', marginTop:2 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:'#5A5852', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:4 }}>Cuentas por Pagar</div>
+            <div style={{ fontSize:26, fontWeight:800, color:'#0B2A4A' }}>AED {(totalPorPagar || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <div style={{ fontSize:12, color:'#5A5852', marginTop:2 }}>
               {cuentasPorPagar.length} factura{cuentasPorPagar.length !== 1 ? 's' : ''} pendiente{cuentasPorPagar.length !== 1 ? 's' : ''} de pago
             </div>
           </div>
-          <div style={{ background:'rgba(255,79,79,0.1)', border:'1px solid rgba(255,79,79,0.25)', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
+          <div style={{ background:'rgba(255,79,79,0.1)', border:'1px solid #F0EFEA', borderRadius:10, padding:10, fontSize:22 }}>🧾</div>
         </div>
         {cuentasPorPagar.length === 0 ? (
-          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#888580' }}>✅ No hay facturas de compra pendientes</div>
+          <div style={{ textAlign:'center', padding:'16px 0', fontSize:13, color:'#5A5852' }}>✅ No hay facturas de compra pendientes</div>
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
             {cuentasPorPagar.map((inv: any) => {
               const isOverdue = inv.due_date && new Date(inv.due_date) < new Date()
               return (
-                <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background: isOverdue ? 'rgba(255,79,79,0.04)' : 'rgba(255,255,255,0.02)', border:`1px solid ${isOverdue ? 'rgba(255,79,79,0.2)' : 'rgba(255,255,255,0.06)'}`, borderRadius:8 }}>
+                <div key={inv.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 14px', background: isOverdue ? '#FBE7E2' : '#F5F4EF', border:`1px solid ${isOverdue ? '#F5B8AE' : '#F0EFEA'}`, borderRadius:8 }}>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:600, color:'#f0ede8' }}>{inv.contacts?.name ?? inv.supplier_name ?? '—'}</div>
-                    <div style={{ fontSize:11, color: isOverdue ? '#ff4f4f' : '#888580', marginTop:2 }}>
+                    <div style={{ fontSize:13, fontWeight:600, color:'#0B2A4A' }}>{inv.contacts?.name ?? inv.supplier_name ?? '—'}</div>
+                    <div style={{ fontSize:11, color: isOverdue ? '#D9533D' : '#5A5852', marginTop:2 }}>
                       {inv.invoice_number}
                       {inv.due_date ? ` · vence ${new Date(inv.due_date + 'T00:00:00+04:00').toLocaleDateString('en-AE', { day:'2-digit', month:'2-digit', year:'numeric' })}` : ''}
                       {isOverdue ? ' · VENCIDA' : ''}
                     </div>
                   </div>
-                  <div style={{ color: isOverdue ? '#ff4f4f' : '#f59e0b', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div style={{ color: isOverdue ? '#D9533D' : '#B45309', fontWeight:800, fontSize:14 }}>AED {Number(inv.total ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
               )
             })}
@@ -741,15 +741,15 @@ export default function ReportsPage() {
 
       {/* expanded panel */}
       {activeCat && (
-        <div style={{ background:'#141416', border:`1px solid ${ICON_COLOR[activeCat.id]}28`, borderTop:`2px solid ${ICON_COLOR[activeCat.id]}`, borderRadius:'0 0 12px 12px', overflow:'hidden', animation:'slideDown 0.18s ease' }}>
+        <div style={{ background:'#FFFFFF', border:`1px solid ${ICON_COLOR[activeCat.id]}28`, borderTop:`2px solid ${ICON_COLOR[activeCat.id]}`, borderRadius:'0 0 12px 12px', overflow:'hidden', animation:'slideDown 0.18s ease' }}>
           {/* panel header */}
           <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 20px', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
-            <button onClick={() => setSelected(null)} style={{ display:'flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', color:'#888580', fontSize:12, fontFamily:'Outfit,sans-serif', padding:0 }}>
+            <button onClick={() => setSelected(null)} style={{ display:'flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', color:'#5A5852', fontSize:12, fontFamily:'Outfit,sans-serif', padding:0 }}>
               <ChevronLeft size={14}/> {t('backToReports')}
             </button>
-            <span style={{ width:1, height:14, background:'rgba(255,255,255,0.1)' }}/>
-            <span style={{ fontSize:15, fontWeight:700, color:'#f0ede8' }}>{activeCat.label}</span>
-            <span style={{ fontSize:11, color:'#888580', background:'rgba(255,255,255,0.06)', borderRadius:99, padding:'2px 8px' }}>
+            <span style={{ width:1, height:14, background:'#E5E7EB' }}/>
+            <span style={{ fontSize:15, fontWeight:700, color:'#0B2A4A' }}>{activeCat.label}</span>
+            <span style={{ fontSize:11, color:'#5A5852', background:'#F0EFEA', borderRadius:99, padding:'2px 8px' }}>
               {activeCat.count} {activeCat.count!==1 ? t('reportes') : t('reporte')}
             </span>
           </div>
