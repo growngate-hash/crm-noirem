@@ -447,18 +447,18 @@ function ProfileSection() {
       <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('generalSettings')}</div>
 
       {/* ── Logo upload ── */}
-      <div style={{ marginBottom: 28, padding: 20, background: '#1a1a1e', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 12 }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#f0ede8', marginBottom: 16 }}>{t('companyLogo')}</div>
+      <div style={{ marginBottom: 28, padding: 20, background: '#FFFFFF', border: '1px solid #F0EFEA', borderRadius: 12 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: '#0B2A4A', marginBottom: 16 }}>{t('companyLogo')}</div>
 
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
           {/* Logo square */}
-          <div style={{ width: 72, height: 72, borderRadius: 14, border: '2px solid rgba(201,168,76,0.3)',
-            background: displayLogo ? 'transparent' : '#c9a84c',
+          <div style={{ width: 72, height: 72, borderRadius: 14, border: '2px solid #F0EFEA',
+            background: displayLogo ? 'transparent' : '#0B2A4A',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             overflow: 'hidden', flexShrink: 0 }}>
             {displayLogo
               ? <img src={displayLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
-              : <span style={{ fontSize: 28, fontWeight: 900, color: '#0d0d0f' }}>{form.businessName.charAt(0)}</span>}
+              : <span style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF' }}>{form.businessName.charAt(0)}</span>}
           </div>
 
           {/* Buttons */}
@@ -466,29 +466,29 @@ function ProfileSection() {
             {hasPending ? (
               <>
                 <button onClick={uploadLogo} disabled={uploading}
-                  style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
+                  style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: '#F5B544', color: '#1A1A1A',
                     fontSize: 12, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: uploading ? 'default' : 'pointer',
                     opacity: uploading ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Upload size={12}/>{uploading ? t('saving') : t('saveLogo')}
                 </button>
                 <button onClick={cancelPreview}
-                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
-                    color: '#888580', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
+                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #F0EFEA', background: '#FFFFFF',
+                    color: '#5A5852', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer' }}>
                   {t('cancel')}
                 </button>
               </>
             ) : (
               <>
                 <button onClick={() => fileRef.current?.click()}
-                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid rgba(201,168,76,0.25)', background: '#141416',
-                    color: '#c9a84c', fontSize: 12, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
+                  style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #0B2A4A', background: '#FFFFFF',
+                    color: '#0B2A4A', fontSize: 12, fontWeight: 600, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Upload size={12}/> {t('uploadLogo')}
                 </button>
                 {logoUrl && (
                   <button onClick={removeLogo}
                     style={{ padding: '6px 16px', borderRadius: 8, border: 'none', background: 'transparent',
-                      color: '#ff4f4f', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
+                      color: '#D9533D', fontSize: 12, fontFamily: 'Outfit,sans-serif', cursor: 'pointer',
                       display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Trash size={12}/> {t('removeLogo')}
                   </button>
@@ -496,7 +496,7 @@ function ProfileSection() {
               </>
             )}
             <input ref={fileRef} type="file" accept="image/png,image/svg+xml,image/jpeg" style={{ display: 'none' }} onChange={handleFileInput}/>
-            <div style={{ fontSize: 11, color: '#3a3836', marginTop: 2 }}>Formatos: PNG, SVG, JPG · Máximo 2MB · 256×256px recomendado</div>
+            <div style={{ fontSize: 11, color: '#A8A6A0', marginTop: 2 }}>Formatos: PNG, SVG, JPG · Máximo 2MB · 256×256px recomendado</div>
           </div>
         </div>
 
@@ -505,11 +505,11 @@ function ProfileSection() {
           onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
           onClick={() => fileRef.current?.click()}
           style={{ marginTop: 16, padding: 20, borderRadius: 10, cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s',
-            border: `2px dashed ${isDragging ? 'rgba(201,168,76,0.6)' : 'rgba(201,168,76,0.25)'}`,
-            background: isDragging ? 'rgba(201,168,76,0.05)' : '#141416' }}>
+            border: `2px dashed ${isDragging ? '#0B2A4A' : '#CBD8E8'}`,
+            background: isDragging ? 'rgba(11,42,74,0.04)' : '#F5F4EF' }}>
           <div style={{ fontSize: 20, marginBottom: 6 }}>📁</div>
-          <div style={{ fontSize: 13, color: '#888580' }}>Arrastra tu logo aquí</div>
-          <div style={{ fontSize: 11, color: '#3a3836', marginTop: 4 }}>o haz clic para seleccionar</div>
+          <div style={{ fontSize: 13, color: '#5A5852' }}>Arrastra tu logo aquí</div>
+          <div style={{ fontSize: 11, color: '#A8A6A0', marginTop: 4 }}>o haz clic para seleccionar</div>
         </div>
       </div>
 
@@ -1437,7 +1437,7 @@ export default function SettingsPage() {
                 style={{ display: 'flex', alignItems: 'center', gap: 9,
                   padding: isMobile ? '7px 14px' : '9px 12px',
                   borderRadius: isMobile ? 20 : 8,
-                  border: isMobile ? `1px solid ${active ? 'rgba(201,168,76,0.4)' : 'rgba(255,255,255,0.08)'}` : 'none',
+                  border: isMobile ? `1px solid ${active ? 'rgba(11,42,74,0.3)' : '#F0EFEA'}` : 'none',
                   cursor: 'pointer', fontFamily: 'Outfit, sans-serif', fontSize: 12, fontWeight: active ? 700 : 500,
                   background: active ? 'var(--gold-dim)' : 'transparent',
                   color: active ? 'var(--gold)' : 'var(--text2)',
