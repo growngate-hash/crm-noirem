@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -10,27 +10,27 @@ import { useTimezone } from '@/hooks/useTimezone'
 
 // ── shared UI ─────────────────────────────────────────────────────────────────
 const INP: React.CSSProperties = {
-  width:'100%', background:'#1a1a1e', borderRadius:8, padding:'10px 12px',
-  color:'#f0ede8', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
+  width:'100%', background:'#FFFFFF', borderRadius:8, padding:'10px 12px',
+  color:'#0B2A4A', fontSize:13, fontFamily:'Outfit,sans-serif', outline:'none', boxSizing:'border-box',
 }
 function MInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   const [foc,setFoc] = useState(false)
   return <input {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}}
-    style={{...INP,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`, ...props.style}}/>
+    style={{...INP,border:`1px solid ${foc?'#F5B544':'#F0EFEA'}`, ...props.style}}/>
 }
 function MSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   const [foc,setFoc] = useState(false)
   return <select {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}}
-    style={{...INP,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`,cursor:'pointer', ...props.style}}/>
+    style={{...INP,border:`1px solid ${foc?'#F5B544':'#F0EFEA'}`,cursor:'pointer', ...props.style}}/>
 }
 function MTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   const [foc,setFoc] = useState(false)
   return <textarea {...props} onFocus={e=>{setFoc(true);props.onFocus?.(e)}} onBlur={e=>{setFoc(false);props.onBlur?.(e)}}
-    style={{...INP,border:`1px solid ${foc?'#c9a84c':'rgba(255,255,255,0.08)'}`,resize:'vertical', ...props.style}}/>
+    style={{...INP,border:`1px solid ${foc?'#F5B544':'#F0EFEA'}`,resize:'vertical', ...props.style}}/>
 }
 function MLabel({ children }: { children: React.ReactNode }) {
   return <label style={{display:'block',fontSize:11,fontWeight:600,textTransform:'uppercase',
-    letterSpacing:'0.08em',color:'#888580',marginBottom:6}}>{children}</label>
+    letterSpacing:'0.08em',color:'#5A5852',marginBottom:6}}>{children}</label>
 }
 
 // ── Tech chips ────────────────────────────────────────────────────────────────
@@ -39,11 +39,11 @@ function TechTag({ name, onRemove }: { name:string; onRemove:()=>void }) {
   return (
     <span style={{display:'inline-flex',alignItems:'center',gap:5,padding:'4px 10px',borderRadius:99,
       background:'rgba(201,168,76,0.12)',border:`1px solid ${hov?'rgba(255,79,79,0.45)':'rgba(201,168,76,0.35)'}`,
-      color:'#c9a84c',fontSize:11,fontWeight:600}}>
+      color:'#F5B544',fontSize:11,fontWeight:600}}>
       {name}
       <button type="button" onClick={onRemove} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
         style={{background:'none',border:'none',cursor:'pointer',padding:0,display:'flex',alignItems:'center',
-          color:hov?'#ff4f4f':'#888580',lineHeight:1}}><X size={10}/></button>
+          color:hov?'#ff4f4f':'#5A5852',lineHeight:1}}><X size={10}/></button>
     </span>
   )
 }
@@ -51,7 +51,7 @@ const FALLBACK_TECHS = ['Mohammed A.','Carlos R.','Ivan P.','Yimmer','Ahmed H.']
 function TechDropRow({ name, onPick }: { name:string; onPick:()=>void }) {
   const [hov,setHov] = useState(false)
   return <div onClick={onPick} onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)}
-    style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#f0ede8',fontFamily:'Outfit,sans-serif',
+    style={{padding:'10px 12px',cursor:'pointer',fontSize:13,color:'#0B2A4A',fontFamily:'Outfit,sans-serif',
       background:hov?'rgba(201,168,76,0.1)':'transparent'}}>{name}</div>
 }
 function TechPicker({ selected, onChange, pool }: { selected:string[]; onChange:(v:string[])=>void; pool:string[] }) {
@@ -76,12 +76,12 @@ function TechPicker({ selected, onChange, pool }: { selected:string[]; onChange:
         <MInput placeholder="Buscar técnico…" value={query}
           onChange={e=>{setQuery(e.target.value);setOpen(true)}} onFocus={()=>setOpen(true)}/>
         {canAdd&&<button type="button" onClick={()=>add(query.trim())}
-          style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'#c9a84c',
-            border:'none',borderRadius:6,color:'#0d0d0f',fontSize:11,fontWeight:700,padding:'3px 8px',
+          style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'#F5B544',
+            border:'none',borderRadius:6,color:'#1A1A1A',fontSize:11,fontWeight:700,padding:'3px 8px',
             cursor:'pointer',fontFamily:'Outfit,sans-serif'}}>+ Agregar</button>}
       </div>
       {open&&filtered.length>0&&<div style={{position:'absolute',top:'calc(100% + 4px)',left:0,right:0,
-        background:'#1a1a1e',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,zIndex:810,
+        background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.25)',borderRadius:8,zIndex:810,
         overflow:'hidden',boxShadow:'0 8px 24px rgba(0,0,0,0.5)'}}>
         {filtered.map(t=><TechDropRow key={t} name={t} onPick={()=>add(t)}/>)}
       </div>}
@@ -125,7 +125,7 @@ function BookingBadge({status}:{status:string}) {
     pending:    {bg:'rgba(251,191,36,0.1)', color:'#fbbf24',border:'rgba(251,191,36,0.3)'},
     completed:  {bg:'rgba(52,211,153,0.1)', color:'#34d399',border:'rgba(52,211,153,0.3)'},
     cancelled:  {bg:'rgba(255,79,79,0.1)',  color:'#ff4f4f',border:'rgba(255,79,79,0.3)'},
-    in_progress:{bg:'rgba(201,168,76,0.1)', color:'#c9a84c',border:'rgba(201,168,76,0.3)'},
+    in_progress:{bg:'rgba(201,168,76,0.1)', color:'#F5B544',border:'rgba(201,168,76,0.3)'},
   }
   const s=M[status?.toLowerCase()]??M['pending']
   return <span style={{padding:'2px 10px',borderRadius:99,fontSize:10,fontWeight:700,
@@ -135,8 +135,8 @@ function BookingBadge({status}:{status:string}) {
 }
 function DetailRow({label,children}:{label:string;children:React.ReactNode}) {
   return <div>
-    <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:4}}>{label}</div>
-    <div style={{fontSize:13,color:'#f0ede8'}}>{children}</div>
+    <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#5A5852',marginBottom:4}}>{label}</div>
+    <div style={{fontSize:13,color:'#0B2A4A'}}>{children}</div>
   </div>
 }
 
@@ -160,10 +160,10 @@ function GanttBlock({leftPct,widthPct,timeLabel,client,service,status,onClick}:{
       <div style={{fontSize:10,fontWeight:600,color:'rgba(0,0,0,0.65)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
         {timeLabel}
       </div>
-      <div style={{fontSize:12,fontWeight:700,color:'#0d0d0f',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
+      <div style={{fontSize:12,fontWeight:700,color:'#1A1A1A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',marginTop:1}}>
         {client}
       </div>
-      <div style={{fontSize:11,color:'rgba(0,0,0,0.6)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+      <div style={{fontSize:11,color:'rgba(11,42,74,0.4)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
         {service}
       </div>
     </div>
@@ -581,18 +581,18 @@ function getDemoForVehicle(vName:string):any[] {
     <div style={{padding:24,fontFamily:'Outfit,sans-serif'}}>
       <style>{`
         .gantt-scroll::-webkit-scrollbar{height:4px}
-        .gantt-scroll::-webkit-scrollbar-track{background:#1a1a1e}
-        .gantt-scroll::-webkit-scrollbar-thumb{background:#c9a84c;border-radius:2px}
+        .gantt-scroll::-webkit-scrollbar-track{background:#F0EFEA}
+        .gantt-scroll::-webkit-scrollbar-thumb{background:#5A5852;border-radius:2px}
       `}</style>
 
       {/* ── Header ── */}
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:24}}>
         <div>
-          <div style={{fontSize:22,fontWeight:700,color:'#f0ede8'}}>{t('bookingsCalendar')}</div>
-          <div style={{fontSize:12,color:'#888580',marginTop:3,textTransform:'capitalize'}}>{todayStr}</div>
+          <div style={{fontSize:22,fontWeight:700,color:'#0B2A4A'}}>{t('bookingsCalendar')}</div>
+          <div style={{fontSize:12,color:'#5A5852',marginTop:3,textTransform:'capitalize'}}>{todayStr}</div>
         </div>
         <button onClick={()=>{setNewForm(f=>({...f,date:toDateStr(selectedDay)}));setShowNew(true)}}
-          style={{padding:'8px 20px',borderRadius:8,border:'none',background:'#c9a84c',color:'#0d0d0f',
+          style={{padding:'8px 20px',borderRadius:8,border:'none',background:'#F5B544',color:'#1A1A1A',
             fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
           + {t('newBooking')}
         </button>
@@ -600,21 +600,21 @@ function getDemoForVehicle(vName:string):any[] {
 
       {/* ── Travel time control ── */}
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:16,
-        padding:'10px 16px',borderRadius:10,background:'#141416',
-        border:'1px solid rgba(255,255,255,0.06)',alignSelf:'flex-start'}}>
-        <span style={{fontSize:12,color:'#888580',fontWeight:600,
+        padding:'10px 16px',borderRadius:10,background:'#FAFAF7',
+        border:'1px solid #F0EFEA',alignSelf:'flex-start'}}>
+        <span style={{fontSize:12,color:'#5A5852',fontWeight:600,
           textTransform:'uppercase',letterSpacing:'0.06em'}}>Traslado</span>
         <input
           type="number" min={0} max={120} value={travelTime}
           onChange={e=>setTravelTime(Number(e.target.value))}
-          style={{width:52,background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',
-            borderRadius:6,padding:'4px 8px',color:'#f0ede8',fontSize:13,
+          style={{width:52,background:'#FAFAF7',border:'1px solid #F0EFEA',
+            borderRadius:6,padding:'4px 8px',color:'#0B2A4A',fontSize:13,
             fontFamily:'Outfit,sans-serif',textAlign:'center',outline:'none'}}
         />
-        <span style={{fontSize:12,color:'#888580'}}>min</span>
+        <span style={{fontSize:12,color:'#5A5852'}}>min</span>
         <button onClick={saveTravelTime} disabled={savingTravel}
           style={{padding:'5px 14px',borderRadius:6,border:'none',
-            background:'#c9a84c',color:'#0d0d0f',fontSize:12,fontWeight:700,
+            background:'#F5B544',color:'#1A1A1A',fontSize:12,fontWeight:700,
             fontFamily:'Outfit,sans-serif',cursor:savingTravel?'default':'pointer',
             opacity:savingTravel?0.6:1}}>
           {savingTravel ? '…' : 'Guardar'}
@@ -623,8 +623,8 @@ function getDemoForVehicle(vName:string):any[] {
 
       {/* ── Week selector ── */}
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:20}}>
-        <button onClick={prevWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
-          background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
+        <button onClick={prevWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid #F0EFEA',
+          background:'#FFFFFF',color:'#5A5852',cursor:'pointer',display:'flex',alignItems:'center',
           justifyContent:'center',flexShrink:0}}><ChevronLeft size={14}/></button>
         <div style={{display:'flex',gap:6,flex:1,justifyContent:'center'}}>
           {weekDays.map(d=>{
@@ -633,43 +633,43 @@ function getDemoForVehicle(vName:string):any[] {
               <button key={d.toISOString()} onClick={()=>setSelectedDay(d)}
                 style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,padding:'10px 14px',
                   borderRadius:10,cursor:'pointer',fontFamily:'Outfit,sans-serif',transition:'all 0.15s',
-                  background:active?'#c9a84c':'#141416',
-                  border:active?'1px solid #c9a84c':'1px solid rgba(255,255,255,0.06)',
-                  color:active?'#0d0d0f':'#888580'}}>
+                  background:active?'#F5B544':isNow?'#0B2A4A':'#FFFFFF',
+                  border:active?'1px solid #F5B544':isNow?'1px solid #0B2A4A':'1px solid #F0EFEA',
+                  color:active?'#1A1A1A':isNow?'#FAFAF7':'#5A5852'}}>
                 <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em'}}>{DAYS_ABBR[d.getDay()]}</span>
-                <span style={{fontSize:16,fontWeight:700,color:active?'#0d0d0f':isNow?'#c9a84c':'#f0ede8'}}>
+                <span style={{fontSize:16,fontWeight:700,color:active?'#1A1A1A':isNow?'#FAFAF7':'#0B2A4A'}}>
                   {d.getDate()}
                 </span>
               </button>
             )
           })}
         </div>
-        <button onClick={nextWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
-          background:'#1a1a1e',color:'#888580',cursor:'pointer',display:'flex',alignItems:'center',
+        <button onClick={nextWeek} style={{width:32,height:32,borderRadius:8,border:'1px solid #F0EFEA',
+          background:'#FFFFFF',color:'#5A5852',cursor:'pointer',display:'flex',alignItems:'center',
           justifyContent:'center',flexShrink:0}}><ChevronRight size={14}/></button>
       </div>
 
       {/* ── Gantt Calendar ── */}
-      <div style={{overflow:'hidden',borderRadius:12,border:'1px solid rgba(255,255,255,0.06)',background:'#141416'}}>
-        <div className="gantt-scroll" style={{overflowX:'auto',scrollbarWidth:'thin',scrollbarColor:'#c9a84c #1a1a1e'}}>
+      <div style={{overflow:'hidden',borderRadius:12,border:'1px solid rgba(11,42,74,0.15)',background:'#FFFFFF'}}>
+        <div className="gantt-scroll" style={{overflowX:'auto',scrollbarWidth:'thin',scrollbarColor:'#5A5852 #F0EFEA'}}>
           {/* Minimum width: vehicle col + enough for readability */}
           <div style={{minWidth:VEH_COL_W+780,position:'relative'}}>
 
             {/* ── Hour header ── */}
-            <div style={{display:'flex',height:40,borderBottom:'1px solid rgba(255,255,255,0.06)',
-              background:'#141416',position:'sticky',top:0,zIndex:5}}>
+            <div style={{display:'flex',height:40,borderBottom:'1px solid #F0EFEA',
+              background:'#FAFAF7',position:'sticky',top:0,zIndex:5}}>
               {/* vehicle col header */}
               <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:6,
-                background:'#141416',borderRight:'1px solid rgba(255,255,255,0.06)',
+                background:'#FAFAF7',borderRight:'1px solid #F0EFEA',
                 display:'flex',alignItems:'center',padding:'0 14px'}}>
-                <span style={{fontSize:10,fontWeight:600,color:'#888580',textTransform:'uppercase',letterSpacing:'0.1em'}}>{t('vehicle')}</span>
+                <span style={{fontSize:10,fontWeight:600,color:'#A8A6A0',textTransform:'uppercase',letterSpacing:'0.1em'}}>{t('vehicle')}</span>
               </div>
               {/* hour labels — percentage based */}
               <div style={{flex:1,display:'flex',position:'relative'}}>
                 {HOURS.map(h=>(
-                  <div key={h} style={{flex:1,borderLeft:'1px solid rgba(255,255,255,0.04)',
+                  <div key={h} style={{flex:1,borderLeft:'1px solid #F0EFEA',
                     display:'flex',alignItems:'center',padding:'0 6px'}}>
-                    <span style={{fontSize:11,color:'#888580'}}>{String(h).padStart(2,'0')}:00</span>
+                    <span style={{fontSize:11,color:'#A8A6A0'}}>{String(h).padStart(2,'0')}:00</span>
                   </div>
                 ))}
               </div>
@@ -686,7 +686,7 @@ function getDemoForVehicle(vName:string):any[] {
 
             {/* ── Vehicle rows ── */}
             {loading ? (
-              <div style={{padding:48,textAlign:'center',color:'#888580',fontSize:13}}>Cargando…</div>
+              <div style={{padding:48,textAlign:'center',color:'#5A5852',fontSize:13}}>Cargando…</div>
             ) : vehicles.length===0 ? (
               <EmptyState
                 icon="booking"
@@ -703,30 +703,30 @@ function getDemoForVehicle(vName:string):any[] {
 
               return (
                 <div key={v.id} style={{display:'flex',height:ROW_H,
-                  borderBottom:'1px solid rgba(255,255,255,0.04)',
-                  background:i%2===0?'#141416':'#0d0d0f',
+                  borderBottom:'1px solid #F0EFEA',
+                  background:i%2===0?'#FAFAF7':'#F4F6F8',
                   opacity: isActivo ? 1 : 0.5}}>
 
                   {/* vehicle label — sticky */}
                   <div style={{width:VEH_COL_W,flexShrink:0,position:'sticky',left:0,zIndex:2,
-                    background:i%2===0?'#141416':'#0d0d0f',
-                    borderRight:'1px solid rgba(255,255,255,0.06)',
+                    background:i%2===0?'#FAFAF7':'#F4F6F8',
+                    borderRight:'1px solid #F0EFEA',
                     display:'flex',flexDirection:'column',justifyContent:'center',padding:'0 14px',gap:2}}>
                     <div style={{display:'flex',alignItems:'center',gap:6}}>
                       <div style={{width:7,height:7,borderRadius:'50%',flexShrink:0,
                         background:isActivo?'#34d399':'#ff4f4f'}}/>
-                      <span style={{fontSize:14,fontWeight:700,color:'#f0ede8',
+                      <span style={{fontSize:14,fontWeight:700,color:'#0B2A4A',
                         whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{v.name}</span>
                     </div>
-                    <div style={{fontSize:12,fontFamily:'monospace',color:'#c9a84c',paddingLeft:13}}>
+                    <div style={{fontSize:12,fontFamily:'monospace',color:'#5A5852',paddingLeft:13}}>
                       {v.license_plate}
                     </div>
                     <div style={{fontSize:11,fontWeight:700,paddingLeft:13,
-                      color:isActivo?'#34d399':'#ff4f4f',letterSpacing:'0.04em'}}>
+                      color:isActivo?'#1F8F5C':'#ff4f4f',letterSpacing:'0.04em'}}>
                       {isActivo ? 'En servicio' : 'Fuera de servicio'}
                     </div>
                     {techs.length>0&&(
-                      <div style={{fontSize:10,color:'#888580',paddingLeft:12,
+                      <div style={{fontSize:10,color:'#5A5852',paddingLeft:12,
                         whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
                         {techs[0]}{techs.length>1?` +${techs.length-1}`:''}
                       </div>
@@ -738,13 +738,13 @@ function getDemoForVehicle(vName:string):any[] {
                     {/* grid lines at each hour */}
                     {HOURS.map((_,idx)=>(
                       <div key={idx} style={{position:'absolute',left:`${(idx/TOTAL_HORAS)*100}%`,
-                        top:0,bottom:0,width:1,background:'rgba(255,255,255,0.035)',pointerEvents:'none'}}/>
+                        top:0,bottom:0,width:1,background:'rgba(11,42,74,0.04)',pointerEvents:'none'}}/>
                     ))}
                     {/* half-hour lines */}
                     {HOURS.map((_,idx)=>(
                       <div key={`h${idx}`} style={{position:'absolute',
                         left:`${((idx+0.5)/TOTAL_HORAS)*100}%`,
-                        top:0,bottom:0,width:1,background:'rgba(255,255,255,0.015)',pointerEvents:'none'}}/>
+                        top:0,bottom:0,width:1,background:'rgba(11,42,74,0.02)',pointerEvents:'none'}}/>
                     ))}
 
                     {/* real bookings for this vehicle on selected day */}
@@ -789,32 +789,32 @@ function getDemoForVehicle(vName:string):any[] {
             <span style={{fontSize:13,fontWeight:700,color:'#ff4f4f'}}>
               Reservas canceladas hoy ({cancelledBookings.length})
             </span>
-            <span style={{fontSize:12,color:'#888580'}}>{showCancelled ? '▲' : '▼'}</span>
+            <span style={{fontSize:12,color:'#5A5852'}}>{showCancelled ? '▲' : '▼'}</span>
           </button>
           {showCancelled && (
-            <div style={{borderRadius:10,border:'1px solid rgba(255,79,79,0.2)',overflow:'hidden',background:'#141416'}}>
+            <div style={{borderRadius:10,border:'1px solid rgba(255,79,79,0.2)',overflow:'hidden',background:'#FAFAF7'}}>
               <table style={{width:'100%',borderCollapse:'collapse',fontFamily:'Outfit,sans-serif'}}>
                 <thead>
                   <tr style={{background:'rgba(255,79,79,0.06)',borderBottom:'1px solid rgba(255,79,79,0.15)'}}>
                     {['Cliente','Servicio','Hora','Motivo','Cancelada'].map(h=>(
                       <th key={h} style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,
-                        textTransform:'uppercase',letterSpacing:'0.08em',color:'#888580'}}>{h}</th>
+                        textTransform:'uppercase',letterSpacing:'0.08em',color:'#5A5852'}}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {cancelledBookings.map((b,i)=>(
-                    <tr key={b.id} style={{borderBottom:i<cancelledBookings.length-1?'1px solid rgba(255,255,255,0.04)':'none'}}>
-                      <td style={{padding:'10px 14px',fontSize:13,color:'#f0ede8'}}>{b.contacts?.name??'—'}</td>
-                      <td style={{padding:'10px 14px',fontSize:13,color:'#888580'}}>{b.services?.name??'—'}</td>
-                      <td style={{padding:'10px 14px',fontSize:13,color:'#888580',fontVariantNumeric:'tabular-nums'}}>
+                    <tr key={b.id} style={{borderBottom:i<cancelledBookings.length-1?'1px solid #F0EFEA':'none'}}>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#0B2A4A'}}>{b.contacts?.name??'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#5A5852'}}>{b.services?.name??'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:13,color:'#5A5852',fontVariantNumeric:'tabular-nums'}}>
                         {tz.formatHora(b.scheduled_at)}
                       </td>
                       <td style={{padding:'10px 14px',fontSize:12,color:'#ff4f4f',maxWidth:220,
                         overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                         {b.cancellation_reason??'—'}
                       </td>
-                      <td style={{padding:'10px 14px',fontSize:12,color:'#888580',whiteSpace:'nowrap'}}>
+                      <td style={{padding:'10px 14px',fontSize:12,color:'#5A5852',whiteSpace:'nowrap'}}>
                         {b.cancelled_at ? tz.formatHora(b.cancelled_at) : '—'}
                       </td>
                     </tr>
@@ -831,14 +831,14 @@ function getDemoForVehicle(vName:string):any[] {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.72)',zIndex:700,
           display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
           onClick={()=>{ setCancelTarget(null); setCancelReason('') }}>
-          <div style={{background:'#141416',border:'1px solid rgba(255,79,79,0.2)',borderRadius:14,
-            padding:28,width:'100%',maxWidth:460}}
+          <div style={{background:'#FFFFFF',border:'1px solid rgba(255,79,79,0.2)',borderRadius:14,
+            padding:28,width:'100%',maxWidth:460,boxShadow:'0 24px 48px rgba(11,42,74,0.12)'}}
             onClick={e=>e.stopPropagation()}>
             <div style={{marginBottom:20}}>
-              <div style={{fontSize:17,fontWeight:700,color:'#f0ede8',marginBottom:4}}>
+              <div style={{fontSize:17,fontWeight:700,color:'#0B2A4A',marginBottom:4}}>
                 Cancelar reserva
               </div>
-              <div style={{fontSize:13,color:'#888580'}}>
+              <div style={{fontSize:13,color:'#5A5852'}}>
                 {cancelTarget.contacts?.name ?? '—'} · {tz.formatHora(cancelTarget.scheduled_at)}
               </div>
             </div>
@@ -859,8 +859,8 @@ function getDemoForVehicle(vName:string):any[] {
             <div style={{display:'flex',gap:10}}>
               <button
                 onClick={()=>{ setCancelTarget(null); setCancelReason('') }}
-                style={{flex:1,padding:12,borderRadius:8,border:'1px solid rgba(255,255,255,0.1)',
-                  background:'transparent',color:'#888580',fontSize:13,fontWeight:600,
+                style={{flex:1,padding:12,borderRadius:8,border:'1px solid #F0EFEA',
+                  background:'transparent',color:'#5A5852',fontSize:13,fontWeight:600,
                   fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                 Volver
               </button>
@@ -885,12 +885,12 @@ function getDemoForVehicle(vName:string):any[] {
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.72)',zIndex:700,
           display:'flex',alignItems:'center',justifyContent:'center',padding:20}}
           onClick={()=>{setShowNew(false);resetForm()}}>
-          <div style={{background:'#141416',border:'1px solid rgba(255,255,255,0.08)',borderRadius:14,
-            padding:28,width:'100%',maxWidth:540,maxHeight:'90vh',overflowY:'auto'}}
+          <div style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:14,
+            padding:28,width:'100%',maxWidth:540,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 24px 48px rgba(11,42,74,0.12)'}}
             onClick={e=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
-              <span style={{fontSize:17,fontWeight:700,color:'#f0ede8'}}>{editId ? t('editBooking') : t('newBooking')}</span>
-              <button onClick={()=>{setShowNew(false);resetForm()}} style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex'}}>
+              <span style={{fontSize:17,fontWeight:700,color:'#0B2A4A'}}>{editId ? t('editBooking') : t('newBooking')}</span>
+              <button onClick={()=>{setShowNew(false);resetForm()}} style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex'}}>
                 <X size={18}/>
               </button>
             </div>
@@ -951,7 +951,7 @@ function getDemoForVehicle(vName:string):any[] {
             </div>
             <button onClick={saveBooking} disabled={saving||!newForm.contact_id||!newForm.date}
               style={{width:'100%',padding:14,borderRadius:10,border:'none',marginTop:20,
-                background:'#c9a84c',color:'#0d0d0f',fontSize:14,fontWeight:700,
+                background:'#F5B544',color:'#1A1A1A',fontSize:14,fontWeight:700,
                 fontFamily:'Outfit,sans-serif',cursor:'pointer',
                 opacity:(!newForm.contact_id||!newForm.date)?0.5:1}}>
               {saving ? t('saving') : editId ? t('updateBooking') : t('createBooking')}
@@ -964,33 +964,33 @@ function getDemoForVehicle(vName:string):any[] {
       {detailBooking&&(
         <div style={{position:'fixed',inset:0,zIndex:700}} onClick={()=>setDetailBooking(null)}>
           <div style={{position:'absolute',right:0,top:0,bottom:0,width:'min(420px,100vw)',
-            background:'#141416',borderLeft:'1px solid rgba(255,255,255,0.08)',
+            background:'#FAFAF7',borderLeft:'1px solid #F0EFEA',
             display:'flex',flexDirection:'column',overflowY:'auto'}}
             onClick={e=>e.stopPropagation()}>
-            <div style={{padding:'20px 24px',borderBottom:'1px solid rgba(255,255,255,0.06)',
+            <div style={{padding:'20px 24px',borderBottom:'1px solid #F0EFEA',
               display:'flex',justifyContent:'space-between',alignItems:'flex-start'}}>
               <div>
-                <div style={{fontSize:16,fontWeight:700,color:'#f0ede8',marginBottom:6}}>
+                <div style={{fontSize:16,fontWeight:700,color:'#0B2A4A',marginBottom:6}}>
                   {detailBooking.contacts?.name??'Reserva'}
                 </div>
                 <BookingBadge status={detailBooking.status??'confirmed'}/>
               </div>
               <button onClick={()=>setDetailBooking(null)}
-                style={{background:'none',border:'none',cursor:'pointer',color:'#888580',padding:4,display:'flex',flexShrink:0}}>
+                style={{background:'none',border:'none',cursor:'pointer',color:'#5A5852',padding:4,display:'flex',flexShrink:0}}>
                 <X size={18}/>
               </button>
             </div>
             <div style={{padding:'20px 24px',display:'flex',flexDirection:'column',gap:18,flex:1}}>
               <DetailRow label={t('vehicleLabel')}>
                 {detailBooking.vehicles
-                  ?<span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#c9a84c'}}>{detailBooking.vehicles.license_plate}</span></span>
+                  ?<span>{detailBooking.vehicles.name} · <span style={{fontFamily:'monospace',color:'#F5B544'}}>{detailBooking.vehicles.license_plate}</span></span>
                   :'—'}
               </DetailRow>
 
               {/* ── Vehicle reassignment ── */}
               <div>
                 <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',
-                  letterSpacing:'0.07em',color:'#888580',marginBottom:6}}>
+                  letterSpacing:'0.07em',color:'#5A5852',marginBottom:6}}>
                   Reasignar vehículo
                 </div>
                 <MSelect value={reassignVehicleId}
@@ -1011,7 +1011,7 @@ function getDemoForVehicle(vName:string):any[] {
                   <button onClick={saveReassignment} disabled={reassignSaving}
                     style={{marginTop:8,width:'100%',padding:'8px 12px',borderRadius:6,
                       border:'1px solid rgba(201,168,76,0.5)',background:'rgba(201,168,76,0.1)',
-                      color:'#c9a84c',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',
+                      color:'#F5B544',fontSize:12,fontWeight:700,fontFamily:'Outfit,sans-serif',
                       cursor:reassignSaving?'not-allowed':'pointer',opacity:reassignSaving?0.6:1}}>
                     {reassignSaving ? 'Guardando…' : '↺ Guardar reasignación'}
                   </button>
@@ -1029,25 +1029,25 @@ function getDemoForVehicle(vName:string):any[] {
               )}
               {detailBooking.technician&&(
                 <div>
-                  <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#888580',marginBottom:8}}>{t('technicians')}</div>
+                  <div style={{fontSize:11,fontWeight:600,textTransform:'uppercase',letterSpacing:'0.07em',color:'#5A5852',marginBottom:8}}>{t('technicians')}</div>
                   <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                     {detailBooking.technician.split(', ').filter(Boolean).map((t:string)=>(
                       <span key={t} style={{padding:'3px 10px',borderRadius:99,background:'rgba(201,168,76,0.12)',
-                        border:'1px solid rgba(201,168,76,0.3)',color:'#c9a84c',fontSize:11,fontWeight:600}}>{t}</span>
+                        border:'1px solid rgba(201,168,76,0.3)',color:'#F5B544',fontSize:11,fontWeight:600}}>{t}</span>
                     ))}
                   </div>
                 </div>
               )}
               {detailBooking.price!=null&&(
                 <DetailRow label={t('price')}>
-                  <span style={{color:'#c9a84c',fontWeight:700}}>AED {Number(detailBooking.price).toLocaleString('en-AE')}</span>
-                  {detailBooking.discount>0&&<span style={{marginLeft:8,color:'#888580',fontSize:11}}>-AED {Number(detailBooking.discount).toLocaleString('en-AE')} desc.</span>}
+                  <span style={{color:'#F5B544',fontWeight:700}}>AED {Number(detailBooking.price).toLocaleString('en-AE')}</span>
+                  {detailBooking.discount>0&&<span style={{marginLeft:8,color:'#5A5852',fontSize:11}}>-AED {Number(detailBooking.discount).toLocaleString('en-AE')} desc.</span>}
                 </DetailRow>
               )}
               {detailBooking.address&&<DetailRow label={t('address')}>📍 {detailBooking.address}</DetailRow>}
-              {detailBooking.notes&&<DetailRow label={t('notes')}><span style={{color:'#888580'}}>{detailBooking.notes}</span></DetailRow>}
+              {detailBooking.notes&&<DetailRow label={t('notes')}><span style={{color:'#5A5852'}}>{detailBooking.notes}</span></DetailRow>}
             </div>
-            <div style={{padding:'16px 24px',borderTop:'1px solid rgba(255,255,255,0.06)',display:'flex',flexDirection:'column',gap:8}}>
+            <div style={{padding:'16px 24px',borderTop:'1px solid #F0EFEA',display:'flex',flexDirection:'column',gap:8}}>
               {detailBooking.status!=='completed'&&detailBooking.status!=='cancelled'&&(
                 <button
                   onClick={async () => {
@@ -1172,7 +1172,7 @@ function getDemoForVehicle(vName:string):any[] {
               <button onClick={()=>openEdit(detailBooking)}
                 style={{width:'100%',padding:11,borderRadius:8,
                   border:'1px solid rgba(201,168,76,0.4)',background:'transparent',
-                  color:'#c9a84c',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
+                  color:'#F5B544',fontSize:13,fontWeight:700,fontFamily:'Outfit,sans-serif',cursor:'pointer'}}>
                 ✏ {t('edit')}
               </button>
               {detailBooking.status!=='cancelled'&&detailBooking.status!=='completed'&&(
@@ -1191,37 +1191,37 @@ function getDemoForVehicle(vName:string):any[] {
       {/* ── Invoice confirmation modal ── */}
       {showInvoiceModal && completedInvoice && (
         <div style={{position:'fixed',inset:0,zIndex:800,background:'rgba(0,0,0,0.7)',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div style={{background:'#141416',border:'1px solid rgba(201,168,76,0.3)',borderRadius:16,padding:32,maxWidth:420,width:'100%',textAlign:'center',fontFamily:'Outfit,sans-serif'}}>
+          <div style={{background:'#FFFFFF',border:'1px solid rgba(201,168,76,0.3)',borderRadius:16,padding:32,maxWidth:420,width:'100%',textAlign:'center',fontFamily:'Outfit,sans-serif',boxShadow:'0 24px 48px rgba(11,42,74,0.12)'}}>
             <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(52,211,153,0.15)',border:'2px solid #34d399',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,margin:'0 auto 16px'}}>✓</div>
-            <div style={{fontSize:18,fontWeight:700,color:'#f0ede8',marginBottom:8}}>
+            <div style={{fontSize:18,fontWeight:700,color:'#0B2A4A',marginBottom:8}}>
               {lang==='es' ? '¡Reserva completada!' : 'Booking completed!'}
             </div>
-            <div style={{fontSize:13,color:'#888580',marginBottom:20}}>
+            <div style={{fontSize:13,color:'#5A5852',marginBottom:20}}>
               {lang==='es' ? 'Se generó la factura automáticamente' : 'Invoice generated automatically'}
             </div>
-            <div style={{background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.06)',borderRadius:10,padding:16,marginBottom:20,textAlign:'left'}}>
+            <div style={{background:'#FFFFFF',border:'1px solid #F0EFEA',borderRadius:10,padding:16,marginBottom:20,textAlign:'left'}}>
               {[
-                { label: lang==='es' ? 'Número de factura' : 'Invoice number', value: completedInvoice.invoice_no, mono: true, color: '#c9a84c' },
-                { label: 'Subtotal', value: `AED ${completedInvoice.subtotal?.toFixed(2)}`, mono: false, color: '#f0ede8' },
-                { label: 'VAT (5%)', value: `AED ${completedInvoice.tax?.toFixed(2)}`, mono: false, color: '#f0ede8' },
+                { label: lang==='es' ? 'Número de factura' : 'Invoice number', value: completedInvoice.invoice_no, mono: true, color: '#F5B544' },
+                { label: 'Subtotal', value: `AED ${completedInvoice.subtotal?.toFixed(2)}`, mono: false, color: '#0B2A4A' },
+                { label: 'VAT (5%)', value: `AED ${completedInvoice.tax?.toFixed(2)}`, mono: false, color: '#0B2A4A' },
               ].map(row => (
                 <div key={row.label} style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                  <span style={{fontSize:12,color:'#888580'}}>{row.label}</span>
+                  <span style={{fontSize:12,color:'#5A5852'}}>{row.label}</span>
                   <span style={{fontSize:12,fontWeight:700,color:row.color,fontFamily:row.mono?'monospace':'Outfit,sans-serif'}}>{row.value}</span>
                 </div>
               ))}
-              <div style={{display:'flex',justifyContent:'space-between',paddingTop:8,borderTop:'1px solid rgba(255,255,255,0.06)'}}>
-                <span style={{fontSize:13,fontWeight:700,color:'#f0ede8'}}>Total</span>
-                <span style={{fontSize:13,fontWeight:800,color:'#00d4aa'}}>AED {completedInvoice.total?.toFixed(2)}</span>
+              <div style={{display:'flex',justifyContent:'space-between',paddingTop:8,borderTop:'1px solid #F0EFEA'}}>
+                <span style={{fontSize:13,fontWeight:700,color:'#0B2A4A'}}>Total</span>
+                <span style={{fontSize:13,fontWeight:800,color:'#3DD9D6'}}>AED {completedInvoice.total?.toFixed(2)}</span>
               </div>
             </div>
             <div style={{display:'flex',gap:10}}>
               <button onClick={()=>{setShowInvoiceModal(false);router.push('/finance')}}
-                style={{flex:1,padding:10,background:'#c9a84c',color:'#0d0d0f',border:'none',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
+                style={{flex:1,padding:10,background:'#F5B544',color:'#1A1A1A',border:'none',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,fontWeight:700,cursor:'pointer'}}>
                 {lang==='es' ? 'Ver en Finanzas' : 'View in Finance'}
               </button>
               <button onClick={()=>setShowInvoiceModal(false)}
-                style={{flex:1,padding:10,background:'#1a1a1e',border:'1px solid rgba(255,255,255,0.1)',color:'#888580',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,cursor:'pointer'}}>
+                style={{flex:1,padding:10,background:'#FFFFFF',border:'1px solid #F0EFEA',color:'#5A5852',borderRadius:8,fontFamily:'Outfit,sans-serif',fontSize:13,cursor:'pointer'}}>
                 {lang==='es' ? 'Cerrar' : 'Close'}
               </button>
             </div>
