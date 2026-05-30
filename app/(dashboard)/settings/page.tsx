@@ -1228,20 +1228,72 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const { t } = useLanguage()
-  const [enabled,     setEnabled]     = useState<Record<string, boolean>>({ whatsapp: false, stripe: false, gcal: true, gmail: false, zapier: false })
-  const [showWAPanel, setShowWAPanel] = useState(false)
-  const [waConnected, setWaConnected] = useState(false)
+  const [enabled,          setEnabled]          = useState<Record<string, boolean>>({ whatsapp: false, stripe: false, gcal: true, gmail: false, zapier: false })
+  const [showWAPanel,      setShowWAPanel]      = useState(false)
+  const [waConnected,      setWaConnected]      = useState(false)
+  const [stripePlan,       setStripePlan]       = useState<string>('trial')
+  const [stripeStatus,     setStripeStatus]     = useState<string>('trialing')
+  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
+  const [tenantId,         setTenantId]         = useState<string | null>(null)
 
   useEffect(() => {
-    createClient()
-      .from('whatsapp_configs')
-      .select('connected')
-      .eq('connected', true)
-      .maybeSingle()
-      .then(({ data }) => {
-        setWaConnected(!!data)
-      })
+    const sb = createClient()
+    sb.from('whatsapp_configs').select('connected').eq('connected', true).maybeSingle()
+      .then(({ data }) => setWaConnected(!!data))
+    sb.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: td } = await sb.from('tenants')
+        .select('id, plan, subscription_status, stripe_customer_id')
+        .eq('owner_id', user.id).maybeSingle()
+      if (td) {
+        setTenantId(td.id)
+        setStripePlan(td.plan ?? 'trial')
+        setStripeStatus(td.subscription_status ?? 'trialing')
+        setStripeCustomerId(td.stripe_customer_id ?? null)
+      }
+    })
   }, [])
+
+  async function handleStripePortal() {
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId }),
+      })
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } catch (err) {
+      console.error('Error opening Stripe portal:', err)
+    }
+  }
+
+  function stripeBadge() {
+    const map: Record<string, { label: string; bg: string; color: string; border: string }> = {
+      active:   { label:'ACTIVO',    bg:'#E6F4EE', color:'#1A6B40', border:'#A3D4B5' },
+      trialing: { label:'TRIAL',     bg:'#FFF3E0', color:'#B45309', border:'#F5B544' },
+      past_due: { label:'VENCIDO',   bg:'#FBE7E2', color:'#D9533D', border:'#F5B8AE' },
+      canceled: { label:'CANCELADO', bg:'#F0EFEA', color:'#5A5852', border:'#CBD8E8' },
+      unpaid:   { label:'SIN PAGO',  bg:'#FBE7E2', color:'#D9533D', border:'#F5B8AE' },
+    }
+    const s = map[stripeStatus] ?? map['trialing']
+    return (
+      <span style={{ fontSize:10, fontWeight:700, background:s.bg, color:s.color, border:`1px solid ${s.border}`, borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', whiteSpace:'nowrap' }}>
+        {s.label}
+      </span>
+    )
+  }
+
+  function stripeDesc() {
+    if (stripeStatus === 'active') {
+      const planLabel: Record<string, string> = { starter:'Starter', pro:'Pro', enterprise:'Enterprise' }
+      return `Plan ${planLabel[stripePlan] ?? stripePlan} activo`
+    }
+    if (stripeStatus === 'trialing') return 'Trial activo — actualiza tu plan'
+    if (stripeStatus === 'past_due') return 'Pago vencido — actualiza método de pago'
+    if (stripeStatus === 'canceled') return 'Suscripción cancelada'
+    return 'Gestiona tu suscripción'
+  }
 
   return (
     <div>
@@ -1249,18 +1301,39 @@ function IntegrationsSection() {
       <div style={{ fontSize:12, color:'var(--text2)', marginBottom:24 }}>{t('connectApps')}</div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
         {INTEGRATIONS.map(int => (
-          <div key={int.key} className="glass" style={{ padding:18, display:'flex', gap:14, alignItems:'center', cursor:int.key==='whatsapp'?'pointer':'default', transition:'border-color 0.15s' }}
-            onClick={() => int.key === 'whatsapp' && setShowWAPanel(true)}>
+          <div key={int.key} className="glass" style={{ padding:18, display:'flex', gap:14, alignItems:'center',
+            cursor: (int.key === 'whatsapp' || int.key === 'stripe') ? 'pointer' : 'default',
+            transition:'border-color 0.15s' }}
+            onClick={() => {
+              if (int.key === 'whatsapp') setShowWAPanel(true)
+              if (int.key === 'stripe') {
+                if (stripeStatus === 'active' && stripeCustomerId) {
+                  handleStripePortal()
+                } else {
+                  window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`
+                }
+              }
+            }}>
             <div style={{ width:44, height:44, borderRadius:10, background:`${int.color}18`, border:`1px solid ${int.color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:int.color, flexShrink:0 }}>
               {int.initials}
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:13, fontWeight:700, marginBottom:3 }}>{int.name}</div>
               <div style={{ fontSize:11, color:'var(--text2)' }}>
-                {int.key === 'whatsapp' ? 'Clic para configurar →' : int.desc}
+                {int.key === 'whatsapp' ? 'Clic para configurar →'
+                 : int.key === 'stripe'    ? stripeDesc()
+                 : int.desc}
               </div>
             </div>
-            {int.key !== 'whatsapp' ? (
+            {int.key === 'whatsapp' ? (
+              waConnected ? (
+                <span style={{ fontSize:10, fontWeight:700, color:'#1A6B40', background:'#E6F4EE', border:'1px solid #A3D4B5', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>ACTIVO</span>
+              ) : (
+                <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
+              )
+            ) : int.key === 'stripe' ? (
+              stripeBadge()
+            ) : (
               <button onClick={e => { e.stopPropagation(); setEnabled(p => ({...p, [int.key]:!p[int.key]})) }}
                 style={{ background:'none', border:'none', padding:0, cursor:'pointer', flexShrink:0 }}>
                 {enabled[int.key] ? (
@@ -1269,24 +1342,13 @@ function IntegrationsSection() {
                   <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
                 )}
               </button>
-            ) : (
-              waConnected ? (
-                <span style={{ fontSize:10, fontWeight:700, color:'#1A6B40', background:'#E6F4EE', border:'1px solid #A3D4B5', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>ACTIVO</span>
-              ) : (
-                <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
-              )
             )}
           </div>
         ))}
       </div>
       {showWAPanel && <WhatsAppConfigPanel onClose={() => {
         setShowWAPanel(false)
-        // Refrescar estado de conexión al cerrar el panel
-        createClient()
-          .from('whatsapp_configs')
-          .select('connected')
-          .eq('connected', true)
-          .maybeSingle()
+        createClient().from('whatsapp_configs').select('connected').eq('connected', true).maybeSingle()
           .then(({ data }) => setWaConnected(!!data))
       }} />}
     </div>
