@@ -106,17 +106,17 @@ function UpgradeContent() {
   async function handleSelectPlan(priceId: string, planKey: PlanKey) {
     if (!tenantId) return
     setLoading(planKey)
-    try {
-      const res = await fetch('/api/stripe/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, tenantId }),
-      })
-      const data = (await res.json()) as { url?: string; error?: string }
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } finally {
+    const res = await fetch('/api/stripe/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priceId, tenantId }),
+    })
+    const data = (await res.json()) as { url?: string; error?: string }
+    if (data.url) {
+      window.location.href = data.url
+    } else {
+      console.error('[upgrade] checkout error:', data.error)
+      alert('Error al procesar: ' + (data.error ?? 'Sin respuesta del servidor'))
       setLoading(null)
     }
   }

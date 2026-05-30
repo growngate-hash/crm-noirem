@@ -9,6 +9,8 @@ export async function POST(req: NextRequest) {
       tenantId: string
     }
 
+    console.log('[checkout] received:', { priceId, tenantId })
+
     if (!priceId || !tenantId) {
       return NextResponse.json({ error: 'priceId and tenantId are required' }, { status: 400 })
     }
@@ -24,6 +26,8 @@ export async function POST(req: NextRequest) {
       .eq('id', tenantId)
       .single()
 
+    console.log('[checkout] tenant found:', tenant?.id, tenantError?.message)
+
     if (tenantError || !tenant) {
       return NextResponse.json({ error: 'Tenant not found' }, { status: 404 })
     }
@@ -33,6 +37,7 @@ export async function POST(req: NextRequest) {
     const email = userData?.user?.email ?? ''
 
     const customerId = await getOrCreateStripeCustomer(tenantId, email, tenant.name)
+    console.log('[checkout] stripe customer:', customerId)
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -47,6 +52,7 @@ export async function POST(req: NextRequest) {
       metadata: { tenantId },
     })
 
+    console.log('[checkout] session url:', session.url)
     return NextResponse.json({ url: session.url })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal error'
