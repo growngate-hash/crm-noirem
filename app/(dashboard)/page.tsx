@@ -64,22 +64,25 @@ const PERIOD_OPTIONS = [
 const GOLD = '#F5B544'
 const CHART_COLORS = ['#0B2A4A', '#3DD9D6', '#F5B544', '#1A6B40', '#D9533D']
 
-// ─── demo chart data ──────────────────────────────────────────────────────────
-const DEMO_SALES    = [{m:'Ene',v:45000},{m:'Feb',v:52000},{m:'Mar',v:48000},{m:'Abr',v:61000},{m:'May',v:73000},{m:'Jun',v:68000}]
-const DEMO_FLOW     = [{d:'Lun',n:5},{d:'Mar',n:8},{d:'Mié',n:3},{d:'Jue',n:9},{d:'Vie',n:7},{d:'Sáb',n:4},{d:'Dom',n:2}]
-const DEMO_EXPENSES = [{name:'Materiales',value:35},{name:'Mano de obra',value:40},{name:'Marketing',value:15},{name:'Otros',value:10}]
-const DEMO_PRODUCTS = [{name:'Ceramic Coating',v:85000},{name:'Full Detail',v:62000},{name:'PPF',v:54000},{name:'Corrección',v:38000},{name:'Tintado',v:22000}]
-const DEMO_CLIENTS  = [{name:'Khalid Al Mansoori',v:45000},{name:'Mohammed Al Maktoum',v:38000},{name:'Sara Al Rashid',v:29000},{name:'Ahmed Hassan',v:24000},{name:'Fatima Al Zaabi',v:18000}]
 
 const tooltipStyle = { background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, fontSize:11, color:'#0B2A4A' }
 
 // ─── chart widget ─────────────────────────────────────────────────────────────
+function EmptyChart() {
+  return (
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:200, gap:8, color:'#A8A6A0' }}>
+      <span style={{ fontSize:32 }}>📊</span>
+      <span style={{ fontSize:13, fontWeight:500 }}>Sin información suficiente</span>
+    </div>
+  )
+}
 function ChartWidget({ id, onRemove, salesData, flowData, expensesData, productsData, clientsData }: {
   id: string; onRemove: () => void;
   salesData: any[]; flowData: any[]; expensesData: any[]; productsData: any[]; clientsData: any[];
 }) {
   const opt = CHART_OPTIONS.find(c => c.id === id)!
   const ax  = { tick:{ fill:'#5A5852', fontSize:11 }, axisLine:{ stroke:'#F0EFEA' }, tickLine:false as const }
+  const hasData = (arr: any[], key: string) => arr.length > 0 && arr.some(d => (d[key] ?? 0) > 0)
   return (
     <div className="glass" style={{ padding:'18px 20px', position:'relative' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
@@ -89,7 +92,7 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
         </button>
       </div>
       <div style={{ height:200 }}>
-        {id === 'sales' && (
+        {id === 'sales' && (!hasData(salesData,'v') ? <EmptyChart/> :
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={salesData} margin={{top:0,right:0,bottom:0,left:0}}>
               <defs>
@@ -105,7 +108,7 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
             </BarChart>
           </ResponsiveContainer>
         )}
-        {id === 'flow' && (
+        {id === 'flow' && (!hasData(flowData,'n') ? <EmptyChart/> :
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={flowData} margin={{top:4,right:0,bottom:0,left:0}}>
               <defs>
@@ -123,17 +126,29 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
             </AreaChart>
           </ResponsiveContainer>
         )}
-        {id === 'expenses' && (
+        {id === 'expenses' && (expensesData.length === 0 ? <EmptyChart/> :
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={expensesData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
+              <Pie data={expensesData} cx="50%" cy="50%" innerRadius={55} outerRadius={75}
+                dataKey="value" nameKey="name" paddingAngle={3}
+                label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`}
+                labelLine={true}>
                 {expensesData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[`${v}%`,'Share']} />
+              <Tooltip content={({ active, payload }) => {
+                if (!active || !payload?.length) return null
+                const { name, value } = payload[0]
+                return (
+                  <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#0B2A4A' }}>
+                    <div style={{ fontWeight:700 }}>{name as string}</div>
+                    <div>AED {(value as number)?.toLocaleString()}</div>
+                  </div>
+                )
+              }}/>
             </PieChart>
           </ResponsiveContainer>
         )}
-        {id === 'products' && (
+        {id === 'products' && (!hasData(productsData,'v') ? <EmptyChart/> :
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={productsData} layout="vertical" margin={{top:0,right:0,bottom:0,left:80}}>
               <defs>
@@ -154,7 +169,7 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
             </BarChart>
           </ResponsiveContainer>
         )}
-        {id === 'clients' && (
+        {id === 'clients' && (!hasData(clientsData,'v') ? <EmptyChart/> :
           <div style={{ display:'flex', flexDirection:'column', gap:8, paddingTop:4 }}>
             {clientsData.map((c, i) => {
               const pct = clientsData[0]?.v > 0 ? Math.round(c.v / clientsData[0].v * 100) : 0
@@ -241,11 +256,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   // ── Chart data ──
-  const [salesData,    setSalesData]    = useState<any[]>(DEMO_SALES)
-  const [flowData,     setFlowData]     = useState<any[]>(DEMO_FLOW)
-  const [expensesData, setExpensesData] = useState<any[]>(DEMO_EXPENSES)
-  const [productsData, setProductsData] = useState<any[]>(DEMO_PRODUCTS)
-  const [clientsData,  setClientsData]  = useState<any[]>(DEMO_CLIENTS)
+  const [salesData,    setSalesData]    = useState<any[]>([])
+  const [flowData,     setFlowData]     = useState<any[]>([])
+  const [expensesData, setExpensesData] = useState<any[]>([])
+  const [productsData, setProductsData] = useState<any[]>([])
+  const [clientsData,  setClientsData]  = useState<any[]>([])
   const [mounted, setMounted] = useState(false)
 
   // ── UI state ──
@@ -456,7 +471,7 @@ export default function DashboardPage() {
       // 4. Productos más vendidos (ingresos por servicio)
       const { data: prodData } = await supabase
         .from('bookings').select('services(name), price')
-        .eq('status', 'completed').not('services', 'is', null)
+        .eq('status', 'completed').not('service_id', 'is', null)
       const bySvc: Record<string, number> = {}
       ;(prodData ?? []).forEach((b: any) => {
         const name = b.services?.name ?? 'Sin servicio'
@@ -469,7 +484,7 @@ export default function DashboardPage() {
       // 5. Mejores clientes por LTV
       const { data: cliData } = await supabase
         .from('bookings').select('contacts(full_name), price')
-        .eq('status', 'completed').not('contacts', 'is', null)
+        .eq('status', 'completed').not('contact_id', 'is', null)
       const byClient: Record<string, number> = {}
       ;(cliData ?? []).forEach((b: any) => {
         const name = b.contacts?.full_name ?? 'Desconocido'
