@@ -322,43 +322,51 @@ export default function DashboardPage() {
       supabase.from('inventory_items').select('id, name, stock_qty, min_stock, unit, brand'),
     ])
 
-    // ── Bookings (optional — failures don't block KPIs) ──
-    let activeBookings = 0
-    try {
-      const { data: activos } = await supabase
-        .from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending'])
-      activeBookings = activos?.length ?? 0
-    } catch { /* bookings table may not exist */ }
-    let localHoy:  any[] = []
-    let localMana: any[] = []
-    try {
-      const hoy    = tz.getToday()
-      const manana = new Date(hoy)
-      manana.setDate(hoy.getDate() + 1)
-      const { start: startHoy,  end: endHoy  } = tz.dayRange(hoy)
-      const { start: startMana, end: endMana  } = tz.dayRange(manana)
+    // ── Bloque 2: bookings, expenses, reviews, activity — todo en paralelo ──
+    const hoy    = tz.getToday()
+    const manana = new Date(hoy)
+    manana.setDate(hoy.getDate() + 1)
+    const { start: startHoy,  end: endHoy  } = tz.dayRange(hoy)
+    const { start: startMana, end: endMana  } = tz.dayRange(manana)
 
-      const { data: bHoy } = await supabase
-        .from('bookings')
+    const [
+      bookingsActivosResult,
+      bookingsHoyResult,
+      bookingsMananaResult,
+      expensesResult,
+      reviewsResult,
+      activityResult,
+    ] = await Promise.all([
+      supabase.from('bookings').select('id', { count: 'exact', head: true })
+        .in('status', ['confirmed', 'in_progress', 'pending'])
+        .catch(() => ({ count: 0, data: null, error: null })),
+      supabase.from('bookings')
         .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
-        .gte('scheduled_at', startHoy)
-        .lte('scheduled_at', endHoy)
+        .gte('scheduled_at', startHoy).lte('scheduled_at', endHoy)
         .order('scheduled_at', { ascending: true })
-
-      const { data: bMana } = await supabase
-        .from('bookings')
+        .catch(() => ({ data: null, error: null })),
+      supabase.from('bookings')
         .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
-        .gte('scheduled_at', startMana)
-        .lte('scheduled_at', endMana)
+        .gte('scheduled_at', startMana).lte('scheduled_at', endMana)
         .order('scheduled_at', { ascending: true })
+        .catch(() => ({ data: null, error: null })),
+      getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
+        .catch(() => ({ total: 0, expensesAmt: 0, comprasAmt: 0, nominaAmt: 0 })),
+      supabase.from('reviews').select('rating').gte('created_at', inicioMesUTC)
+        .catch(() => ({ data: null, error: null })),
+      supabase.from('activity_log').select('*')
+        .order('created_at', { ascending: false }).limit(10)
+        .catch(() => ({ data: null, error: true })),
+    ])
 
-      localHoy  = bHoy  ?? []
-      localMana = bMana ?? []
-      setBookingsHoy(localHoy)
-      setBookingsManana(localMana)
-    } catch { /* bookings schema may differ */ }
+    const activeBookings = (bookingsActivosResult as any).count
+      ?? (bookingsActivosResult as any).data?.length ?? 0
+    const localHoy  = (bookingsHoyResult  as any).data ?? []
+    const localMana = (bookingsMananaResult as any).data ?? []
+    const totalExpenses = (expensesResult as any).total ?? 0
 
-    const { total: totalExpenses } = await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
+    setBookingsHoy(localHoy)
+    setBookingsManana(localMana)
 
     const calcRevenue = (rows: any[]) =>
       (rows ?? []).reduce((sum, inv) => sum + Number(inv.subtotal ?? 0), 0)
@@ -387,15 +395,11 @@ export default function DashboardPage() {
     const lowStockAlerts = lowItems.length
     setLowStockItems(lowItems)
 
-    // CSAT — optional table
     let csatScore = 0
-    try {
-      const { data: reviews } = await supabase
-        .from('reviews').select('rating').gte('created_at', inicioMesUTC)
-      if (reviews && reviews.length > 0) {
-        csatScore = reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / reviews.length
-      }
-    } catch { /* table may not exist yet */ }
+    const reviews = (reviewsResult as any).data ?? []
+    if (reviews.length > 0) {
+      csatScore = reviews.reduce((sum: number, r: any) => sum + (r.rating ?? 0), 0) / reviews.length
+    }
 
     setKpis({
       totalRevenue, totalExpenses, totalProfit,
@@ -408,67 +412,80 @@ export default function DashboardPage() {
     const todasReservas = [...localHoy, ...localMana]
     setRecentBookings(todasReservas)
 
-    // Activity feed — try activity_log first, fall back to bookings
-    try {
-      const { data: activities, error } = await supabase
-        .from('activity_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10)
-
-      if (!error && activities && activities.length > 0) {
-        setActivityFeed(activities)
-      } else {
-        buildActivityFromBookings(todasReservas)
-      }
-    } catch {
+    // Activity feed
+    const activities = (activityResult as any).data ?? null
+    const activityError = (activityResult as any).error
+    if (!activityError && activities && activities.length > 0) {
+      setActivityFeed(activities)
+    } else {
       buildActivityFromBookings(todasReservas)
     }
 
-    // ── Chart queries ─────────────────────────────────────────────────────────
+    // ── Bloque 3: chart queries — todo en paralelo ───────────────────────────
     try {
-      // 1. Ventas por mes (últimos 6 meses)
-      const salesByMonth: any[] = []
-      for (let i = 5; i >= 0; i--) {
+      const hoyChart    = tz.getToday()
+      const firstOfMonth = new Date(hoyChart.getFullYear(), hoyChart.getMonth(), 1)
+      const lastOfMonth  = new Date(hoyChart.getFullYear(), hoyChart.getMonth() + 1, 0)
+      const { start: mesStart } = tz.dayRange(firstOfMonth)
+      const { end:   mesEnd   } = tz.dayRange(lastOfMonth)
+
+      // 1. Ventas: 6 meses en paralelo
+      const meses = Array.from({ length: 6 }, (_, i) => {
         const d = new Date(tz.getToday())
-        d.setMonth(d.getMonth() - i)
-        const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
-        const lastDay  = new Date(d.getFullYear(), d.getMonth() + 1, 0)
-        const { start } = tz.dayRange(firstDay)
-        const { end }   = tz.dayRange(lastDay)
-        const { data: invs } = await supabase
-          .from('invoices').select('subtotal')
-          .gte('created_at', start).lte('created_at', end)
-          .in('status', ['pagada', 'paid'])
-        const total = (invs ?? []).reduce((s, inv) => s + Number(inv.subtotal ?? 0), 0)
+        d.setMonth(d.getMonth() - (5 - i))
+        return d
+      })
+      const salesResults = await Promise.all(
+        meses.map(d => {
+          const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+          const lastDay  = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+          const { start } = tz.dayRange(firstDay)
+          const { end }   = tz.dayRange(lastDay)
+          return supabase.from('invoices').select('subtotal')
+            .gte('created_at', start).lte('created_at', end)
+            .in('status', ['pagada', 'paid'])
+        })
+      )
+      const salesByMonth = meses.map((d, i) => {
+        const total = (salesResults[i].data ?? []).reduce((s, inv) => s + Number(inv.subtotal ?? 0), 0)
         const mes = d.toLocaleDateString('es-AE', { month: 'short', timeZone: tz.timezone ?? 'Asia/Dubai' })
-        salesByMonth.push({ m: mes.charAt(0).toUpperCase() + mes.slice(1), v: total })
-      }
+        return { m: mes.charAt(0).toUpperCase() + mes.slice(1), v: total }
+      })
       if (salesByMonth.some(s => s.v > 0)) setSalesData(salesByMonth)
 
-      // 2. Flujo de reservas — últimos 7 días
+      // 2. Flujo: 7 días en paralelo
       const diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
-      const flowByDay: any[] = []
-      for (let i = 6; i >= 0; i--) {
+      const dias = Array.from({ length: 7 }, (_, i) => {
         const d = new Date(tz.getToday())
-        d.setDate(d.getDate() - i)
-        const { start, end } = tz.dayRange(d)
-        const { count } = await supabase
-          .from('bookings').select('id', { count: 'exact', head: true })
-          .gte('scheduled_at', start).lte('scheduled_at', end)
-        flowByDay.push({ d: diasSemana[d.getDay()], n: count ?? 0 })
-      }
+        d.setDate(d.getDate() - (6 - i))
+        return d
+      })
+      const flowResults = await Promise.all(
+        dias.map(d => {
+          const { start, end } = tz.dayRange(d)
+          return supabase.from('bookings')
+            .select('id', { count: 'exact', head: true })
+            .gte('scheduled_at', start).lte('scheduled_at', end)
+        })
+      )
+      const flowByDay = dias.map((d, i) => ({
+        d: diasSemana[d.getDay()],
+        n: flowResults[i].count ?? 0,
+      }))
       if (flowByDay.some(f => f.n > 0)) setFlowData(flowByDay)
 
-      // 3. Gastos por categoría — mes actual
-      const hoyChart = tz.getToday()
-      const mesIni = tz.dayRange(new Date(hoyChart.getFullYear(), hoyChart.getMonth(), 1))
-      const { data: expData } = await supabase
-        .from('expenses').select('amount, category')
-        .gte('date', mesIni.start.split('T')[0])
-        .lte('date', mesIni.end.split('T')[0])
+      // 3+4+5. Gastos, productos y clientes en paralelo
+      const [expensesChartResult, productsChartResult, clientsChartResult] = await Promise.all([
+        supabase.from('expenses').select('amount, category')
+          .gte('date', mesStart.split('T')[0]).lte('date', mesEnd.split('T')[0]),
+        supabase.from('bookings').select('services(name), price')
+          .eq('status', 'completed').not('service_id', 'is', null),
+        supabase.from('bookings').select('contacts(full_name), price')
+          .eq('status', 'completed').not('contact_id', 'is', null),
+      ])
+
       const byCat: Record<string, number> = {}
-      ;(expData ?? []).forEach((e: any) => {
+      ;(expensesChartResult.data ?? []).forEach((e: any) => {
         const cat = e.category ?? 'Otros'
         byCat[cat] = (byCat[cat] ?? 0) + Number(e.amount ?? 0)
       })
@@ -476,12 +493,8 @@ export default function DashboardPage() {
         .sort((a, b) => b.value - a.value).slice(0, 5)
       if (expChart.length > 0) setExpensesData(expChart)
 
-      // 4. Productos más vendidos (ingresos por servicio)
-      const { data: prodData } = await supabase
-        .from('bookings').select('services(name), price')
-        .eq('status', 'completed').not('service_id', 'is', null)
       const bySvc: Record<string, number> = {}
-      ;(prodData ?? []).forEach((b: any) => {
+      ;(productsChartResult.data ?? []).forEach((b: any) => {
         const name = b.services?.name ?? 'Sin servicio'
         bySvc[name] = (bySvc[name] ?? 0) + Number(b.price ?? 0)
       })
@@ -489,12 +502,8 @@ export default function DashboardPage() {
         .sort((a, b) => b.v - a.v).slice(0, 5)
       if (prodChart.length > 0) setProductsData(prodChart)
 
-      // 5. Mejores clientes por LTV
-      const { data: cliData } = await supabase
-        .from('bookings').select('contacts(full_name), price')
-        .eq('status', 'completed').not('contact_id', 'is', null)
       const byClient: Record<string, number> = {}
-      ;(cliData ?? []).forEach((b: any) => {
+      ;(clientsChartResult.data ?? []).forEach((b: any) => {
         const name = b.contacts?.full_name ?? 'Desconocido'
         byClient[name] = (byClient[name] ?? 0) + Number(b.price ?? 0)
       })
