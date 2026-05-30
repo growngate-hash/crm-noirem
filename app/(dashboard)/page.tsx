@@ -348,8 +348,9 @@ export default function DashboardPage() {
         .gte('scheduled_at', startMana).lte('scheduled_at', endMana)
         .order('scheduled_at', { ascending: true }),
       getMonthlyExpenses(supabase, inicioMesStr, finMesStr),
-      supabase.from('reviews').select('rating').gte('created_at', inicioMesUTC),
-      supabase.from('activity_log').select('*')
+      Promise.resolve({ count: 0, data: null, error: null }),
+      supabase.from('activities')
+        .select('id, type, description, created_at, contact_id')
         .order('created_at', { ascending: false }).limit(10),
     ])
 
@@ -472,9 +473,9 @@ export default function DashboardPage() {
       const [expensesChartResult, productsChartResult, clientsChartResult] = await Promise.all([
         supabase.from('expenses').select('amount, category')
           .gte('date', mesStart.split('T')[0]).lte('date', mesEnd.split('T')[0]),
-        supabase.from('bookings').select('price, services:service_id(name)')
+        supabase.from('bookings').select('price, services(name)')
           .eq('status', 'completed'),
-        supabase.from('bookings').select('price, contacts:contact_id(full_name)')
+        supabase.from('bookings').select('price, contacts(full_name)')
           .eq('status', 'completed'),
       ])
 
