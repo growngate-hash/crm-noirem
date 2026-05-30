@@ -472,10 +472,10 @@ export default function DashboardPage() {
       const [expensesChartResult, productsChartResult, clientsChartResult] = await Promise.all([
         supabase.from('expenses').select('amount, category')
           .gte('date', mesStart.split('T')[0]).lte('date', mesEnd.split('T')[0]),
-        supabase.from('bookings').select('services(name), price')
-          .eq('status', 'completed').not('service_id', 'is', null),
-        supabase.from('bookings').select('contacts(full_name), price')
-          .eq('status', 'completed').not('contact_id', 'is', null),
+        supabase.from('bookings').select('price, services:service_id(name)')
+          .eq('status', 'completed'),
+        supabase.from('bookings').select('price, contacts:contact_id(full_name)')
+          .eq('status', 'completed'),
       ])
 
       const byCat: Record<string, number> = {}
