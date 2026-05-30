@@ -1,3 +1,24 @@
+// ── Stripe / Subscription types ───────────────────────────────────────────────
+export type Plan             = 'trial' | 'starter' | 'pro' | 'enterprise'
+export type PlanInterval     = 'monthly' | 'annual'
+export type SubscriptionStatus =
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'canceled'
+  | 'unpaid'
+
+export interface TenantSubscription {
+  plan:                 Plan
+  planInterval:         PlanInterval
+  subscriptionStatus:   SubscriptionStatus
+  stripeCustomerId?:    string
+  stripeSubscriptionId?:string
+  trialEndsAt?:         string
+  subscriptionEndsAt?:  string
+}
+
+// ── CRM types ─────────────────────────────────────────────────────────────────
 export type Tier = 'Black Diamond' | 'Platinum' | 'VIP'
 export type ActivityType = 'note' | 'call' | 'email' | 'meeting' | 'task' | 'deal_moved' | 'deal_created' | 'contact_created'
 
