@@ -131,7 +131,7 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
             <PieChart>
               <Pie data={expensesData} cx="50%" cy="50%" innerRadius={55} outerRadius={75}
                 dataKey="value" nameKey="name" paddingAngle={3}
-                label={({ name, percent }) => `${name} ${(percent*100).toFixed(0)}%`}
+                label={({ name, percent }) => percent ? `${name} ${(percent*100).toFixed(0)}%` : name}
                 labelLine={true}>
                 {expensesData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
