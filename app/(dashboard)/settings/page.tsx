@@ -14,7 +14,7 @@ import {
 import { PrintTemplatesSection } from '@/components/settings/PrintTemplatesSection'
 import { COUNTRIES } from '@/lib/countries'
 
-type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'billing' | 'print-templates'
+type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'print-templates'
 
 // ─── permission types ──────────────────────────────────────────────────────────
 type PermOps = { view: boolean; create?: boolean; edit?: boolean; delete?: boolean }
@@ -302,19 +302,12 @@ const NAV: { key: Section; label: string; icon: any }[] = [
   { key: 'team',            label: 'Team & Roles',         icon: Users },
   { key: 'integrations',   label: 'Integrations',         icon: Plug },
   { key: 'plans',           label: 'Plans',                icon: BarChart2 },
-  { key: 'billing',         label: 'Billing',              icon: CreditCard },
   { key: 'print-templates', label: 'Plantillas Impresión', icon: Printer },
 ]
 
-const MOCK_INVOICES = [
-  { date: '2026-04-01', amount: 129, status: 'Paid' },
-  { date: '2026-03-01', amount: 129, status: 'Paid' },
-  { date: '2026-02-01', amount: 129, status: 'Paid' },
-]
 
 const INTEGRATIONS = [
   { key: 'whatsapp', name: 'WhatsApp Business', desc: 'Send automated messages to clients', color: '#22c55e', initials: 'WA' },
-  { key: 'stripe',   name: 'Stripe',            desc: 'Accept online payments',             color: '#818cf8', initials: 'ST' },
   { key: 'gcal',     name: 'Google Calendar',   desc: 'Sync bookings to calendar',          color: '#00d4aa', initials: 'GC' },
   { key: 'gmail',    name: 'Gmail',             desc: 'Send invoices via email',            color: '#ff4f4f', initials: 'GM' },
   { key: 'zapier',   name: 'Zapier',            desc: 'Connect 5,000+ apps',               color: '#ffa800', initials: 'ZP' },
@@ -1228,72 +1221,14 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const { t } = useLanguage()
-  const [enabled,          setEnabled]          = useState<Record<string, boolean>>({ whatsapp: false, stripe: false, gcal: true, gmail: false, zapier: false })
-  const [showWAPanel,      setShowWAPanel]      = useState(false)
-  const [waConnected,      setWaConnected]      = useState(false)
-  const [stripePlan,       setStripePlan]       = useState<string>('trial')
-  const [stripeStatus,     setStripeStatus]     = useState<string>('trialing')
-  const [stripeCustomerId, setStripeCustomerId] = useState<string | null>(null)
-  const [tenantId,         setTenantId]         = useState<string | null>(null)
+  const [enabled,     setEnabled]     = useState<Record<string, boolean>>({ whatsapp: false, gcal: true, gmail: false, zapier: false })
+  const [showWAPanel, setShowWAPanel] = useState(false)
+  const [waConnected, setWaConnected] = useState(false)
 
   useEffect(() => {
-    const sb = createClient()
-    sb.from('whatsapp_configs').select('connected').eq('connected', true).maybeSingle()
+    createClient().from('whatsapp_configs').select('connected').eq('connected', true).maybeSingle()
       .then(({ data }) => setWaConnected(!!data))
-    sb.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      const { data: td } = await sb.from('tenants')
-        .select('id, plan, subscription_status, stripe_customer_id')
-        .eq('owner_id', user.id).maybeSingle()
-      if (td) {
-        setTenantId(td.id)
-        setStripePlan(td.plan ?? 'trial')
-        setStripeStatus(td.subscription_status ?? 'trialing')
-        setStripeCustomerId(td.stripe_customer_id ?? null)
-      }
-    })
   }, [])
-
-  async function handleStripePortal() {
-    try {
-      const res = await fetch('/api/stripe/portal', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantId }),
-      })
-      const { url } = await res.json()
-      if (url) window.location.href = url
-    } catch (err) {
-      console.error('Error opening Stripe portal:', err)
-    }
-  }
-
-  function stripeBadge() {
-    const map: Record<string, { label: string; bg: string; color: string; border: string }> = {
-      active:   { label:'ACTIVO',    bg:'#E6F4EE', color:'#1A6B40', border:'#A3D4B5' },
-      trialing: { label:'TRIAL',     bg:'#FFF3E0', color:'#B45309', border:'#F5B544' },
-      past_due: { label:'VENCIDO',   bg:'#FBE7E2', color:'#D9533D', border:'#F5B8AE' },
-      canceled: { label:'CANCELADO', bg:'#F0EFEA', color:'#5A5852', border:'#CBD8E8' },
-      unpaid:   { label:'SIN PAGO',  bg:'#FBE7E2', color:'#D9533D', border:'#F5B8AE' },
-    }
-    const s = map[stripeStatus] ?? map['trialing']
-    return (
-      <span style={{ fontSize:10, fontWeight:700, background:s.bg, color:s.color, border:`1px solid ${s.border}`, borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', whiteSpace:'nowrap' }}>
-        {s.label}
-      </span>
-    )
-  }
-
-  function stripeDesc() {
-    if (stripeStatus === 'active') {
-      const planLabel: Record<string, string> = { starter:'Starter', pro:'Pro', enterprise:'Enterprise' }
-      return `Plan ${planLabel[stripePlan] ?? stripePlan} activo`
-    }
-    if (stripeStatus === 'trialing') return 'Trial activo — actualiza tu plan'
-    if (stripeStatus === 'past_due') return 'Pago vencido — actualiza método de pago'
-    if (stripeStatus === 'canceled') return 'Suscripción cancelada'
-    return 'Gestiona tu suscripción'
-  }
 
   return (
     <div>
@@ -1302,27 +1237,15 @@ function IntegrationsSection() {
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
         {INTEGRATIONS.map(int => (
           <div key={int.key} className="glass" style={{ padding:18, display:'flex', gap:14, alignItems:'center',
-            cursor: (int.key === 'whatsapp' || int.key === 'stripe') ? 'pointer' : 'default',
-            transition:'border-color 0.15s' }}
-            onClick={() => {
-              if (int.key === 'whatsapp') setShowWAPanel(true)
-              if (int.key === 'stripe') {
-                if (stripeStatus === 'active' && stripeCustomerId) {
-                  handleStripePortal()
-                } else {
-                  window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`
-                }
-              }
-            }}>
+            cursor: int.key === 'whatsapp' ? 'pointer' : 'default', transition:'border-color 0.15s' }}
+            onClick={() => { if (int.key === 'whatsapp') setShowWAPanel(true) }}>
             <div style={{ width:44, height:44, borderRadius:10, background:`${int.color}18`, border:`1px solid ${int.color}30`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:700, color:int.color, flexShrink:0 }}>
               {int.initials}
             </div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:13, fontWeight:700, marginBottom:3 }}>{int.name}</div>
               <div style={{ fontSize:11, color:'var(--text2)' }}>
-                {int.key === 'whatsapp' ? 'Clic para configurar →'
-                 : int.key === 'stripe'    ? stripeDesc()
-                 : int.desc}
+                {int.key === 'whatsapp' ? 'Clic para configurar →' : int.desc}
               </div>
             </div>
             {int.key === 'whatsapp' ? (
@@ -1331,8 +1254,6 @@ function IntegrationsSection() {
               ) : (
                 <span style={{ fontSize:10, fontWeight:700, color:'#D9533D', background:'#FBE7E2', border:'1px solid #F5B8AE', borderRadius:20, padding:'3px 10px', letterSpacing:'0.5px', textTransform:'uppercase', whiteSpace:'nowrap' }}>INACTIVO</span>
               )
-            ) : int.key === 'stripe' ? (
-              stripeBadge()
             ) : (
               <button onClick={e => { e.stopPropagation(); setEnabled(p => ({...p, [int.key]:!p[int.key]})) }}
                 style={{ background:'none', border:'none', padding:0, cursor:'pointer', flexShrink:0 }}>
@@ -1356,98 +1277,131 @@ function IntegrationsSection() {
 }
 
 // ─── Plans section ────────────────────────────────────────────────────────────
-function PlansSection() {
-  const { t } = useLanguage()
-  const plans = [
-    { name: 'Starter', price: '$49', period: '/mo', features: ['Up to 100 contacts','1 user','Basic reports','Email support'], cta: 'Select Plan', ctaClass: 'btn btn-ghost', highlight: false },
-    { name: 'Pro', price: '$129', period: '/mo', features: ['Unlimited contacts','5 users','Advanced reports','All integrations','Priority support'], cta: 'Current Plan', ctaClass: 'btn btn-gold', highlight: true },
-    { name: 'Enterprise', price: '$349', period: '/mo', features: ['Unlimited everything','Unlimited users','Custom reports','Dedicated manager','SLA guarantee'], cta: 'Contact Sales', ctaClass: 'btn btn-ghost', highlight: false },
+function PlansSection({ tenantPlan, tenantStatus, tenantCustomerId, tenantId }: {
+  tenantPlan: string; tenantStatus: string;
+  tenantCustomerId: string | null; tenantId: string | null;
+}) {
+  const PLANS = [
+    { key:'starter', name:'Starter', monthlyPrice:49, annualPrice:39,
+      features:['2 usuarios','2 vehículos / técnicos','Reservas y CRM básico','Contabilidad y finanzas','WhatsApp Bot incluido'],
+      notIncluded:['RRHH + Nómina','Reportes completos','Soporte prioritario'] },
+    { key:'pro', name:'Pro', monthlyPrice:99, annualPrice:79,
+      features:['5 usuarios','Vehículos ilimitados','CRM completo + tiers','WhatsApp Bot incluido','RRHH + Nómina completa','Contabilidad y finanzas','Reportes completos'],
+      notIncluded:['Soporte prioritario'] },
+    { key:'enterprise', name:'Enterprise', monthlyPrice:199, annualPrice:159,
+      features:['Usuarios ilimitados','Todo lo de Pro','Onboarding dedicado','Soporte prioritario 24/7','SLA garantizado','Backup diario de datos','Personalización de marca'],
+      notIncluded:[] },
   ]
+
+  const [interval, setIntervalPlan] = useState<'monthly'|'annual'>('monthly')
+  const [loadingPortal, setLoadingPortal] = useState(false)
+
+  async function handleManagePlan() {
+    if (!tenantCustomerId) {
+      window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`
+      return
+    }
+    setLoadingPortal(true)
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenantId }),
+      })
+      const { url } = await res.json()
+      if (url) window.location.href = url
+    } finally { setLoadingPortal(false) }
+  }
+
+  const statusMap: Record<string,{label:string;bg:string;color:string;border:string}> = {
+    active:   {label:'ACTIVO',    bg:'#E6F4EE',color:'#1A6B40',border:'#A3D4B5'},
+    trialing: {label:'TRIAL',     bg:'#FFF3E0',color:'#B45309',border:'#F5B544'},
+    past_due: {label:'VENCIDO',   bg:'#FBE7E2',color:'#D9533D',border:'#F5B8AE'},
+    canceled: {label:'CANCELADO', bg:'#F0EFEA',color:'#5A5852',border:'#CBD8E8'},
+    unpaid:   {label:'SIN PAGO',  bg:'#FBE7E2',color:'#D9533D',border:'#F5B8AE'},
+  }
+  const statusStyle = statusMap[tenantStatus] ?? statusMap['trialing']
+
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('plans')}</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('choosePlan')}</div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
-        {plans.map(p => (
-          <div key={p.name} className="glass" style={{ padding: 24, border: p.highlight ? '1px solid var(--gold-b)' : undefined, position: 'relative' }}>
-            {p.highlight && (
-              <div style={{ position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)', background: 'var(--gold)', color: '#000', fontSize: 9, fontWeight: 700, padding: '3px 10px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Current</div>
-            )}
-            <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>{p.name}</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 2, marginBottom: 20 }}>
-              <span style={{ fontSize: 28, fontWeight: 900, color: p.highlight ? 'var(--gold)' : 'var(--text)' }}>{p.price}</span>
-              <span style={{ fontSize: 13, color: 'var(--text2)' }}>{p.period}</span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
-              {p.features.map(f => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
-                  <Check size={12} color="var(--cyan)"/>{f}
-                </div>
-              ))}
-            </div>
-            <button className={p.ctaClass} style={{ width: '100%', justifyContent: 'center' }}>{p.cta}</button>
+      {/* Estado actual */}
+      <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:12, padding:'16px 20px', marginBottom:24, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+        <div>
+          <div style={{ fontSize:13, color:'#5A5852', marginBottom:4 }}>Plan actual</div>
+          <div style={{ fontSize:18, fontWeight:700, color:'#0B2A4A' }}>
+            {tenantPlan === 'trial' ? 'Trial gratuito' : tenantPlan.charAt(0).toUpperCase() + tenantPlan.slice(1)}
           </div>
+        </div>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontSize:10, fontWeight:700, background:statusStyle.bg, color:statusStyle.color, border:`1px solid ${statusStyle.border}`, borderRadius:20, padding:'3px 10px' }}>
+            {statusStyle.label}
+          </span>
+          <button onClick={handleManagePlan} disabled={loadingPortal}
+            style={{ background:'#F5B544', color:'#1A1A1A', border:'none', borderRadius:8, padding:'8px 16px', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+            {loadingPortal ? 'Cargando...' : tenantStatus === 'active' ? 'Gestionar plan' : 'Actualizar plan'}
+          </button>
+        </div>
+      </div>
+
+      {/* Toggle mensual/anual */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
+        {(['monthly','annual'] as const).map(i => (
+          <button key={i} onClick={() => setIntervalPlan(i)} style={{
+            padding:'6px 16px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+            border: interval === i ? '1px solid #0B2A4A' : '1px solid #F0EFEA',
+            background: interval === i ? '#0B2A4A' : '#FFFFFF',
+            color: interval === i ? '#FFFFFF' : '#5A5852',
+          }}>
+            {i === 'monthly' ? 'Mensual' : 'Anual'}
+            {i === 'annual' && <span style={{ marginLeft:6, fontSize:10, background:'#E6F4EE', color:'#1A6B40', borderRadius:10, padding:'1px 6px' }}>-20%</span>}
+          </button>
         ))}
+      </div>
+
+      {/* Cards */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
+        {PLANS.map(plan => {
+          const isCurrent = tenantPlan === plan.key
+          const price = interval === 'monthly' ? plan.monthlyPrice : plan.annualPrice
+          return (
+            <div key={plan.key} style={{ background:'#FFFFFF', border: isCurrent ? '2px solid #0B2A4A' : '1px solid #F0EFEA', borderRadius:12, padding:20, position:'relative' }}>
+              {isCurrent && (
+                <div style={{ position:'absolute', top:-10, left:'50%', transform:'translateX(-50%)', background:'#0B2A4A', color:'#FFFFFF', fontSize:10, fontWeight:700, padding:'2px 12px', borderRadius:20 }}>
+                  PLAN ACTUAL
+                </div>
+              )}
+              <div style={{ fontSize:13, fontWeight:700, color:'#5A5852', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.5px' }}>{plan.name}</div>
+              <div style={{ marginBottom:16 }}>
+                <span style={{ fontSize:28, fontWeight:800, color:'#0B2A4A' }}>${price}</span>
+                <span style={{ fontSize:12, color:'#5A5852' }}>/mes</span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:20 }}>
+                {plan.features.map(f => (
+                  <div key={f} style={{ fontSize:12, color:'#0B2A4A', display:'flex', alignItems:'center', gap:6 }}>
+                    <span style={{ color:'#1A6B40' }}>✓</span> {f}
+                  </div>
+                ))}
+                {plan.notIncluded.map(f => (
+                  <div key={f} style={{ fontSize:12, color:'#A8A6A0', display:'flex', alignItems:'center', gap:6 }}>
+                    <span>✗</span> {f}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => isCurrent && tenantCustomerId ? handleManagePlan() : window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`}
+                style={{ width:'100%', padding:'10px 0', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
+                  border: isCurrent ? 'none' : '1px solid #F0EFEA',
+                  background: isCurrent ? '#0B2A4A' : '#FFFFFF',
+                  color: isCurrent ? '#FFFFFF' : '#5A5852' }}>
+                {isCurrent ? 'Gestionar plan' : `Cambiar a ${plan.name}`}
+              </button>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
 }
 
-// ─── Billing section ──────────────────────────────────────────────────────────
-function BillingSection() {
-  const { t } = useLanguage()
-  return (
-    <div style={{ maxWidth: 600 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 4 }}>{t('billing')}</div>
-      <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 24 }}>{t('manageSub')}</div>
-      <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('currentSubscription')}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Plan</div>
-            <div style={{ fontSize: 13, color: 'var(--text2)' }}>$129 / month · Renews June 1, 2026</div>
-          </div>
-          <span className="badge status-completed">Active</span>
-        </div>
-      </div>
-      <div className="glass" style={{ padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>{t('paymentMethod')}</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 12px', fontSize: 12, fontWeight: 600 }}>VISA</div>
-            <div>
-              <div style={{ fontSize: 13 }}>•••• •••• •••• 4242</div>
-              <div style={{ fontSize: 11, color: 'var(--text2)' }}>Expires 12/2028</div>
-            </div>
-          </div>
-          <button className="btn btn-ghost btn-sm">Update</button>
-        </div>
-      </div>
-      <div className="glass" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', fontSize: 11, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('invoiceHistory')}</div>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border)' }}>
-              {[t('date'), t('amount'), t('status'), t('download')].map(h => (
-                <th key={h} style={{ padding: '10px 16px', fontSize: 10, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', textAlign: 'left' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_INVOICES.map((inv, i) => (
-              <tr key={i} className="row-hover" style={{ borderBottom: '1px solid var(--border)' }}>
-                <td style={{ padding: '12px 16px', fontSize: 13 }}>{new Date(inv.date).toLocaleDateString('en-AE', { year: 'numeric', month: 'long' })}</td>
-                <td style={{ padding: '12px 16px', fontSize: 13, fontWeight: 600 }}>${inv.amount}</td>
-                <td style={{ padding: '12px 16px' }}><StatusBadge status={inv.status}/></td>
-                <td style={{ padding: '12px 16px' }}><button className="btn btn-ghost btn-sm">PDF</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SettingsPage() {
@@ -1456,8 +1410,30 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<Section>('profile')
   const { isAdmin, isManager, currentUserEmail } = usePermissions()
 
+  // ── Tenant / Stripe state shared across sections ──
+  const [tenantPlan,       setTenantPlan]       = useState<string>('trial')
+  const [tenantStatus,     setTenantStatus]     = useState<string>('trialing')
+  const [tenantCustomerId, setTenantCustomerId] = useState<string | null>(null)
+  const [tenantId,         setTenantId]         = useState<string | null>(null)
+
+  useEffect(() => {
+    const sb = createClient()
+    sb.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: td } = await sb.from('tenants')
+        .select('id, plan, subscription_status, stripe_customer_id')
+        .eq('owner_id', user.id).maybeSingle()
+      if (td) {
+        setTenantId(td.id)
+        setTenantPlan(td.plan ?? 'trial')
+        setTenantStatus(td.subscription_status ?? 'trialing')
+        setTenantCustomerId(td.stripe_customer_id ?? null)
+      }
+    })
+  }, [])
+
   const visibleNav = NAV.filter(item => {
-    if (item.key === 'plans' || item.key === 'billing') return isAdmin
+    if (item.key === 'plans') return isAdmin
     if (item.key === 'integrations') return isAdmin || isManager
     return true
   })
@@ -1467,9 +1443,8 @@ export default function SettingsPage() {
       case 'profile':      return <ProfileSection/>
       case 'team':         return <TeamSection isAdmin={isAdmin} currentUserEmail={currentUserEmail}/>
       case 'integrations': return <IntegrationsSection/>
-      case 'plans':            return <PlansSection/>
-      case 'billing':          return <BillingSection/>
-      case 'print-templates':  return <PrintTemplatesSection/>
+      case 'plans':        return <PlansSection tenantPlan={tenantPlan} tenantStatus={tenantStatus} tenantCustomerId={tenantCustomerId} tenantId={tenantId}/>
+      case 'print-templates': return <PrintTemplatesSection/>
     }
   }
 
@@ -1478,7 +1453,6 @@ export default function SettingsPage() {
     team:             t('teamRoles'),
     integrations:     t('integrations'),
     plans:            t('plans'),
-    billing:          t('billing'),
     'print-templates': 'Plantillas',
   }
 
