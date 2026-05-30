@@ -55,8 +55,9 @@ export async function POST(req: NextRequest) {
         const subscriptionId = session.subscription as string
         const subscription   = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
         const priceId        = subscription.items.data[0]?.price.id ?? ''
-        const periodEnd      = subscription.current_period_end
-          ? new Date((subscription as any).current_period_end * 1000).toISOString()
+        const rawSub = subscription as unknown as Record<string, unknown>
+        const periodEnd = typeof rawSub['current_period_end'] === 'number'
+          ? new Date(rawSub['current_period_end'] * 1000).toISOString()
           : null
 
         await supabase
@@ -80,8 +81,9 @@ export async function POST(req: NextRequest) {
         if (!tenantId) break
 
         const priceId   = sub.items.data[0]?.price.id ?? ''
-        const periodEnd = sub.current_period_end
-          ? new Date((sub as any).current_period_end * 1000).toISOString()
+        const rawSub2 = sub as unknown as Record<string, unknown>
+        const periodEnd = typeof rawSub2['current_period_end'] === 'number'
+          ? new Date(rawSub2['current_period_end'] * 1000).toISOString()
           : null
 
         await supabase
@@ -107,10 +109,11 @@ export async function POST(req: NextRequest) {
       }
 
       case 'invoice.payment_failed': {
-        const invoice      = event.data.object as Stripe.Invoice
-        const subscriptionId = typeof invoice.subscription === 'string'
-          ? invoice.subscription
-          : invoice.subscription?.id
+        const rawInvoice     = event.data.object as unknown as Record<string, unknown>
+        const subField       = rawInvoice['subscription']
+        const subscriptionId = typeof subField === 'string'
+          ? subField
+          : (subField as Record<string, unknown> | null)?.['id'] as string | undefined
         if (!subscriptionId) break
 
         await supabase
