@@ -6,8 +6,8 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import { SkeletonTable } from '@/components/ui/SkeletonLoader'
 import { useLanguage } from '@/contexts/LanguageContext'
 import {
-  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, Tooltip, ResponsiveContainer,
+  BarChart, Bar, AreaChart, Area, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { DollarSign, TrendingUp, TrendingDown, ChevronDown, Plus, X } from 'lucide-react'
 import { getMonthlyExpenses } from '@/utils/getMonthlyExpenses'
@@ -62,7 +62,7 @@ const PERIOD_OPTIONS = [
   { key: 'thisYear',     label: 'Este Año' },
 ]
 const GOLD = '#F5B544'
-const CHART_COLORS = [GOLD, '#00d4aa', '#ff4f4f', '#818cf8', '#ffa800']
+const CHART_COLORS = ['#0B2A4A', '#3DD9D6', '#F5B544', '#1A6B40', '#D9533D']
 
 // ─── demo chart data ──────────────────────────────────────────────────────────
 const DEMO_SALES    = [{m:'Ene',v:45000},{m:'Feb',v:52000},{m:'Mar',v:48000},{m:'Abr',v:61000},{m:'May',v:73000},{m:'Jun',v:68000}]
@@ -74,8 +74,12 @@ const DEMO_CLIENTS  = [{name:'Khalid Al Mansoori',v:45000},{name:'Mohammed Al Ma
 const tooltipStyle = { background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, fontSize:11, color:'#0B2A4A' }
 
 // ─── chart widget ─────────────────────────────────────────────────────────────
-function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
+function ChartWidget({ id, onRemove, salesData, flowData, expensesData, productsData, clientsData }: {
+  id: string; onRemove: () => void;
+  salesData: any[]; flowData: any[]; expensesData: any[]; productsData: any[]; clientsData: any[];
+}) {
   const opt = CHART_OPTIONS.find(c => c.id === id)!
+  const ax  = { tick:{ fill:'#5A5852', fontSize:11 }, axisLine:{ stroke:'#F0EFEA' }, tickLine:false as const }
   return (
     <div className="glass" style={{ padding:'18px 20px', position:'relative' }}>
       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
@@ -87,29 +91,43 @@ function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
       <div style={{ height:200 }}>
         {id === 'sales' && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={DEMO_SALES} margin={{top:0,right:0,bottom:0,left:0}}>
-              <XAxis dataKey="m" tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} />
-              <YAxis tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
+            <BarChart data={salesData} margin={{top:0,right:0,bottom:0,left:0}}>
+              <defs>
+                <linearGradient id="salesBarGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%"   stopColor="#0B2A4A" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#1a4a7a" stopOpacity={0.85} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="m" {...ax} />
+              <YAxis {...ax} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[fmt(v),'Revenue']} />
-              <Bar dataKey="v" fill={GOLD} radius={[4,4,0,0]} />
+              <Bar dataKey="v" fill="url(#salesBarGrad)" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
         {id === 'flow' && (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={DEMO_FLOW} margin={{top:0,right:0,bottom:0,left:0}}>
-              <XAxis dataKey="d" tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} />
-              <YAxis tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[v,'Bookings']} />
-              <Line dataKey="n" stroke="#00d4aa" strokeWidth={2} dot={false} />
-            </LineChart>
+            <AreaChart data={flowData} margin={{top:4,right:0,bottom:0,left:0}}>
+              <defs>
+                <linearGradient id="flowAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#3DD9D6" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#3DD9D6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <XAxis dataKey="d" {...ax} />
+              <YAxis {...ax} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[v,'Reservas']} />
+              <Area type="monotone" dataKey="n" stroke="#3DD9D6" strokeWidth={2.5}
+                fill="url(#flowAreaGrad)"
+                dot={{ fill:'#3DD9D6', r:4, strokeWidth:2, stroke:'#fff' }} />
+            </AreaChart>
           </ResponsiveContainer>
         )}
         {id === 'expenses' && (
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={DEMO_EXPENSES} cx="50%" cy="50%" innerRadius={50} outerRadius={85} dataKey="value" paddingAngle={3}>
-                {DEMO_EXPENSES.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+              <Pie data={expensesData} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" paddingAngle={3}>
+                {expensesData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
               </Pie>
               <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[`${v}%`,'Share']} />
             </PieChart>
@@ -117,28 +135,39 @@ function ChartWidget({ id, onRemove }: { id: string; onRemove: () => void }) {
         )}
         {id === 'products' && (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={DEMO_PRODUCTS} layout="vertical" margin={{top:0,right:0,bottom:0,left:80}}>
-              <XAxis type="number" tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
-              <YAxis type="category" dataKey="name" tick={{fontSize:10,fill:'#888580'}} axisLine={false} tickLine={false} width={80} />
+            <BarChart data={productsData} layout="vertical" margin={{top:0,right:0,bottom:0,left:80}}>
+              <defs>
+                <linearGradient id="prodBarGrad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%"   stopColor="#0B2A4A" stopOpacity={1} />
+                  <stop offset="100%" stopColor="#1a4a7a" stopOpacity={0.8} />
+                </linearGradient>
+              </defs>
+              <XAxis type="number" {...ax} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
+              <YAxis type="category" dataKey="name" tick={{fill:'#5A5852',fontSize:10}} axisLine={{stroke:'#F0EFEA'}} tickLine={false} width={80} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[fmt(v),'Revenue']} />
-              <Bar dataKey="v" fill={GOLD} radius={[0,4,4,0]} />
+              {productsData.length > 1 && (
+                <ReferenceLine x={productsData.reduce((s,p)=>s+p.v,0)/productsData.length}
+                  stroke="#A8A6A0" strokeDasharray="4 4"
+                  label={{ value:'Prom', fill:'#A8A6A0', fontSize:9, position:'insideTopRight' }} />
+              )}
+              <Bar dataKey="v" fill="url(#prodBarGrad)" radius={[0,4,4,0]} />
             </BarChart>
           </ResponsiveContainer>
         )}
         {id === 'clients' && (
           <div style={{ display:'flex', flexDirection:'column', gap:8, paddingTop:4 }}>
-            {DEMO_CLIENTS.map((c, i) => {
-              const pct = Math.round(c.v / DEMO_CLIENTS[0].v * 100)
+            {clientsData.map((c, i) => {
+              const pct = clientsData[0]?.v > 0 ? Math.round(c.v / clientsData[0].v * 100) : 0
               return (
                 <div key={c.name} style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:18, height:18, borderRadius:'50%', background:`${GOLD}20`, border:`1px solid ${GOLD}40`, fontSize:9, fontWeight:700, color:GOLD, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{i+1}</div>
+                  <div style={{ width:18, height:18, borderRadius:'50%', background:'#0B2A4A', border:'1px solid #0B2A4A', fontSize:9, fontWeight:700, color:'#FFFFFF', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{i+1}</div>
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
                       <span style={{ fontSize:11, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</span>
-                      <span style={{ fontSize:11, fontWeight:700, color:GOLD, flexShrink:0 }}>{fmt(c.v)}</span>
+                      <span style={{ fontSize:11, fontWeight:700, color:'#0B2A4A', flexShrink:0 }}>{fmt(c.v)}</span>
                     </div>
-                    <div style={{ height:3, background:'rgba(255,255,255,0.05)', borderRadius:2 }}>
-                      <div style={{ height:'100%', width:`${pct}%`, background:GOLD, borderRadius:2 }} />
+                    <div style={{ height:3, background:'#F0EFEA', borderRadius:2 }}>
+                      <div style={{ height:'100%', width:`${pct}%`, background:'#0B2A4A', borderRadius:2 }} />
                     </div>
                   </div>
                 </div>
@@ -210,6 +239,13 @@ export default function DashboardPage() {
   const [activityFeed, setActivityFeed] = useState<any[]>([])
   const [lowStockItems, setLowStockItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // ── Chart data ──
+  const [salesData,    setSalesData]    = useState<any[]>(DEMO_SALES)
+  const [flowData,     setFlowData]     = useState<any[]>(DEMO_FLOW)
+  const [expensesData, setExpensesData] = useState<any[]>(DEMO_EXPENSES)
+  const [productsData, setProductsData] = useState<any[]>(DEMO_PRODUCTS)
+  const [clientsData,  setClientsData]  = useState<any[]>(DEMO_CLIENTS)
   const [mounted, setMounted] = useState(false)
 
   // ── UI state ──
@@ -365,6 +401,84 @@ export default function DashboardPage() {
     } catch {
       buildActivityFromBookings(todasReservas)
     }
+
+    // ── Chart queries ─────────────────────────────────────────────────────────
+    try {
+      // 1. Ventas por mes (últimos 6 meses)
+      const salesByMonth: any[] = []
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(tz.getToday())
+        d.setMonth(d.getMonth() - i)
+        const firstDay = new Date(d.getFullYear(), d.getMonth(), 1)
+        const lastDay  = new Date(d.getFullYear(), d.getMonth() + 1, 0)
+        const { start } = tz.dayRange(firstDay)
+        const { end }   = tz.dayRange(lastDay)
+        const { data: invs } = await supabase
+          .from('invoices').select('total')
+          .gte('created_at', start).lte('created_at', end)
+          .in('status', ['pagada', 'paid'])
+        const total = (invs ?? []).reduce((s, inv) => s + Number(inv.total ?? 0), 0)
+        const mes = d.toLocaleDateString('es-AE', { month: 'short', timeZone: tz.timezone ?? 'Asia/Dubai' })
+        salesByMonth.push({ m: mes.charAt(0).toUpperCase() + mes.slice(1), v: total })
+      }
+      if (salesByMonth.some(s => s.v > 0)) setSalesData(salesByMonth)
+
+      // 2. Flujo de reservas — últimos 7 días
+      const diasSemana = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+      const flowByDay: any[] = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(tz.getToday())
+        d.setDate(d.getDate() - i)
+        const { start, end } = tz.dayRange(d)
+        const { count } = await supabase
+          .from('bookings').select('id', { count: 'exact', head: true })
+          .gte('scheduled_at', start).lte('scheduled_at', end)
+        flowByDay.push({ d: diasSemana[d.getDay()], n: count ?? 0 })
+      }
+      if (flowByDay.some(f => f.n > 0)) setFlowData(flowByDay)
+
+      // 3. Gastos por categoría — mes actual
+      const hoyChart = tz.getToday()
+      const mesIni = tz.dayRange(new Date(hoyChart.getFullYear(), hoyChart.getMonth(), 1))
+      const { data: expData } = await supabase
+        .from('expenses').select('amount, category')
+        .gte('date', mesIni.start.split('T')[0])
+        .lte('date', mesIni.end.split('T')[0])
+      const byCat: Record<string, number> = {}
+      ;(expData ?? []).forEach((e: any) => {
+        const cat = e.category ?? 'Otros'
+        byCat[cat] = (byCat[cat] ?? 0) + Number(e.amount ?? 0)
+      })
+      const expChart = Object.entries(byCat).map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value).slice(0, 5)
+      if (expChart.length > 0) setExpensesData(expChart)
+
+      // 4. Productos más vendidos (ingresos por servicio)
+      const { data: prodData } = await supabase
+        .from('bookings').select('services(name), price')
+        .eq('status', 'completed').not('services', 'is', null)
+      const bySvc: Record<string, number> = {}
+      ;(prodData ?? []).forEach((b: any) => {
+        const name = b.services?.name ?? 'Sin servicio'
+        bySvc[name] = (bySvc[name] ?? 0) + Number(b.price ?? 0)
+      })
+      const prodChart = Object.entries(bySvc).map(([name, v]) => ({ name, v }))
+        .sort((a, b) => b.v - a.v).slice(0, 5)
+      if (prodChart.length > 0) setProductsData(prodChart)
+
+      // 5. Mejores clientes por LTV
+      const { data: cliData } = await supabase
+        .from('bookings').select('contacts(full_name), price')
+        .eq('status', 'completed').not('contacts', 'is', null)
+      const byClient: Record<string, number> = {}
+      ;(cliData ?? []).forEach((b: any) => {
+        const name = b.contacts?.full_name ?? 'Desconocido'
+        byClient[name] = (byClient[name] ?? 0) + Number(b.price ?? 0)
+      })
+      const cliChart = Object.entries(byClient).map(([name, v]) => ({ name, v }))
+        .sort((a, b) => b.v - a.v).slice(0, 5)
+      if (cliChart.length > 0) setClientsData(cliChart)
+    } catch { /* chart queries optional */ }
 
     setLoading(false)
   }
@@ -640,7 +754,11 @@ export default function DashboardPage() {
       {/* ── Chart widgets ── */}
       {mounted && activeCharts.length > 0 && (
         <div style={{ display:'grid', gridTemplateColumns: activeCharts.length === 1 ? '1fr' : 'repeat(2,1fr)', gap:14, marginBottom:16 }}>
-          {activeCharts.map(id => <ChartWidget key={id} id={id} onRemove={() => removeChart(id)} />)}
+          {activeCharts.map(id => (
+            <ChartWidget key={id} id={id} onRemove={() => removeChart(id)}
+              salesData={salesData} flowData={flowData} expensesData={expensesData}
+              productsData={productsData} clientsData={clientsData} />
+          ))}
         </div>
       )}
 
