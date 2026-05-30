@@ -451,9 +451,9 @@ export default function DashboardPage() {
     return {
       display:'block', width:'100%', textAlign:'left', border:'none', cursor:'pointer',
       padding:'10px 16px', fontSize:13, fontFamily:'Outfit,sans-serif',
-      background: active ? 'rgba(245,181,68,0.12)' : 'transparent',
-      color: active ? GOLD : '#5A5852',
-      borderLeft: active ? `2px solid ${GOLD}` : '2px solid transparent',
+      background: active ? '#E6F0FA' : 'transparent',
+      color: active ? '#0B2A4A' : '#5A5852',
+      borderLeft: active ? '2px solid #0B2A4A' : '2px solid transparent',
       transition:'all 0.12s',
     }
   }
@@ -479,7 +479,7 @@ export default function DashboardPage() {
         {/* Period */}
         <div ref={periodRef} style={{ position:'relative' }}>
           <button onClick={openPeriod}
-            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:'var(--bg3)', border:`1px solid ${GOLD}40`, color:GOLD, fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif' }}>
+            style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 14px', borderRadius:8, cursor:'pointer', background:'var(--bg3)', border:'1px solid #0B2A4A', color:'#0B2A4A', fontSize:12, fontWeight:600, fontFamily:'Outfit,sans-serif' }}>
             {appliedLabel} <ChevronDown size={12} />
           </button>
 
@@ -495,7 +495,7 @@ export default function DashboardPage() {
                       {p.label}
                     </button>
                   ))}
-                  <div style={{ height:1, background:'rgba(255,255,255,0.06)', margin:'4px 0' }} />
+                  <div style={{ height:1, background:'#F0EFEA', margin:'4px 0' }} />
                   <button onClick={() => setPeriodView('custom')} style={optStyle(period === 'custom')}
                     onMouseEnter={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = '#FAFAF7'; (e.currentTarget as HTMLElement).style.color = '#0B2A4A' } }}
                     onMouseLeave={e => { if (period !== 'custom') { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#5A5852' } }}>
@@ -629,7 +629,7 @@ export default function DashboardPage() {
               <div style={{ fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em', marginBottom:8 }}>{card.label}</div>
               <div style={{ fontSize:22, fontWeight:800, color:'var(--text)', marginBottom:6 }}>{card.value}</div>
               <div style={{ display:'flex', gap:5, alignItems:'center' }}>
-                <span style={{ fontSize:11, fontWeight:700, color: card.deltaPos ? '#34d399' : '#ff4f4f' }}>{card.delta}</span>
+                <span style={{ fontSize:11, fontWeight:700, color: card.deltaPos ? '#1A6B40' : '#ff4f4f' }}>{card.delta}</span>
                 <span style={{ fontSize:13, color:'var(--text2)' }}>{card.sub}</span>
               </div>
             </div>
@@ -815,7 +815,7 @@ export default function DashboardPage() {
                         )
                       })}
                     </div>
-                    <a href="/services" style={{ display:'block', textAlign:'center', padding:'9px', background:'transparent', border:'1px solid var(--border)', borderRadius:8, color:GOLD, fontSize:11, fontWeight:700, textDecoration:'none', letterSpacing:'1px' }}>
+                    <a href="/services" style={{ display:'block', textAlign:'center', padding:'9px', background:'transparent', border:'1px solid #0B2A4A', borderRadius:8, color:'#0B2A4A', fontSize:11, fontWeight:700, textDecoration:'none', letterSpacing:'1px' }}>
                       VER INVENTARIO COMPLETO →
                     </a>
                   </>
