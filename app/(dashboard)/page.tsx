@@ -580,20 +580,20 @@ export default function DashboardPage() {
                     }} />
                   )}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
-                    <div style={{ fontSize:10, fontWeight:600, color: hasAlerts ? '#ef4444' : 'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
+                    <div style={{ fontSize:10, fontWeight:700, color: hasAlerts ? '#991B1B' : 'var(--text2)', textTransform:'uppercase', letterSpacing:'0.07em' }}>
                       {card.label}
                     </div>
                     <div style={{ width:28, height:28, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center',
                       background: hasAlerts ? 'rgba(239,68,68,0.15)' : card.iconBg,
                       border: `1px solid ${hasAlerts ? 'rgba(239,68,68,0.3)' : 'transparent'}`,
                     }}>
-                      <span style={{ fontSize:14 }}>{hasAlerts ? '⚠️' : '📦'}</span>
+                      <span style={{ fontSize:14, color: hasAlerts ? '#991B1B' : undefined }}>{hasAlerts ? '⚠️' : '📦'}</span>
                     </div>
                   </div>
-                  <div style={{ fontSize:36, fontWeight:800, color: hasAlerts ? '#ef4444' : 'var(--text)', lineHeight:1 }}>
+                  <div style={{ fontSize:36, fontWeight:800, color: hasAlerts ? '#7F1D1D' : 'var(--text)', lineHeight:1 }}>
                     {count}
                   </div>
-                  <div style={{ fontSize:13, color: hasAlerts ? 'rgba(239,68,68,0.6)' : '#5A5852', marginTop:6 }}>
+                  <div style={{ fontSize:13, color: hasAlerts ? '#7F1D1D' : '#5A5852', marginTop:6 }}>
                     {count === 0 ? `— ${t('allInStock')}` : `— ${count} producto${count !== 1 ? 's' : ''} bajo mínimo`}
                   </div>
                 </div>
@@ -661,7 +661,7 @@ export default function DashboardPage() {
                   Hoy — {formatearFecha(hoyDisplay)}
                 </div>
                 {bookingsHoy.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'20px 0', color:'#A8A6A0', fontSize:13 }}>
+                  <div style={{ textAlign:'center', padding:'20px 0', color:'#0B2A4A', fontSize:15, fontWeight:500 }}>
                     Sin reservas para hoy
                   </div>
                 ) : (
@@ -706,7 +706,7 @@ export default function DashboardPage() {
                   Mañana — {formatearFecha(mananaDisplay)}
                 </div>
                 {bookingsManana.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'20px 0', color:'#A8A6A0', fontSize:13 }}>
+                  <div style={{ textAlign:'center', padding:'20px 0', color:'#0B2A4A', fontSize:15, fontWeight:500 }}>
                     Sin reservas para mañana
                   </div>
                 ) : (
