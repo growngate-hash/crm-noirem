@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 // ── Price IDs from env ────────────────────────────────────────────────────────
@@ -93,15 +93,15 @@ function SaffiLogo() {
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-export default function UpgradePage() {
+// ── Inner component — uses useSearchParams ────────────────────────────────────
+function UpgradeContent() {
   const params    = useSearchParams()
   const tenantId  = params.get('tenant_id') ?? ''
   const upgraded  = params.get('upgraded') === 'true'
   const canceled  = params.get('canceled')  === 'true'
 
-  const [interval,   setInterval]   = useState<Interval>('monthly')
-  const [loading,    setLoading]    = useState<PlanKey | null>(null)
+  const [interval, setInterval] = useState<Interval>('monthly')
+  const [loading,  setLoading]  = useState<PlanKey | null>(null)
 
   async function handleSelectPlan(priceId: string, planKey: PlanKey) {
     if (!tenantId) return
@@ -211,8 +211,8 @@ export default function UpgradePage() {
         margin: '0 auto',
       }}>
         {PLANS.map(plan => {
-          const price   = interval === 'annual' ? plan.annual : plan.monthly
-          const priceId = PRICE_IDS[plan.key][interval]
+          const price     = interval === 'annual' ? plan.annual : plan.monthly
+          const priceId   = PRICE_IDS[plan.key][interval]
           const isLoading = loading === plan.key
 
           return (
@@ -267,10 +267,7 @@ export default function UpgradePage() {
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                 {plan.features.map(f => (
                   <li key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <span style={{
-                      fontSize: 14, fontWeight: 700, flexShrink: 0,
-                      color: f.included ? '#1A6B40' : '#A8A6A0',
-                    }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, flexShrink: 0, color: f.included ? '#1A6B40' : '#A8A6A0' }}>
                       {f.included ? '✓' : '✗'}
                     </span>
                     <span style={{ fontSize: 13, color: f.included ? '#0B2A4A' : '#A8A6A0' }}>
@@ -286,7 +283,8 @@ export default function UpgradePage() {
                 disabled={isLoading || !tenantId}
                 style={{
                   width: '100%', padding: '13px 0', borderRadius: 10, border: 'none',
-                  fontSize: 14, fontWeight: 700, cursor: isLoading || !tenantId ? 'not-allowed' : 'pointer',
+                  fontSize: 14, fontWeight: 700,
+                  cursor: isLoading || !tenantId ? 'not-allowed' : 'pointer',
                   transition: 'all 0.15s',
                   background: plan.highlight ? '#0B2A4A' : '#F5B544',
                   color:      plan.highlight ? '#FFFFFF'  : '#1A1A1A',
@@ -311,5 +309,26 @@ export default function UpgradePage() {
         </p>
       )}
     </div>
+  )
+}
+
+// ── Page — wraps content in Suspense for useSearchParams ──────────────────────
+export default function UpgradePage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        background: '#F5F4EF',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#0B2A4A',
+        fontSize: 16,
+      }}>
+        Cargando planes...
+      </div>
+    }>
+      <UpgradeContent />
+    </Suspense>
   )
 }
