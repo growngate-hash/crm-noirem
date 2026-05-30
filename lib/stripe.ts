@@ -3,8 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 
 // ── Server-side Stripe client ─────────────────────────────────────────────────
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-04-30.basil',
-  typescript: true,
+  apiVersion: '2024-04-10',
 })
 
 // ── Price ID map from env ─────────────────────────────────────────────────────
