@@ -174,17 +174,29 @@ Una fila por empresa. El middleware la lee en cada request autenticado.
 
 ```sql
 CREATE TABLE tenants (
-  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id      uuid UNIQUE REFERENCES auth.users(id),
-  name          text NOT NULL,
-  slug          text UNIQUE,
-  plan_id       uuid REFERENCES plans(id),
-  status        text CHECK (status IN ('trial', 'active', 'expired', 'suspended')),
-  trial_ends_at timestamptz DEFAULT now() + INTERVAL '10 days',
-  country       text,
-  timezone      text,
-  currency      text,
-  is_superadmin boolean NOT NULL DEFAULT false  -- agregado en 20260527_admin_panel.sql
+  id                     uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  owner_id               uuid UNIQUE REFERENCES auth.users(id),
+  name                   text NOT NULL,
+  slug                   text UNIQUE,
+  plan_id                uuid REFERENCES plans(id),
+  status                 text CHECK (status IN ('trial', 'active', 'expired', 'suspended')),
+  trial_ends_at          timestamptz DEFAULT now() + INTERVAL '10 days',
+  country                text,
+  timezone               text,
+  currency               text,
+  is_superadmin          boolean NOT NULL DEFAULT false,   -- 20260527_admin_panel.sql
+
+  -- Columnas Stripe (20260529_stripe_subscriptions.sql)
+  stripe_customer_id     text,
+  stripe_subscription_id text,
+  stripe_price_id        text,
+  plan                   text DEFAULT 'trial'
+                         CHECK (plan IN ('trial','starter','pro','enterprise')),
+  plan_interval          text DEFAULT 'monthly'
+                         CHECK (plan_interval IN ('monthly','annual')),
+  subscription_status    text DEFAULT 'trialing'
+                         CHECK (subscription_status IN ('trialing','active','past_due','canceled','unpaid')),
+  subscription_ends_at   timestamptz
 );
 ```
 
@@ -197,6 +209,8 @@ CREATE TABLE tenants (
 | `suspended` | Siempre | `/suspended` |
 | `active` | — | Sin redirección |
 | Sin fila en `tenants` | Legacy Noirem | Sin redirección (deja pasar) |
+
+> Para el flujo completo de suscripciones Stripe, ver [docs/STRIPE_INTEGRATION.md](STRIPE_INTEGRATION.md).
 
 ---
 
@@ -312,7 +326,9 @@ CREATE POLICY "superadmin_all" ON admin_audit_log
 Columnas: `performed_by`, `action`, `affected_tenant_id`, `payload (jsonb)`, `note`, `created_at`.
 
 Rutas excluidas del matcher (no pasan por middleware):
-`_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/cron`, `api/register`, `booking`, `auth`, imágenes.
+`_next/static`, `_next/image`, `favicon.ico`, `api/availability`, `api/whatsapp/webhook`, `api/cron`, `api/register`, `api/stripe`, `booking`, `auth`, imágenes.
+
+> `api/stripe` excluye tanto `/api/stripe/webhook` como `/api/stripe/checkout`. Sin esta exclusión, Stripe recibe un `307 Redirect` al intentar llamar al webhook (no tiene sesión de Supabase).
 
 > Para la lógica completa de emails transaccionales y cron jobs, ver [docs/EMAIL_CRON.md](EMAIL_CRON.md).
 
@@ -505,3 +521,4 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | `20260527_fix_purchase_journal_triggers.sql` | Documentación del fix a `generate_journal_for_purchase()` y `generate_journal_for_purchase_payment()` aplicado directamente en BD |
 | `20260527_fix_vehicles_rls.sql` | Policy `auth_see_unowned_vehicles` — permite ver vehículos de clientes con `user_id = NULL` |
 | `20260527_admin_panel.sql` | Columna `is_superadmin` en `tenants` + tabla `admin_audit_log` con RLS para superadmins |
+| `20260529_stripe_subscriptions.sql` | Columnas Stripe en `tenants`: `stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `plan`, `plan_interval`, `subscription_status`, `subscription_ends_at` |
