@@ -338,25 +338,19 @@ export default function DashboardPage() {
       activityResult,
     ] = await Promise.all([
       supabase.from('bookings').select('id', { count: 'exact', head: true })
-        .in('status', ['confirmed', 'in_progress', 'pending'])
-        .catch(() => ({ count: 0, data: null, error: null })),
+        .in('status', ['confirmed', 'in_progress', 'pending']),
       supabase.from('bookings')
         .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
         .gte('scheduled_at', startHoy).lte('scheduled_at', endHoy)
-        .order('scheduled_at', { ascending: true })
-        .catch(() => ({ data: null, error: null })),
+        .order('scheduled_at', { ascending: true }),
       supabase.from('bookings')
         .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
         .gte('scheduled_at', startMana).lte('scheduled_at', endMana)
-        .order('scheduled_at', { ascending: true })
-        .catch(() => ({ data: null, error: null })),
-      getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
-        .catch(() => ({ total: 0, expensesAmt: 0, comprasAmt: 0, nominaAmt: 0 })),
-      supabase.from('reviews').select('rating').gte('created_at', inicioMesUTC)
-        .catch(() => ({ data: null, error: null })),
+        .order('scheduled_at', { ascending: true }),
+      getMonthlyExpenses(supabase, inicioMesStr, finMesStr),
+      supabase.from('reviews').select('rating').gte('created_at', inicioMesUTC),
       supabase.from('activity_log').select('*')
-        .order('created_at', { ascending: false }).limit(10)
-        .catch(() => ({ data: null, error: true })),
+        .order('created_at', { ascending: false }).limit(10),
     ])
 
     const activeBookings = (bookingsActivosResult as any).count
