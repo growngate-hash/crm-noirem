@@ -208,13 +208,13 @@ function KpiSkeleton() {
   return (
     <div style={{ background:'var(--bg2)', border:'1px solid var(--border)', borderRadius:12, padding:'18px 16px', height:108 }}>
       <div style={{ height:10, width:'60%', borderRadius:4, marginBottom:14,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
       <div style={{ height:28, width:'75%', borderRadius:6, marginBottom:10,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
       <div style={{ height:8, width:'50%', borderRadius:4,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
     </div>
   )
@@ -224,13 +224,13 @@ function KpiSkeleton2() {
   return (
     <div style={{ background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:12, padding:'16px 16px', height:88 }}>
       <div style={{ height:8, width:'55%', borderRadius:4, marginBottom:12,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
       <div style={{ height:22, width:'65%', borderRadius:6, marginBottom:8,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
       <div style={{ height:8, width:'45%', borderRadius:4,
-        background:'linear-gradient(90deg,#1a1a1e 25%,#212126 50%,#1a1a1e 75%)',
+        background:'linear-gradient(90deg,#F0EFEA 25%,#E5E7EB 50%,#F0EFEA 75%)',
         backgroundSize:'200% 100%', animation:'shimmer 1.5s infinite' }} />
     </div>
   )
