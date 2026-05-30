@@ -70,6 +70,7 @@ export async function POST(req: NextRequest) {
             plan_interval:          derivePlanInterval(priceId),
             subscription_status:    'active',
             subscription_ends_at:   periodEnd,
+            status:                 'active',
           })
           .eq('id', tenantId)
         break
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
         const sub = event.data.object as Stripe.Subscription
         await supabase
           .from('tenants')
-          .update({ subscription_status: 'canceled', plan: 'trial' })
+          .update({ subscription_status: 'canceled', plan: 'trial', status: 'expired' })
           .eq('stripe_subscription_id', sub.id)
         break
       }
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
 
         await supabase
           .from('tenants')
-          .update({ subscription_status: 'past_due' })
+          .update({ subscription_status: 'past_due', status: 'suspended' })
           .eq('stripe_subscription_id', subscriptionId)
         break
       }

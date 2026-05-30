@@ -81,21 +81,33 @@ export async function middleware(request: NextRequest) {
     )
     const { data: tenant } = await supabaseAdmin
       .from('tenants')
-      .select('status, trial_ends_at')
+      .select('id, status, trial_ends_at, subscription_status, plan')
       .eq('owner_id', user.id)
       .maybeSingle()
 
     // Si no tiene tenant todavía (Noirem legacy o error) — dejar pasar
     if (tenant) {
       const now = new Date()
-      const trialExpired = tenant.status === 'trial' && new Date(tenant.trial_ends_at) < now
-      const isSuspended  = tenant.status === 'suspended'
-      const isExpired    = tenant.status === 'expired' || trialExpired
 
-      // Trial expirado → upgrade
+      // Trial expirado — campo legado
+      const trialExpired = tenant.status === 'trial' &&
+        tenant.trial_ends_at &&
+        new Date(tenant.trial_ends_at) < now
+
+      // Suscripción activa por Stripe — desbloquea acceso
+      const stripeActive = tenant.subscription_status === 'active'
+
+      // Expirado si: trial venció Y no tiene Stripe activo
+      const isExpired = (tenant.status === 'expired' || trialExpired) && !stripeActive
+
+      // Suspendido si: status=suspended Y no tiene Stripe activo
+      const isSuspended = tenant.status === 'suspended' && !stripeActive
+
+      // Trial expirado → upgrade (con tenant_id para pre-fill)
       if (isExpired && !isUpgradePage) {
         const url = request.nextUrl.clone()
         url.pathname = '/upgrade'
+        if (tenant.id) url.searchParams.set('tenant_id', tenant.id)
         return NextResponse.redirect(url)
       }
 
