@@ -103,7 +103,15 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
               </defs>
               <XAxis dataKey="m" {...ax} />
               <YAxis {...ax} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
-              <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[fmt(v),'Revenue']} />
+              <Tooltip content={({ active, payload, label }) => {
+                if (!active || !payload?.length) return null
+                return (
+                  <div style={{ background:'#FFFFFF', border:'1px solid #F0EFEA', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#0B2A4A' }}>
+                    <div style={{ fontWeight:700, marginBottom:4 }}>{label}</div>
+                    <div>AED {payload[0].value?.toLocaleString()}</div>
+                  </div>
+                )
+              }}/>
               <Bar dataKey="v" fill="url(#salesBarGrad)" radius={[4,4,0,0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -158,7 +166,7 @@ function ChartWidget({ id, onRemove, salesData, flowData, expensesData, products
                 </linearGradient>
               </defs>
               <XAxis type="number" {...ax} tickFormatter={v=>`${(v/1000).toFixed(0)}K`} />
-              <YAxis type="category" dataKey="name" tick={{fill:'#5A5852',fontSize:10}} axisLine={{stroke:'#F0EFEA'}} tickLine={false} width={80} />
+              <YAxis type="category" dataKey="name" tick={{fill:'#5A5852',fontSize:11}} axisLine={{stroke:'#F0EFEA'}} tickLine={false} width={100} />
               <Tooltip contentStyle={tooltipStyle} formatter={(v:any)=>[fmt(v),'Revenue']} />
               {productsData.length > 1 && (
                 <ReferenceLine x={productsData.reduce((s,p)=>s+p.v,0)/productsData.length}
@@ -429,10 +437,10 @@ export default function DashboardPage() {
         const { start } = tz.dayRange(firstDay)
         const { end }   = tz.dayRange(lastDay)
         const { data: invs } = await supabase
-          .from('invoices').select('total')
+          .from('invoices').select('subtotal')
           .gte('created_at', start).lte('created_at', end)
           .in('status', ['pagada', 'paid'])
-        const total = (invs ?? []).reduce((s, inv) => s + Number(inv.total ?? 0), 0)
+        const total = (invs ?? []).reduce((s, inv) => s + Number(inv.subtotal ?? 0), 0)
         const mes = d.toLocaleDateString('es-AE', { month: 'short', timeZone: tz.timezone ?? 'Asia/Dubai' })
         salesByMonth.push({ m: mes.charAt(0).toUpperCase() + mes.slice(1), v: total })
       }
