@@ -195,7 +195,7 @@ const dropdownStyle: React.CSSProperties = {
 
 // ─── main page ────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const tz = useTimezone()
 
   // ── KPI state ──
@@ -204,7 +204,9 @@ export default function DashboardPage() {
     lowStockAlerts: 0, revenueMTD: 0, vatMTD: 0, activeBookings: 0,
     avgOrderValue: 0, csatScore: 0, deltaRevenue: 0,
   })
-  const [recentBookings, setRecentBookings] = useState<any[]>([])
+  const [recentBookings,  setRecentBookings]  = useState<any[]>([])
+  const [bookingsHoy,     setBookingsHoy]     = useState<any[]>([])
+  const [bookingsManana,  setBookingsManana]  = useState<any[]>([])
   const [activityFeed, setActivityFeed] = useState<any[]>([])
   const [lowStockItems, setLowStockItems] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -263,19 +265,34 @@ export default function DashboardPage() {
 
     // ── Bookings (optional — failures don't block KPIs) ──
     let activeBookings = 0
-    let bookingsRecientes: any[] = []
     try {
       const { data: activos } = await supabase
         .from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending'])
       activeBookings = activos?.length ?? 0
     } catch { /* bookings table may not exist */ }
     try {
-      const { data } = await supabase
+      const hoy    = tz.getToday()
+      const manana = new Date(hoy)
+      manana.setDate(hoy.getDate() + 1)
+      const { start: startHoy,  end: endHoy  } = tz.dayRange(hoy)
+      const { start: startMana, end: endMana  } = tz.dayRange(manana)
+
+      const { data: bHoy } = await supabase
         .from('bookings')
         .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
-        .order('created_at', { ascending: false })
-        .limit(10)
-      bookingsRecientes = data ?? []
+        .gte('scheduled_at', startHoy)
+        .lte('scheduled_at', endHoy)
+        .order('scheduled_at', { ascending: true })
+
+      const { data: bMana } = await supabase
+        .from('bookings')
+        .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
+        .gte('scheduled_at', startMana)
+        .lte('scheduled_at', endMana)
+        .order('scheduled_at', { ascending: true })
+
+      setBookingsHoy(bHoy ?? [])
+      setBookingsManana(bMana ?? [])
     } catch { /* bookings schema may differ */ }
 
     const { total: totalExpenses } = await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
@@ -416,6 +433,14 @@ export default function DashboardPage() {
       value: kpis.csatScore > 0 ? `${kpis.csatScore.toFixed(2)} / 5` : 'Sin datos',
       delta:'este trimestre', deltaPos:true, sub:'valoración clientes' },
   ]
+
+  const hoyDisplay    = tz.ready ? tz.getToday() : new Date()
+  const mananaDisplay = new Date(hoyDisplay)
+  mananaDisplay.setDate(hoyDisplay.getDate() + 1)
+  const formatearFecha = (date: Date) =>
+    date.toLocaleDateString(lang === 'es' ? 'es-AE' : 'en-AE', {
+      weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dubai',
+    })
 
   function optStyle(active: boolean): React.CSSProperties {
     return {
@@ -563,7 +588,7 @@ export default function DashboardPage() {
                   <div style={{ fontSize:36, fontWeight:800, color: hasAlerts ? '#ef4444' : 'var(--text)', lineHeight:1 }}>
                     {count}
                   </div>
-                  <div style={{ fontSize:10, color: hasAlerts ? 'rgba(239,68,68,0.6)' : '#3a3836', marginTop:6 }}>
+                  <div style={{ fontSize:13, color: hasAlerts ? 'rgba(239,68,68,0.6)' : '#5A5852', marginTop:6 }}>
                     {count === 0 ? `— ${t('allInStock')}` : `— ${count} producto${count !== 1 ? 's' : ''} bajo mínimo`}
                   </div>
                 </div>
@@ -583,7 +608,7 @@ export default function DashboardPage() {
                   ? <div style={{ fontSize:36, fontWeight:800, color:'var(--text)', lineHeight:1 }}>{card.value}</div>
                   : <div style={{ fontSize:22, fontWeight:800, color:card.color, lineHeight:1 }}>{card.value}</div>
                 }
-                <div style={{ fontSize:10, color:'#5A5852', marginTop:6 }}>{card.sub}</div>
+                <div style={{ fontSize:13, color:'#5A5852', marginTop:6 }}>{card.sub}</div>
               </div>
             )
           })
@@ -600,7 +625,7 @@ export default function DashboardPage() {
               <div style={{ fontSize:22, fontWeight:800, color:'var(--text)', marginBottom:6 }}>{card.value}</div>
               <div style={{ display:'flex', gap:5, alignItems:'center' }}>
                 <span style={{ fontSize:11, fontWeight:700, color: card.deltaPos ? '#34d399' : '#ff4f4f' }}>{card.delta}</span>
-                <span style={{ fontSize:10, color:'var(--text2)' }}>{card.sub}</span>
+                <span style={{ fontSize:13, color:'var(--text2)' }}>{card.sub}</span>
               </div>
             </div>
           ))
@@ -617,55 +642,103 @@ export default function DashboardPage() {
       {/* ── Bottom: Recent Bookings + Activity Feed ── */}
       <div className="bottom-grid">
 
-        {/* Recent Bookings */}
+        {/* Reservas de Hoy y Mañana */}
         <div className="glass" style={{ overflow:'hidden', border:'1px solid var(--border-cyan)', boxShadow:'var(--shadow)' }}>
           <div style={{ padding:'14px 18px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <div style={{ fontSize:13, fontWeight:700 }}>{t('recentBookings')}</div>
-            <span style={{ fontSize:11, color:'var(--text2)' }}>{t('last10')}</span>
+            <div style={{ fontSize:13, fontWeight:700 }}>Reservas de Hoy y Mañana</div>
           </div>
-          {loading ? <SkeletonTable rows={3} cols={5} /> : recentBookings.length === 0 ? (
-            <div style={{ padding:'48px 24px', textAlign:'center' }}>
-              <div style={{ fontSize:32, marginBottom:12 }}>📋</div>
-              <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:6 }}>No hay reservas registradas aún</div>
-              <div style={{ fontSize:12, color:'var(--text2)', marginBottom:20 }}>Las reservas aparecerán aquí una vez que las crees</div>
-              <a href="/bookings" style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'8px 18px', borderRadius:8, background:GOLD, color:'#0d0d0f', fontSize:12, fontWeight:700, textDecoration:'none', fontFamily:'Outfit,sans-serif' }}>
-                → Crear primera reserva
-              </a>
-            </div>
-          ) : (
-            <div className="scroll" style={{ maxHeight:360 }}>
-              <table style={{ width:'100%', borderCollapse:'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom:'1px solid var(--border)' }}>
-                    {[t('client'), t('service'), t('vehicle'), t('amount'), t('status')].map(h => (
-                      <th key={h} style={{ padding:'10px 16px', fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'left' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentBookings.map(b => {
-                    const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
-                    const bg = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
-                    const amount = (b.price ?? 0) - (b.discount ?? 0)
-                    return (
-                      <tr key={b.id} className="row-hover" style={{ borderBottom:'1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding:'10px 16px' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                            <div style={{ width:30, height:30, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff', flexShrink:0 }}>{initials(name)}</div>
-                            <span style={{ fontSize:12, fontWeight:600 }}>{name}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding:'10px 16px', fontSize:12, color:'var(--text2)' }}>{b.services?.name ?? '—'}</td>
-                        <td style={{ padding:'10px 16px', fontSize:11, color:'var(--text2)' }}>
-                          {b.vehicles ? `${b.vehicles.make ?? ''} ${b.vehicles.model ?? ''}`.trim() || '—' : '—'}
-                        </td>
-                        <td style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--gold)' }}>{formatAED(amount)}</td>
-                        <td style={{ padding:'10px 16px' }}><StatusBadge status={b.status ?? 'pending'} /></td>
+          {loading ? <SkeletonTable rows={3} cols={5} /> : (
+            <div className="scroll" style={{ maxHeight:420, padding:'16px 0' }}>
+
+              {/* ── Grupo HOY ── */}
+              <div style={{ marginBottom:20, padding:'0 18px' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:12, paddingBottom:8, borderBottom:'1px solid #F0EFEA' }}>
+                  Hoy — {formatearFecha(hoyDisplay)}
+                </div>
+                {bookingsHoy.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'20px 0', color:'#A8A6A0', fontSize:13 }}>
+                    Sin reservas para hoy
+                  </div>
+                ) : (
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom:'1px solid var(--border)' }}>
+                        {[t('client'), t('service'), t('vehicle'), t('amount'), t('status')].map(h => (
+                          <th key={h} style={{ padding:'8px 12px', fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'left' }}>{h}</th>
+                        ))}
                       </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {bookingsHoy.map(b => {
+                        const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
+                        const bg   = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
+                        const amount = (b.price ?? 0) - (b.discount ?? 0)
+                        return (
+                          <tr key={b.id} className="row-hover" style={{ borderBottom:'1px solid #F0EFEA' }}>
+                            <td style={{ padding:'9px 12px' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                <div style={{ width:28, height:28, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff', flexShrink:0 }}>{initials(name)}</div>
+                                <span style={{ fontSize:12, fontWeight:600 }}>{name}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding:'9px 12px', fontSize:12, color:'var(--text2)' }}>{b.services?.name ?? '—'}</td>
+                            <td style={{ padding:'9px 12px', fontSize:11, color:'var(--text2)' }}>
+                              {b.vehicles ? `${b.vehicles.make ?? ''} ${b.vehicles.model ?? ''}`.trim() || '—' : '—'}
+                            </td>
+                            <td style={{ padding:'9px 12px', fontSize:12, fontWeight:700, color:'var(--gold)' }}>{formatAED(amount)}</td>
+                            <td style={{ padding:'9px 12px' }}><StatusBadge status={b.status ?? 'pending'} /></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+              {/* ── Grupo MAÑANA ── */}
+              <div style={{ padding:'0 18px' }}>
+                <div style={{ fontSize:11, fontWeight:700, color:'#5A5852', textTransform:'uppercase', letterSpacing:'0.5px', marginBottom:12, paddingBottom:8, borderBottom:'1px solid #F0EFEA' }}>
+                  Mañana — {formatearFecha(mananaDisplay)}
+                </div>
+                {bookingsManana.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'20px 0', color:'#A8A6A0', fontSize:13 }}>
+                    Sin reservas para mañana
+                  </div>
+                ) : (
+                  <table style={{ width:'100%', borderCollapse:'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom:'1px solid var(--border)' }}>
+                        {[t('client'), t('service'), t('vehicle'), t('amount'), t('status')].map(h => (
+                          <th key={h} style={{ padding:'8px 12px', fontSize:10, fontWeight:600, color:'var(--text2)', textTransform:'uppercase', letterSpacing:'0.06em', textAlign:'left' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookingsManana.map(b => {
+                        const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
+                        const bg   = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
+                        const amount = (b.price ?? 0) - (b.discount ?? 0)
+                        return (
+                          <tr key={b.id} className="row-hover" style={{ borderBottom:'1px solid #F0EFEA' }}>
+                            <td style={{ padding:'9px 12px' }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                <div style={{ width:28, height:28, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, color:'#fff', flexShrink:0 }}>{initials(name)}</div>
+                                <span style={{ fontSize:12, fontWeight:600 }}>{name}</span>
+                              </div>
+                            </td>
+                            <td style={{ padding:'9px 12px', fontSize:12, color:'var(--text2)' }}>{b.services?.name ?? '—'}</td>
+                            <td style={{ padding:'9px 12px', fontSize:11, color:'var(--text2)' }}>
+                              {b.vehicles ? `${b.vehicles.make ?? ''} ${b.vehicles.model ?? ''}`.trim() || '—' : '—'}
+                            </td>
+                            <td style={{ padding:'9px 12px', fontSize:12, fontWeight:700, color:'var(--gold)' }}>{formatAED(amount)}</td>
+                            <td style={{ padding:'9px 12px' }}><StatusBadge status={b.status ?? 'pending'} /></td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           )}
         </div>
