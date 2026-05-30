@@ -270,6 +270,8 @@ export default function DashboardPage() {
         .from('bookings').select('id').in('status', ['confirmed', 'in_progress', 'pending'])
       activeBookings = activos?.length ?? 0
     } catch { /* bookings table may not exist */ }
+    let localHoy:  any[] = []
+    let localMana: any[] = []
     try {
       const hoy    = tz.getToday()
       const manana = new Date(hoy)
@@ -291,8 +293,10 @@ export default function DashboardPage() {
         .lte('scheduled_at', endMana)
         .order('scheduled_at', { ascending: true })
 
-      setBookingsHoy(bHoy ?? [])
-      setBookingsManana(bMana ?? [])
+      localHoy  = bHoy  ?? []
+      localMana = bMana ?? []
+      setBookingsHoy(localHoy)
+      setBookingsManana(localMana)
     } catch { /* bookings schema may differ */ }
 
     const { total: totalExpenses } = await getMonthlyExpenses(supabase, inicioMesStr, finMesStr)
@@ -341,8 +345,9 @@ export default function DashboardPage() {
       avgOrderValue, csatScore, deltaRevenue,
     })
 
-    // Recent bookings
-    setRecentBookings(bookingsRecientes ?? [])
+    // Recent bookings (combined for activity feed fallback)
+    const todasReservas = [...localHoy, ...localMana]
+    setRecentBookings(todasReservas)
 
     // Activity feed — try activity_log first, fall back to bookings
     try {
@@ -355,10 +360,10 @@ export default function DashboardPage() {
       if (!error && activities && activities.length > 0) {
         setActivityFeed(activities)
       } else {
-        buildActivityFromBookings(bookingsRecientes ?? [])
+        buildActivityFromBookings(todasReservas)
       }
     } catch {
-      buildActivityFromBookings(bookingsRecientes ?? [])
+      buildActivityFromBookings(todasReservas)
     }
 
     setLoading(false)
