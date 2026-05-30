@@ -340,11 +340,11 @@ export default function DashboardPage() {
       supabase.from('bookings').select('id', { count: 'exact', head: true })
         .in('status', ['confirmed', 'in_progress', 'pending']),
       supabase.from('bookings')
-        .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
+        .select('id, status, scheduled_at, created_at, contacts(name), vehicles(make, model), services(name)')
         .gte('scheduled_at', startHoy).lte('scheduled_at', endHoy)
         .order('scheduled_at', { ascending: true }),
       supabase.from('bookings')
-        .select('id, status, scheduled_at, created_at, contacts(full_name), vehicles(make, model), services(name)')
+        .select('id, status, scheduled_at, created_at, contacts(name), vehicles(make, model), services(name)')
         .gte('scheduled_at', startMana).lte('scheduled_at', endMana)
         .order('scheduled_at', { ascending: true }),
       getMonthlyExpenses(supabase, inicioMesStr, finMesStr),
@@ -475,7 +475,7 @@ export default function DashboardPage() {
           .gte('date', mesStart.split('T')[0]).lte('date', mesEnd.split('T')[0]),
         supabase.from('bookings').select('price, services(name)')
           .eq('status', 'completed'),
-        supabase.from('bookings').select('price, contacts(full_name)')
+        supabase.from('bookings').select('price, contacts(name)')
           .eq('status', 'completed'),
       ])
 
@@ -499,7 +499,7 @@ export default function DashboardPage() {
 
       const byClient: Record<string, number> = {}
       ;(clientsChartResult.data ?? []).forEach((b: any) => {
-        const name = b.contacts?.full_name ?? 'Desconocido'
+        const name = b.contacts?.name ?? 'Desconocido'
         byClient[name] = (byClient[name] ?? 0) + Number(b.price ?? 0)
       })
       const cliChart = Object.entries(byClient).map(([name, v]) => ({ name, v }))
@@ -514,7 +514,7 @@ export default function DashboardPage() {
     setActivityFeed(
       rows.slice(0, 8).map(b => ({
         id: b.id,
-        name: b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente',
+        name: b.contacts?.name ?? 'Cliente',
         desc: `${b.services?.name ?? 'Servicio'} — ${b.status ?? 'pending'}`,
         status: b.status ?? 'pending',
         time: b.updated_at ?? b.created_at,
@@ -820,7 +820,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {bookingsHoy.map(b => {
-                        const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
+                        const name = b.contacts?.name ?? 'Cliente'
                         const bg   = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
                         const amount = (b.price ?? 0) - (b.discount ?? 0)
                         return (
@@ -865,7 +865,7 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {bookingsManana.map(b => {
-                        const name = b.contacts?.full_name ?? b.contacts?.name ?? 'Cliente'
+                        const name = b.contacts?.name ?? 'Cliente'
                         const bg   = TIER_GRAD[b.contacts?.tier ?? 'Standard'] ?? TIER_GRAD.Standard
                         const amount = (b.price ?? 0) - (b.discount ?? 0)
                         return (
