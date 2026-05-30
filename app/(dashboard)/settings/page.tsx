@@ -98,8 +98,8 @@ function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
   return (
     <div onClick={onChange} style={{
       width: 36, height: 20, borderRadius: 20, cursor: 'pointer', position: 'relative',
-      background: on ? '#c9a84c' : '#2a2a2e',
-      border: `1px solid ${on ? '#c9a84c' : 'rgba(255,255,255,0.1)'}`,
+      background: on ? '#F5B544' : '#F0EFEA',
+      border: `1px solid ${on ? '#F5B544' : '#E5E7EB'}`,
       transition: 'all 0.2s ease', flexShrink: 0, display: 'inline-block',
     }}>
       <div style={{
@@ -139,8 +139,8 @@ function PresetBtn({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ padding: '6px 12px', borderRadius: 6, fontFamily: 'Outfit,sans-serif', fontSize: 11, cursor: 'pointer', transition: 'all 0.15s',
-        border: `1px solid ${hov ? 'rgba(201,168,76,0.4)' : '#F0EFEA'}`,
-        background: '#FFFFFF', color: hov ? '#c9a84c' : '#5A5852' }}>
+        border: `1px solid ${hov ? 'rgba(245,181,68,0.4)' : '#F0EFEA'}`,
+        background: '#FFFFFF', color: hov ? '#F5B544' : '#5A5852' }}>
       {label}
     </button>
   )
@@ -158,7 +158,7 @@ function PermissionsModal({
   const [saving, setSaving] = useState(false)
 
   const ROLE_STYLE: Record<string, { bg: string; color: string }> = {
-    Admin:      { bg: 'rgba(201,168,76,0.15)',  color: '#c9a84c' },
+    Admin:      { bg: 'rgba(245,181,68,0.15)',  color: '#F5B544' },
     Manager:    { bg: 'rgba(0,212,170,0.15)',   color: '#00d4aa' },
     Technician: { bg: 'rgba(136,133,128,0.15)', color: '#5A5852' },
   }
@@ -225,7 +225,7 @@ function PermissionsModal({
               return (
                 <button key={r} onClick={() => setEditRole(r)}
                   style={{ padding: '8px 18px', borderRadius: 20, fontFamily: 'Outfit,sans-serif', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s',
-                    border: `1px solid ${active ? rs.color : 'rgba(255,255,255,0.1)'}`,
+                    border: `1px solid ${active ? rs.color : '#E5E7EB'}`,
                     background: active ? rs.bg : 'transparent', color: active ? rs.color : '#5A5852' }}>
                   {r.toUpperCase()}
                 </button>
@@ -281,7 +281,7 @@ function PermissionsModal({
         {/* Footer */}
         <div style={{ padding: '16px 24px', borderTop: '1px solid #F0EFEA', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <button onClick={handleSave} disabled={saving}
-            style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: '#c9a84c', color: '#0d0d0f',
+            style={{ width: '100%', padding: '10px 0', borderRadius: 8, border: 'none', background: '#F5B544', color: '#0d0d0f',
               fontSize: 13, fontWeight: 700, fontFamily: 'Outfit,sans-serif', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}>
             {saving ? 'Guardando…' : 'Guardar Permisos'}
           </button>
@@ -713,7 +713,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
     setEditingMember(null)
   }
 
-  const ROLE_COLOR: Record<string, string> = { Admin: '#c9a84c', Manager: '#00d4aa', Technician: '#5A5852' }
+  const ROLE_COLOR: Record<string, string> = { Admin: '#F5B544', Manager: '#00d4aa', Technician: '#5A5852' }
 
   return (
     <div>
@@ -798,7 +798,7 @@ function TeamSection({ isAdmin, currentUserEmail }: { isAdmin: boolean; currentU
                 <option value="Technician">Technician</option>
               </select>
             </div>
-            <div style={{ fontSize: 11, color: '#5A5852', background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.15)', borderRadius: 8, padding: '8px 12px' }}>
+            <div style={{ fontSize: 11, color: '#5A5852', background: 'rgba(245,181,68,0.06)', border: '1px solid rgba(245,181,68,0.15)', borderRadius: 8, padding: '8px 12px' }}>
               Se asignarán permisos predeterminados según el rol seleccionado.
             </div>
             {inviteError && (
@@ -1204,11 +1204,11 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
                   placeholder="Hola! 👋 Bienvenido a NOIREM. ¿En qué podemos ayudarte hoy?"
                   style={{ ...INP, resize:'vertical', lineHeight:1.6 }} />
               </div>
-              <div style={{ padding:'12px 16px', background:'rgba(201,168,76,0.06)', border:'1px solid rgba(201,168,76,0.15)', borderRadius:8, fontSize:11, color:'#5A5852', lineHeight:1.7 }}>
-                <strong style={{ color:'#c9a84c' }}>Variables disponibles:</strong><br/>
-                <code style={{ color:'#c9a84c' }}>{'{{name}}'}</code> — Nombre del cliente &nbsp;|&nbsp;
-                <code style={{ color:'#c9a84c' }}>{'{{date}}'}</code> — Fecha actual &nbsp;|&nbsp;
-                <code style={{ color:'#c9a84c' }}>{'{{company}}'}</code> — Tu empresa
+              <div style={{ padding:'12px 16px', background:'rgba(245,181,68,0.06)', border:'1px solid rgba(245,181,68,0.15)', borderRadius:8, fontSize:11, color:'#5A5852', lineHeight:1.7 }}>
+                <strong style={{ color:'#F5B544' }}>Variables disponibles:</strong><br/>
+                <code style={{ color:'#F5B544' }}>{'{{name}}'}</code> — Nombre del cliente &nbsp;|&nbsp;
+                <code style={{ color:'#F5B544' }}>{'{{date}}'}</code> — Fecha actual &nbsp;|&nbsp;
+                <code style={{ color:'#F5B544' }}>{'{{company}}'}</code> — Tu empresa
               </div>
               <div><SaveBtn loading={savingWelcome} onClick={saveWelcome} label="Guardar mensaje" /></div>
             </div>
