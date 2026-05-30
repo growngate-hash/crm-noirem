@@ -53,9 +53,11 @@ export async function POST(req: NextRequest) {
         if (!tenantId) break
 
         const subscriptionId = session.subscription as string
-        const subscription   = await stripe.subscriptions.retrieve(subscriptionId)
+        const subscription   = await stripe.subscriptions.retrieve(subscriptionId) as Stripe.Subscription
         const priceId        = subscription.items.data[0]?.price.id ?? ''
-        const periodEnd      = new Date(subscription.current_period_end * 1000).toISOString()
+        const periodEnd      = subscription.current_period_end
+          ? new Date((subscription as any).current_period_end * 1000).toISOString()
+          : null
 
         await supabase
           .from('tenants')
@@ -78,7 +80,9 @@ export async function POST(req: NextRequest) {
         if (!tenantId) break
 
         const priceId   = sub.items.data[0]?.price.id ?? ''
-        const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
+        const periodEnd = sub.current_period_end
+          ? new Date((sub as any).current_period_end * 1000).toISOString()
+          : null
 
         await supabase
           .from('tenants')
