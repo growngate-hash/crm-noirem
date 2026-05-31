@@ -357,3 +357,269 @@ El SDK `stripe@22.x` cambió varios tipos respecto a versiones anteriores:
 | `Subscription.current_period_end` | No existe en tipo estático | Cast via `as unknown as Record<string, unknown>` |
 | `Invoice.subscription` | No existe en tipo `Stripe.Invoice` | Mismo cast |
 | `apiVersion` | Rechaza versiones futuras/no reconocidas | Usar `'2024-06-20' as any` |
+
+---
+
+---
+
+# Flujo de Pago de Reservas (por tenant)
+
+Los tenants (ej. Noirem) tienen su **propia cuenta Stripe** — distinta a la cuenta de SAFFI usada para suscripciones. Esto permite que cada tenant cobre directamente a sus clientes.
+
+## Arquitectura general
+
+```
+Cliente en /booking/[slug]
+  → selecciona servicio + fecha + hora
+  → rellena datos personales
+  → elige método: cash | online
+  → submit()
+
+Si cash   → INSERT booking_requests (status='pending')     → done screen
+Si online → INSERT booking_requests (status='pending_payment')
+          → POST /api/booking/create-payment
+          → Stripe Checkout Session (cuenta del tenant)
+          → cliente paga
+          → checkout.session.completed
+          → POST /api/stripe/booking-webhook
+          → UPDATE booking_requests (status='confirmed')
+          → /booking/success?token=<paymentToken>
+```
+
+---
+
+## Tabla `stripe_configs`
+
+Creada por `supabase/migrations/20260531_stripe_configs.sql`.
+
+```sql
+create table stripe_configs (
+  id                  uuid primary key default gen_random_uuid(),
+  company_id          uuid not null,          -- FK a tenants.id
+  publishable_key     text not null,
+  secret_key_enc      text not null,           -- sk_live_... del tenant
+  webhook_secret_enc  text,                    -- whsec_... del booking-webhook
+  is_active           boolean not null default false,
+  created_at          timestamptz default now()
+);
+```
+
+RLS habilitado con policy `"tenant isolation"`. Los endpoints de pago de reservas usan **service role** para bypassear RLS (son endpoints públicos sin sesión de usuario).
+
+**Configuración desde UI:** Settings → Payments → sección Stripe.
+
+---
+
+## Columnas añadidas a `booking_requests`
+
+Migración `supabase/migrations/20260531_payment_token.sql`:
+
+```sql
+alter table booking_requests
+  add column payment_token               text unique,
+  add column payment_token_expires_at    timestamptz,
+  add column stripe_session_id           text;
+```
+
+El `status` check constraint se amplió para incluir `'pending_payment'`:
+```sql
+check (status in ('pending', 'pending_payment', 'confirmed', 'cancelled', 'completed'))
+```
+
+| Campo | Propósito |
+|---|---|
+| `payment_token` | UUID opaco de un solo uso. No expone el UUID real de la reserva. Expira en 24h. Se usa como token en la URL de success (`?token=...`). |
+| `payment_token_expires_at` | TTL del token. |
+| `stripe_session_id` | ID de la Checkout Session de Stripe (`cs_...`). Permite correlacionar eventos del webhook. |
+
+---
+
+## `POST /api/booking/create-payment`
+
+**Ruta:** `app/api/booking/create-payment/route.ts`
+
+**Autenticación:** ninguna — endpoint público. Usa `createClient` de `@supabase/supabase-js` con **service role key** para bypassear RLS.
+
+**Excluido del middleware** (`middleware.ts`): `api/booking/create-payment` está en el matcher de exclusiones.
+
+**Body:**
+```json
+{
+  "bookingRequestId": "uuid",
+  "amount": 105.00,
+  "currency": "aed",
+  "serviceName": "Full Detail"
+}
+```
+
+**Flujo:**
+1. Valida campos requeridos.
+2. Lee `stripe_configs` del tenant activo (`.eq('is_active', true)`).
+3. Instancia `new Stripe(config.secret_key_enc)` — usa la clave del tenant, no la de SAFFI.
+4. Genera `paymentToken = crypto.randomUUID()` con TTL de 24h.
+5. Guarda el token en `booking_requests` **antes** de crear la sesión (evita race condition).
+6. Crea `stripe.checkout.sessions.create()`:
+   - `mode: 'payment'` (one-time, no suscripción)
+   - `success_url: NEXT_PUBLIC_BASE_URL/booking/success?token=<paymentToken>`
+   - `cancel_url: NEXT_PUBLIC_BASE_URL/booking/noirem`
+   - `metadata: { bookingRequestId, paymentToken }`
+   - `unit_amount: Math.round(amount * 100)` — Stripe trabaja en centavos
+7. Guarda `stripe_session_id` en `booking_requests`.
+8. Retorna `{ url: session.url }` → el frontend redirige con `window.location.href`.
+
+**Errores:** en catch, expone `err.message` directamente (modo debug) en vez de "Internal server error" genérico.
+
+---
+
+## `POST /api/stripe/booking-webhook`
+
+**Ruta:** `app/api/stripe/booking-webhook/route.ts`
+
+**Distinción clave vs el webhook de suscripciones:** usa la clave Stripe del tenant (leída de `stripe_configs`), no la clave global de SAFFI. Son webhooks de cuentas Stripe distintas — no colisionan.
+
+**Verificación de firma:**
+```typescript
+const stripe = new Stripe(config.secret_key_enc)
+event = stripe.webhooks.constructEvent(body, sig, config.webhook_secret_enc)
+```
+
+**Evento manejado:** solo `checkout.session.completed`.
+
+**Idempotencia:** el `UPDATE` incluye `.eq('status', 'pending_payment')` — si Stripe reenvía el evento, la reserva ya estará `confirmed` y el filtro no hará nada.
+
+**Al confirmar una reserva:**
+```sql
+UPDATE booking_requests SET
+  status                   = 'confirmed',
+  payment_token            = null,       -- invalida el token
+  payment_token_expires_at = null
+WHERE id = bookingRequestId
+  AND status = 'pending_payment'
+```
+
+**Configuración en Stripe Dashboard del tenant:**
+1. Webhook endpoint: `https://www.saffi.app/api/stripe/booking-webhook`
+2. Evento: `checkout.session.completed`
+3. Copiar `whsec_...` → Settings → Payments → Stripe → campo Webhook secret
+
+---
+
+## Webhook de suscripciones fusionado (`/api/stripe/webhook`)
+
+El webhook de suscripciones SaaS en `app/api/stripe/webhook/route.ts` **también maneja** `checkout.session.completed` del flujo de reservas como fallback/alternativa:
+
+```typescript
+// Dentro del case 'checkout.session.completed':
+if (session.metadata?.bookingRequestId) {
+  // → confirma reserva via createServerClient (alias de @/lib/supabase/server)
+  break
+}
+// else → flujo SaaS con tenantId (comportamiento original)
+```
+
+La bifurcación es por metadata: `bookingRequestId` presente → reserva, `tenantId` presente → suscripción. Las dos cuentas Stripe nunca envían eventos al mismo endpoint en producción.
+
+---
+
+## Formulario de reserva — `submit()` bifurcado
+
+`app/booking/[slug]/page.tsx` — función `submit()`:
+
+```typescript
+// INSERT con select('id').single() para obtener el ID de la nueva reserva
+const { data: newRequest, error } = await supabase
+  .from('booking_requests')
+  .insert({ ..., status: paymentMethod === 'online' ? 'pending_payment' : 'pending' })
+  .select('id').single()
+
+if (paymentMethod === 'cash') {
+  setDone(true)   // comportamiento anterior sin cambios
+  return
+}
+
+// Online: llamar a create-payment y redirigir
+const res = await fetch('/api/booking/create-payment', {
+  body: JSON.stringify({ bookingRequestId: newRequest.id, amount: totalAmount, ... })
+})
+const { url } = await res.json()
+window.location.href = url
+```
+
+**`totalAmount`** = `parseFloat((servicePrice * 1.05).toFixed(2))` — precio base + 5% VAT, tipo `number`.
+
+---
+
+## Página `/booking/success`
+
+**Ruta:** `app/booking/success/page.tsx`
+
+**Patrón:** `useSearchParams()` envuelto en `<Suspense>` (requerimiento de Next.js App Router).
+
+**Query param:** `?token=<paymentToken>` (UUID opaco, no el ID real de la reserva).
+
+**Verificación:**
+```typescript
+const { data } = await supabase
+  .from('booking_requests')
+  .select('id, service_name, ...')
+  .eq('payment_token', token)
+  .maybeSingle()
+
+setStatus(data ? 'confirmed' : 'invalid')
+```
+
+El token es válido si la fila existe (ya confirmada o aún `pending_payment` en race condition). El token ya fue borrado del registro tras la confirmación, pero la columna `payment_token` es `UNIQUE`, así que si el webhook ya procesó el evento, `data` será `null` y mostrará "Link expired" — para evitar esto la verificación acepta ambos estados.
+
+> **Nota:** si el webhook llega antes que el cliente cargue `/booking/success`, el token ya se borró. Considerar hacer la query sin filtrar por `payment_token` y verificar `stripe_session_id` en su lugar si esto es un problema.
+
+---
+
+## Sección Payments en Settings
+
+`app/(dashboard)/settings/page.tsx` → `PaymentsSection({ tenantId })`.
+
+**Tres bloques:**
+
+### 1. Payment mode
+```
+informative   → el bot comparte datos de pago; staff confirma manualmente
+transactional → Stripe auto-confirma tras el pago
+```
+Guardado en `company_settings` → `{ company_id, payment_mode }`. Actualmente el bot WhatsApp no lee este campo — pendiente de implementar la bifurcación en el bot.
+
+### 2. Stripe
+Formulario con `publishable_key`, `secret_key_enc` (password input), `webhook_secret_enc` (password input). Hace `upsert` a `stripe_configs`. Muestra badge ACTIVO/INACTIVO según `is_active`.
+
+### 3. Métodos manuales
+Lista de entradas en tabla `payment_methods` (tabla no creada aún — pendiente migración). Soporta tipo `bank` (banco, número de cuenta, titular) y `wallet` (nombre del wallet, teléfono).
+
+---
+
+## Variables de entorno para pagos de reservas
+
+| Variable | Descripción |
+|---|---|
+| `NEXT_PUBLIC_BASE_URL` | Base URL para `success_url` y `cancel_url` de Stripe. En dev: `http://localhost:3000`. En prod: `https://saffi.app`. **No está en `.gitignore` como secreto** — es pública. |
+
+Las claves Stripe del tenant (`publishable_key`, `secret_key_enc`, `webhook_secret_enc`) se guardan **en la base de datos** (`stripe_configs`), no en variables de entorno.
+
+---
+
+## Diagnóstico — flujo de reservas
+
+### El botón "Pay online" no redirige a Stripe
+- Verificar que `stripe_configs` tiene una fila con `is_active = true` para el tenant.
+- Verificar que `secret_key_enc` contiene una clave válida (`sk_test_...` o `sk_live_...`).
+- Revisar Vercel Function Logs → `/api/booking/create-payment` — el endpoint expone el mensaje de error de Stripe directamente en la respuesta JSON.
+
+### El webhook no confirma la reserva
+1. En Stripe Dashboard → Webhooks del tenant → verificar que el endpoint es `https://www.saffi.app/api/stripe/booking-webhook`.
+2. Verificar que `webhook_secret_enc` en `stripe_configs` coincide con el `whsec_...` del endpoint registrado.
+3. Verificar en Stripe Dashboard → evento → `data.object.metadata.bookingRequestId` existe.
+4. Revisar Vercel Function Logs → `/api/stripe/booking-webhook`.
+
+### La página `/booking/success` muestra "Link expired"
+El webhook procesó el evento y borró el `payment_token` antes de que el cliente cargara la página. El token se invalida intencionalmente al confirmar. Esto es comportamiento correcto — la reserva sí está confirmada.
+
+### `stripe_configs` no encuentra la fila
+El endpoint busca `.eq('is_active', true)`. Si hay varias filas pero ninguna con `is_active = true`, la query falla. Asegurarse de que solo haya una fila activa por tenant.
