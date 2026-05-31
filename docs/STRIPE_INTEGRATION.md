@@ -320,7 +320,7 @@ Stripe confirma el pago pero el webhook falla. Revisar:
 ## Configuración en Stripe Dashboard
 
 1. **Productos y precios**: Starter, Pro, Enterprise — monthly y annual (6 precios total).
-2. **Webhook endpoint**: `https://tu-dominio.com/api/stripe/webhook`
+2. **Webhook endpoint**: `https://www.saffi.app/api/stripe/webhook`
    - Eventos a escuchar: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
 3. **Webhook secret**: copiar el `whsec_...` y añadir a Vercel como `STRIPE_WEBHOOK_SECRET`.
 

@@ -1,6 +1,6 @@
 # Dashboard — Arquitectura de datos
 
-`app/(dashboard)/page.tsx`
+`app/(dashboard)/dashboard/page.tsx` → ruta `/dashboard`
 
 ---
 
