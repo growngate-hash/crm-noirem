@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   } else {
     // Usuario nuevo — enviar invitación por email
     const { data, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(email.trim(), {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://crm-noirem.vercel.app'}/accept-invite`,
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? 'https://saffi.app'}/accept-invite`,
       data: { role: (role ?? 'technician').toLowerCase() },
     })
 

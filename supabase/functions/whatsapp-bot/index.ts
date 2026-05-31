@@ -19,7 +19,7 @@ const WHATSAPP_TOKEN    = Deno.env.get('WHATSAPP_TOKEN')!
 const PHONE_NUMBER_ID   = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!
 const VERIFY_TOKEN      = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
 const OPENAI_API_KEY    = Deno.env.get('OPENAI_API_KEY') ?? ''
-const BOOKING_URL       = Deno.env.get('BOOKING_URL') ?? 'https://crm-noirem.vercel.app/booking'
+const BOOKING_URL       = Deno.env.get('BOOKING_URL') ?? 'https://saffi.app/booking'
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
