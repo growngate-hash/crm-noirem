@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import Stripe from 'stripe'
 import { stripe } from '@/lib/stripe'
 import type { Plan } from '@/types/index'
@@ -49,6 +50,31 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
+
+        // ── Pago de reserva (cuenta Stripe del tenant) ──────────────
+        if (session.metadata?.bookingRequestId) {
+          const { bookingRequestId } = session.metadata
+
+          const supabaseTenant = await createServerClient()
+          const { error: updateError } = await supabaseTenant
+            .from('booking_requests')
+            .update({
+              status:                   'confirmed',
+              payment_token:            null,
+              payment_token_expires_at: null,
+            })
+            .eq('id', bookingRequestId)
+            .eq('status', 'pending_payment')
+
+          if (updateError) {
+            console.error('[stripe-webhook] booking confirm error:', updateError)
+          } else {
+            console.log('[stripe-webhook] booking confirmed:', bookingRequestId)
+          }
+          break
+        }
+
+        // ── Suscripción SaaS (cuenta Stripe de SAFFI) ───────────────
         const tenantId = session.metadata?.tenantId
         if (!tenantId) break
 

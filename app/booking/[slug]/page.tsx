@@ -505,31 +505,73 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   async function submit(){
     if(!selService||!selDate||selTime===null)return
     setSaving(true); setErr('')
-    const { error: dbErr } = await createClient().from('booking_requests').insert({
-      owner_id:         ownerId,
-      service_id:       selService.id,
-      service_name:     selService.name,
-      scheduled_at:     slotToUTC(selDate, selTime, timezone),
-      customer_name:    cf.full_name,
-      customer_phone:   cf.whatsapp,
-      vehicle_make_model: cf.vehicle_model || null,
-      plate:            cf.plate_number || null,
-      plate_number:     cf.plate_number || null,
-      vehicle_model:    cf.vehicle_model || null,
-      address:          buildAddress(cf) || null,
-      villa_flat:       cf.villa_flat || null,
-      area:             cf.area || null,
-      community:        cf.community || null,
-      address_notes:    cf.address_notes || null,
-      price:            servicePrice || null,
-      vat:              servicePrice ? vatAmount : null,
-      total_amount:     servicePrice ? totalAmount : null,
-      payment_method:   paymentMethod,
-      status:           'pending',
-    })
-    setSaving(false)
-    if (dbErr) { setErr(dbErr.message); return }
-    setDone(true)
+
+    const { data: newRequest, error: dbErr } = await createClient()
+      .from('booking_requests')
+      .insert({
+        owner_id:           ownerId,
+        service_id:         selService.id,
+        service_name:       selService.name,
+        scheduled_at:       slotToUTC(selDate, selTime, timezone),
+        customer_name:      cf.full_name,
+        customer_phone:     cf.whatsapp,
+        vehicle_make_model: cf.vehicle_model || null,
+        plate:              cf.plate_number || null,
+        plate_number:       cf.plate_number || null,
+        vehicle_model:      cf.vehicle_model || null,
+        address:            buildAddress(cf) || null,
+        villa_flat:         cf.villa_flat || null,
+        area:               cf.area || null,
+        community:          cf.community || null,
+        address_notes:      cf.address_notes || null,
+        price:              servicePrice || null,
+        vat:                servicePrice ? vatAmount : null,
+        total_amount:       servicePrice ? totalAmount : null,
+        payment_method:     paymentMethod,
+        status:             paymentMethod === 'online' ? 'pending_payment' : 'pending',
+      })
+      .select('id')
+      .single()
+
+    if (dbErr || !newRequest) {
+      setSaving(false)
+      setErr(dbErr?.message ?? 'Error creating booking')
+      return
+    }
+
+    // Flujo cash — igual que antes
+    if (paymentMethod === 'cash') {
+      setSaving(false)
+      setDone(true)
+      return
+    }
+
+    // Flujo online — redirige a Stripe Checkout
+    try {
+      const res = await fetch('/api/booking/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bookingRequestId: newRequest.id,
+          amount:           totalAmount,
+          currency:         'aed',
+          serviceName:      selService.name,
+        }),
+      })
+
+      if (!res.ok) {
+        const { error } = await res.json()
+        throw new Error(error ?? 'Payment setup failed')
+      }
+
+      const { url } = await res.json()
+      window.location.href = url
+
+    } catch (e: unknown) {
+      setSaving(false)
+      const msg = e instanceof Error ? e.message : 'Payment setup failed'
+      setErr(msg)
+    }
   }
 
   const filteredServices = services.filter(s=>s.category===selCategory?.name)
