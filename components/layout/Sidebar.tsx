@@ -2,23 +2,26 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { LayoutDashboard, Users, Users2, Wrench, Car, CalendarCheck, DollarSign, BookOpen, BarChart2, Settings, LogOut, User as UserIcon, X } from 'lucide-react'
+import { LayoutDashboard, Users, Users2, Wrench, Car, CalendarCheck, DollarSign, BookOpen, BarChart2, Settings, LogOut, User as UserIcon, X, Lock } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useLanguage } from '@/contexts/LanguageContext'
 import type { TranslationKey } from '@/contexts/LanguageContext'
 import { useCompany } from '@/contexts/CompanyContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
+import { usePlan } from '@/contexts/PlanContext'
+import type { Feature } from '@/lib/plan-features'
+import { FEATURE_MIN_PLAN } from '@/lib/plan-features'
 
-const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
+const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any>; feature?: Feature }[] = [
   { labelKey: 'dashboard',         href: '/dashboard', icon: LayoutDashboard },
   { labelKey: 'contacts',          href: '/contacts',  icon: Users },
   { labelKey: 'servicesInventory', href: '/services',  icon: Wrench },
   { labelKey: 'vehicles',          href: '/vehicles',  icon: Car },
   { labelKey: 'bookings',          href: '/bookings',  icon: CalendarCheck },
-  { labelKey: 'hr',                href: '/hr',        icon: Users2 },
+  { labelKey: 'hr',                href: '/hr',        icon: Users2,   feature: 'hr' },
   { labelKey: 'finance',           href: '/finance',    icon: DollarSign },
   { labelKey: 'accounting',        href: '/accounting', icon: BookOpen },
-  { labelKey: 'reports',           href: '/reports',    icon: BarChart2 },
+  { labelKey: 'reports',           href: '/reports',    icon: BarChart2, feature: 'reports' },
   { labelKey: 'settings',          href: '/settings',  icon: Settings },
 ]
 
@@ -33,6 +36,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
   const router = useRouter()
   const { t } = useLanguage()
   const { companyName, companySubtitle, logoUrl } = useCompany()
+  const { hasFeature, loaded: planLoaded } = usePlan()
 
   const [authUser, setAuthUser]   = useState<any>(null)
   const [dbRole,   setDbRole]     = useState<string | null>(null)
@@ -122,29 +126,49 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
 
       {/* Nav items */}
       <nav style={{ flex: 1, minHeight: 0, padding: '10px 8px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto', overflowX: 'hidden' }}>
-        {NAV.map(({ labelKey, href, icon: Icon }) => {
-          const isActive = href === '/' ? pathname === '/' : pathname.startsWith(href)
+        {NAV.map(({ labelKey, href, icon: Icon, feature }) => {
+          const isLocked = planLoaded && !!feature && !hasFeature(feature)
+          const isActive = !isLocked && (href === '/' ? pathname === '/' : pathname.startsWith(href))
           return (
             <Fragment key={href}>
               {href === '/finance' && (
                 <div style={{ borderTop: '1px solid rgba(61,217,214,0.1)', marginTop: 8, marginBottom: 8 }} />
               )}
-              <Link href={href} style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 10px', paddingLeft: 8, borderRadius: 8,
-                fontSize: 13, letterSpacing: '0.2px',
-                fontWeight: isActive ? 600 : 400,
-                color: isActive ? '#F5B544' : '#B8D4ED',
-                background: isActive ? 'rgba(245,181,68,0.15)' : 'transparent',
-                borderLeft: isActive ? '3px solid #F5B544' : '3px solid transparent',
-                textDecoration: 'none', transition: 'all 0.15s',
-              }}
-                onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#FAFAF7' } }}
-                onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#B8D4ED' } }}
-              >
-                <Icon size={18} color={isActive ? '#F5B544' : '#B8D4ED'} strokeWidth={isActive ? 2 : 1.5} />
-                {t(labelKey)}
-              </Link>
+              {isLocked ? (
+                <div
+                  title={`Disponible en Plan ${feature ? FEATURE_MIN_PLAN[feature] : ''}`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 10px', paddingLeft: 8, borderRadius: 8,
+                    fontSize: 13, letterSpacing: '0.2px', fontWeight: 400,
+                    color: 'rgba(184,212,237,0.3)',
+                    borderLeft: '3px solid transparent',
+                    cursor: 'not-allowed',
+                    userSelect: 'none',
+                  }}
+                >
+                  <Icon size={18} color="rgba(184,212,237,0.3)" strokeWidth={1.5} />
+                  <span style={{ flex: 1 }}>{t(labelKey)}</span>
+                  <Lock size={11} color="rgba(184,212,237,0.35)" style={{ flexShrink: 0 }} />
+                </div>
+              ) : (
+                <Link href={href} style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  padding: '8px 10px', paddingLeft: 8, borderRadius: 8,
+                  fontSize: 13, letterSpacing: '0.2px',
+                  fontWeight: isActive ? 600 : 400,
+                  color: isActive ? '#F5B544' : '#B8D4ED',
+                  background: isActive ? 'rgba(245,181,68,0.15)' : 'transparent',
+                  borderLeft: isActive ? '3px solid #F5B544' : '3px solid transparent',
+                  textDecoration: 'none', transition: 'all 0.15s',
+                }}
+                  onMouseEnter={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'; (e.currentTarget as HTMLElement).style.color = '#FAFAF7' } }}
+                  onMouseLeave={e => { if (!isActive) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = '#B8D4ED' } }}
+                >
+                  <Icon size={18} color={isActive ? '#F5B544' : '#B8D4ED'} strokeWidth={isActive ? 2 : 1.5} />
+                  {t(labelKey)}
+                </Link>
+              )}
             </Fragment>
           )
         })}

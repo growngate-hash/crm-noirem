@@ -126,6 +126,22 @@ export async function middleware(request: NextRequest) {
         url.pathname = '/suspended'
         return NextResponse.redirect(url)
       }
+
+      // Plan insuficiente — rutas restringidas por plan
+      const PLAN_ROUTE_RULES: { prefix: string; allowedPlans: string[] }[] = [
+        { prefix: '/hr',      allowedPlans: ['trial', 'pro', 'enterprise'] },
+        { prefix: '/reports', allowedPlans: ['trial', 'pro', 'enterprise'] },
+      ]
+      const currentPlan = (tenant.plan ?? 'trial') as string
+      const blockedRoute = PLAN_ROUTE_RULES.find(
+        rule => path.startsWith(rule.prefix) && !rule.allowedPlans.includes(currentPlan)
+      )
+      if (blockedRoute) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/upgrade'
+        if (tenant.id) url.searchParams.set('tenant_id', tenant.id)
+        return NextResponse.redirect(url)
+      }
     }
   }
 
