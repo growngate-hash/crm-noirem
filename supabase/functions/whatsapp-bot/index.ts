@@ -20,6 +20,7 @@ const PHONE_NUMBER_ID   = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID')!
 const VERIFY_TOKEN      = Deno.env.get('WHATSAPP_VERIFY_TOKEN')!
 const OPENAI_API_KEY    = Deno.env.get('OPENAI_API_KEY') ?? ''
 const BOOKING_URL       = Deno.env.get('BOOKING_URL') ?? 'https://saffi.app/booking'
+const COMPANY_ID        = Deno.env.get('COMPANY_ID') ?? ''
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -215,6 +216,7 @@ async function processMessage(phone: string, text: string): Promise<void> {
     { data: historyDesc },
     { data: activeBookings },
     { data: bizSettings },
+    { data: paymentMethodsData },
   ] = await Promise.all([
     supabase
       .from('services')
@@ -258,6 +260,13 @@ async function processMessage(phone: string, text: string): Promise<void> {
       .from('business_settings')
       .select('timezone, currency')
       .maybeSingle(),
+
+    supabase
+      .from('payment_methods')
+      .select('type, label, details')
+      .eq('company_id', COMPANY_ID)
+      .eq('is_active', true)
+      .order('sort_order'),
   ])
 
   const timezone = bizSettings?.timezone ?? 'Asia/Dubai'
@@ -296,6 +305,29 @@ async function processMessage(phone: string, text: string): Promise<void> {
       }).join('\n')}`
     : '\nRESERVAS ACTIVAS DEL CLIENTE: Ninguna'
 
+  const paymentLines = (paymentMethodsData ?? []).map((m: {
+    type: string
+    label: string
+    details: Record<string, string>
+  }) => {
+    if (m.type === 'bank') {
+      const d = m.details
+      return `- ${m.label}${d.bank_name ? ` (${d.bank_name})` : ''}: cuenta ${d.account_number ?? ''}${d.account_holder ? `, titular ${d.account_holder}` : ''}`
+    }
+    if (m.type === 'wallet') {
+      const d = m.details
+      return `- ${m.label}${d.wallet_name ? ` (${d.wallet_name})` : ''}: ${d.phone_number ?? ''}`
+    }
+    if (m.type === 'stripe') {
+      return `- ${m.label}: pago online con tarjeta`
+    }
+    return `- ${m.label}`
+  }).join('\n')
+
+  const paymentSection = paymentLines
+    ? `\nMÉTODOS DE PAGO DISPONIBLES:\n${paymentLines}`
+    : ''
+
   const systemPrompt = `Eres el asistente virtual de ${company.name}, empresa premium de car wash y detailing a domicilio en UAE.
 
 SERVICIOS DISPONIBLES:
@@ -309,6 +341,7 @@ ${hoursLines}
 
 CONTACTO DEL NEGOCIO: ${company.phone}
 ${bookingsSection}
+${paymentSection}
 
 COMPORTAMIENTO POR TIPO DE MENSAJE:
 
