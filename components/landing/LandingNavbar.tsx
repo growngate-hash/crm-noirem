@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Menu, X } from 'lucide-react'
+import { useLandingLang } from './LandingLangContext'
 
 const S = '#0B2A4A'
 const C = '#3DD9D6'
@@ -10,6 +11,7 @@ const A = '#F5B544'
 export default function LandingNavbar() {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const { lang, setLang, t } = useLandingLang()
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -24,9 +26,9 @@ export default function LandingNavbar() {
   }, [open])
 
   const navLinks = [
-    { label: 'Funcionalidades', href: '#features' },
-    { label: 'Precios', href: '#pricing' },
-    { label: 'Cómo funciona', href: '#how' },
+    { label: t.navFeatures, href: '#features' },
+    { label: t.navPricing,  href: '#pricing' },
+    { label: t.navHow,      href: '#how' },
   ]
 
   const navStyle: React.CSSProperties = {
@@ -73,6 +75,20 @@ export default function LandingNavbar() {
 
           {/* Desktop CTAs */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} className="landing-desktop-cta">
+            {/* Language toggle */}
+            <div style={{ display: 'flex', alignItems: 'center', background: '#F4F6F8', borderRadius: 8, padding: 3, gap: 2 }}>
+              {(['es', 'en'] as const).map(l => (
+                <button key={l} onClick={() => setLang(l)} style={{
+                  padding: '4px 10px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: 700, letterSpacing: '0.05em',
+                  background: lang === l ? S : 'transparent',
+                  color: lang === l ? 'white' : '#A8A6A0',
+                  transition: 'all 0.15s', fontFamily: 'Geist, sans-serif',
+                }}>
+                  {l.toUpperCase()}
+                </button>
+              ))}
+            </div>
             <Link href="/login" style={{
               color: S, fontSize: 14, fontWeight: 600,
               textDecoration: 'none', padding: '8px 16px', borderRadius: 8,
@@ -80,7 +96,7 @@ export default function LandingNavbar() {
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#F0EFEA')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-              Iniciar sesión
+              {t.navLogin}
             </Link>
             <Link href="/register" style={{
               background: A, color: '#0B1A2A',
@@ -92,7 +108,7 @@ export default function LandingNavbar() {
             }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '0.88')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '1')}>
-              Empieza gratis
+              {t.navCta}
             </Link>
           </div>
 
@@ -133,6 +149,18 @@ export default function LandingNavbar() {
               </a>
             ))}
             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Language toggle mobile */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['es', 'en'] as const).map(l => (
+                  <button key={l} onClick={() => setLang(l)} style={{
+                    flex: 1, padding: '10px 0', borderRadius: 8, border: `1.5px solid ${lang === l ? S : '#E8EDF2'}`,
+                    background: lang === l ? S : 'transparent', color: lang === l ? 'white' : '#A8A6A0',
+                    fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'Geist, sans-serif',
+                  }}>
+                    {l === 'es' ? '🇪🇸 Español' : '🇺🇸 English'}
+                  </button>
+                ))}
+              </div>
               <Link href="/login" onClick={() => setOpen(false)} style={{
                 display: 'block', textAlign: 'center',
                 border: `1.5px solid ${S}`, borderRadius: 10,
@@ -140,7 +168,7 @@ export default function LandingNavbar() {
                 fontSize: 15, textDecoration: 'none',
                 fontFamily: 'Geist, sans-serif',
               }}>
-                Iniciar sesión
+                {t.navLogin}
               </Link>
               <Link href="/register" onClick={() => setOpen(false)} style={{
                 display: 'block', textAlign: 'center',
@@ -149,7 +177,7 @@ export default function LandingNavbar() {
                 fontSize: 15, textDecoration: 'none',
                 fontFamily: 'Geist, sans-serif',
               }}>
-                Empieza gratis — 10 días
+                {t.navCtaMobile}
               </Link>
             </div>
           </div>
