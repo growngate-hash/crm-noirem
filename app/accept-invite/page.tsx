@@ -214,7 +214,7 @@ export default function AcceptInvitePage() {
               {errorMsg}
             </div>
             <button
-              onClick={() => router.push('/auth')}
+              onClick={() => router.push('/login')}
               style={{
                 padding: '12px 28px', background: '#c9a84c', color: '#0d0d0f',
                 border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 800,

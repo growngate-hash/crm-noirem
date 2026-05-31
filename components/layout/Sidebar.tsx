@@ -74,7 +74,7 @@ export default function Sidebar({ mobileMenuOpen, onClose }: SidebarProps) {
   async function handleLogout() {
     onClose()
     await createClient().auth.signOut()
-    router.push('/auth')
+    router.push('/login')
     router.refresh()
   }
 
