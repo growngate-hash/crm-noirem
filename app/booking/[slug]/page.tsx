@@ -418,6 +418,11 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   const [selDate,    setSelDate]     = useState<Date|null>(null)
   const [selTime,    setSelTime]     = useState<number|null>(null)
   const [paymentMethod,setPaymentMethod] = useState<'online'|'cash'>('cash')
+  const [paymentMethods,setPaymentMethods] = useState<Array<{
+    type: string
+    label: string
+    details: Record<string, string>
+  }>>([])
 
   const [cf,setCf_] = useState<CustomerForm>({
     full_name:'',whatsapp:'',vehicle_model:'',plate_number:'',
@@ -465,6 +470,13 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       setLoading(false)
     }
     load()
+    createClient()
+      .from('payment_methods')
+      .select('type, label, details')
+      .eq('company_id', ownerId)
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => setPaymentMethods(data ?? []))
   },[ownerId])
 
   // ── Auto-skip Sunday when entering step 3 ─────────────────────────────────
@@ -642,9 +654,52 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         <strong style={{ color:TEXT }}>{selDate?toYMD(selDate):''}</strong> at{' '}
         <strong style={{ color:GOLD }}>{timeLabel()}</strong> has been received.
       </p>
-      <p style={{ color:DIM, fontSize:13, marginBottom:36 }}>
+      <p style={{ color:DIM, fontSize:13, marginBottom: paymentMethods.length > 0 ? 20 : 36 }}>
         We will contact you on <strong style={{ color:TEXT }}>{cf.whatsapp}</strong> to confirm.
       </p>
+
+      {paymentMethods.length > 0 && (
+        <div style={{
+          textAlign:'left', margin:'0 auto 36px',
+          maxWidth:340, borderRadius:10,
+          border:`1px solid ${GOLD}30`,
+          background:`${GOLD}08`, padding:'16px 20px',
+        }}>
+          <p style={{ color:GOLD, fontSize:12, fontWeight:700,
+            letterSpacing:'0.8px', textTransform:'uppercase',
+            marginBottom:12 }}>
+            Payment details
+          </p>
+          {paymentMethods.map((m, i) => (
+            <div key={i} style={{
+              marginBottom: i < paymentMethods.length - 1 ? 12 : 0,
+              paddingBottom: i < paymentMethods.length - 1 ? 12 : 0,
+              borderBottom: i < paymentMethods.length - 1
+                ? `1px solid ${GOLD}20` : 'none',
+            }}>
+              <p style={{ color:TEXT, fontSize:13, fontWeight:700, marginBottom:4 }}>
+                {m.label}
+              </p>
+              {m.type === 'bank' && (
+                <p style={{ color:MUTED, fontSize:12, lineHeight:1.6, margin:0 }}>
+                  {m.details.bank_name && `${m.details.bank_name}`}
+                  {m.details.account_number && ` · ${m.details.account_number}`}
+                  {m.details.account_holder && ` · ${m.details.account_holder}`}
+                </p>
+              )}
+              {m.type === 'wallet' && (
+                <p style={{ color:MUTED, fontSize:12, lineHeight:1.6, margin:0 }}>
+                  {m.details.wallet_name && `${m.details.wallet_name}`}
+                  {m.details.phone_number && ` · ${m.details.phone_number}`}
+                </p>
+              )}
+            </div>
+          ))}
+          <p style={{ color:DIM, fontSize:11, marginTop:14, marginBottom:0, lineHeight:1.5 }}>
+            Once payment is made, send us the receipt on WhatsApp and we will confirm your booking.
+          </p>
+        </div>
+      )}
       <button onClick={resetAll} style={{
         padding:'12px 28px', borderRadius:6, background:'transparent',
         border:`1px solid ${GOLD}60`, color:GOLD, fontSize:13, fontWeight:700,
@@ -1032,7 +1087,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       )}
                     </div>
                     <span style={{ color:isSel?GOLD:TEXT, fontSize:14, fontWeight:isSel?700:500 }}>
-                      {method==='online'?'Card payment':'Cash / Bank / Wallet'}
+                      {method==='online'?'Card payment':'Other methods'}
                     </span>
                     {isSel&&(
                       <div style={{ marginLeft:'auto', color:GOLD, fontSize:14, fontWeight:900 }}>✓</div>
