@@ -6,7 +6,7 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-const BOOKING_URL = process.env.BOOKING_URL ?? 'https://saffi.ae/book'
+const BOOKING_URL = process.env.NEXT_PUBLIC_BOOKING_URL ?? 'https://saffi.app/booking'
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN ?? 'noirem_verify_token'
 
 const MESSAGES = {
