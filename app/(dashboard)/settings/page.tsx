@@ -1283,8 +1283,8 @@ function PlansSection({ tenantPlan, tenantStatus, tenantCustomerId, tenantId }: 
 }) {
   const PLANS = [
     { key:'starter', name:'Starter', monthlyPrice:49, annualPrice:39, badge:null,
-      features:['2 usuarios','2 vehículos / técnicos','Reservas y CRM básico','Contabilidad y finanzas','WhatsApp Bot incluido'],
-      notIncluded:['RRHH + Nómina','Reportes completos','Soporte prioritario'] },
+      features:['1 usuario','2 vehículos / técnicos','Reservas y CRM básico','WhatsApp Bot incluido'],
+      notIncluded:['Contabilidad y finanzas','RRHH + Nómina','Reportes completos','Soporte prioritario'] },
     { key:'pro', name:'Pro', monthlyPrice:99, annualPrice:79, badge:'El más popular',
       features:['5 usuarios','Vehículos ilimitados','CRM completo + tiers VIP','WhatsApp Bot incluido','RRHH + Nómina completa','Contabilidad y finanzas','Reportes completos'],
       notIncluded:['Soporte prioritario'] },

@@ -38,11 +38,11 @@ const PLANS: PlanConfig[] = [
     key: 'starter', name: 'Starter', monthly: 49, annual: 39,
     highlight: false, cta: 'Empezar con Starter',
     features: [
-      { label: '2 usuarios',                    included: true  },
+      { label: '1 usuario',                      included: true  },
       { label: '2 vehículos / técnicos',         included: true  },
       { label: 'Reservas y CRM básico',          included: true  },
-      { label: 'Contabilidad y finanzas',        included: true  },
       { label: 'WhatsApp Bot incluido',          included: true  },
+      { label: 'Contabilidad y finanzas',        included: false },
       { label: 'RRHH + Nómina completa',         included: false },
       { label: 'Reportes completos',             included: false },
       { label: 'Onboarding dedicado',            included: false },
