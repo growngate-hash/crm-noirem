@@ -10,7 +10,7 @@ import { useCompany } from '@/contexts/CompanyContext'
 import { useIsMobile } from '@/hooks/useIsMobile'
 
 const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any> }[] = [
-  { labelKey: 'dashboard',         href: '/',          icon: LayoutDashboard },
+  { labelKey: 'dashboard',         href: '/dashboard', icon: LayoutDashboard },
   { labelKey: 'contacts',          href: '/contacts',  icon: Users },
   { labelKey: 'servicesInventory', href: '/services',  icon: Wrench },
   { labelKey: 'vehicles',          href: '/vehicles',  icon: Car },

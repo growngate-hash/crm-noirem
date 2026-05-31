@@ -57,7 +57,8 @@ export async function middleware(request: NextRequest) {
   const isRegisterPage  = path.startsWith('/register')
   const isUpgradePage   = path.startsWith('/upgrade')
   const isSuspendedPage = path.startsWith('/suspended')
-  const isPublicPage    = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage
+  const isHomePage      = path === '/'
+  const isPublicPage    = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage || isHomePage
 
   // No autenticado → solo puede ver páginas públicas
   if (!user && !isPublicPage) {
@@ -66,10 +67,17 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Autenticado en home → redirigir al dashboard
+  if (user && isHomePage) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    return NextResponse.redirect(url)
+  }
+
   // Autenticado en login/register → redirigir al dashboard
   if (user && (isLoginPage || isRegisterPage)) {
     const url = request.nextUrl.clone()
-    url.pathname = '/'
+    url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
