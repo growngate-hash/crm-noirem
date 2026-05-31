@@ -129,8 +129,10 @@ export async function middleware(request: NextRequest) {
 
       // Plan insuficiente — rutas restringidas por plan
       const PLAN_ROUTE_RULES: { prefix: string; allowedPlans: string[] }[] = [
-        { prefix: '/hr',      allowedPlans: ['trial', 'pro', 'enterprise'] },
-        { prefix: '/reports', allowedPlans: ['trial', 'pro', 'enterprise'] },
+        { prefix: '/hr',         allowedPlans: ['trial', 'pro', 'enterprise'] },
+        { prefix: '/reports',    allowedPlans: ['trial', 'pro', 'enterprise'] },
+        { prefix: '/finance',    allowedPlans: ['trial', 'pro', 'enterprise'] },
+        { prefix: '/accounting', allowedPlans: ['trial', 'pro', 'enterprise'] },
       ]
       const currentPlan = (tenant.plan ?? 'trial') as string
       const blockedRoute = PLAN_ROUTE_RULES.find(

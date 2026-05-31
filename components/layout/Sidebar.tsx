@@ -19,8 +19,8 @@ const NAV: { labelKey: TranslationKey; href: string; icon: React.FC<any>; featur
   { labelKey: 'vehicles',          href: '/vehicles',  icon: Car },
   { labelKey: 'bookings',          href: '/bookings',  icon: CalendarCheck },
   { labelKey: 'hr',                href: '/hr',        icon: Users2,   feature: 'hr' },
-  { labelKey: 'finance',           href: '/finance',    icon: DollarSign },
-  { labelKey: 'accounting',        href: '/accounting', icon: BookOpen },
+  { labelKey: 'finance',           href: '/finance',    icon: DollarSign, feature: 'accounting' },
+  { labelKey: 'accounting',        href: '/accounting', icon: BookOpen,   feature: 'accounting' },
   { labelKey: 'reports',           href: '/reports',    icon: BarChart2, feature: 'reports' },
   { labelKey: 'settings',          href: '/settings',  icon: Settings },
 ]
