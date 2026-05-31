@@ -18,7 +18,8 @@ Cliente envía mensaje por WhatsApp
         │         ├── company_settings (nombre, teléfono, email, dirección)
         │         ├── whatsapp_messages (últimos 10, historial de conversación)
         │         ├── booking_requests (pendientes/confirmadas del cliente)
-        │         └── business_settings (timezone, currency)
+        │         ├── business_settings (timezone, currency)
+        │         └── payment_methods (activos del tenant, para inyectar en el prompt)
         │
         ├─── 3. BUILD ───────────► system prompt (con contexto dinámico)
         │
@@ -209,6 +210,7 @@ Si se necesita auditoría persistente de envíos, agregar un insert en `sendWhat
 | `WHATSAPP_VERIFY_TOKEN` | Token secreto para verificación del webhook | `supabase secrets set WHATSAPP_VERIFY_TOKEN=...` |
 | `OPENAI_API_KEY` | Clave de OpenAI | `supabase secrets set OPENAI_API_KEY=...` |
 | `BOOKING_URL` | URL de la página de reservas pública | `supabase secrets set BOOKING_URL=https://...` |
+| `COMPANY_ID` | UUID del tenant (`business_settings.user_id`) — filtra `payment_methods` | `supabase secrets set COMPANY_ID=afe5c9b1-...` |
 | `SUPABASE_URL` | URL del proyecto Supabase | Inyectado automáticamente |
 | `SUPABASE_SERVICE_ROLE_KEY` | Service role key (necesaria para leer/escribir sin RLS) | Inyectado automáticamente |
 
@@ -258,9 +260,9 @@ await supabase.from('whatsapp_messages').insert({ phone, role: 'user', content: 
 ```
 Se guarda antes de llamar a OpenAI para que el mensaje quede en BD incluso si OpenAI falla.
 
-### Paso 2 — Obtener contexto (7 queries en paralelo)
+### Paso 2 — Obtener contexto (8 queries en paralelo)
 ```typescript
-const [services, zones, hours, settings, historyDesc, activeBookings, bizSettings] = await Promise.all([
+const [services, zones, hours, settings, historyDesc, activeBookings, bizSettings, paymentMethodsData] = await Promise.all([
   supabase.from('services').select('name, description, base_price, duration_hrs, category')
     .eq('is_active', true).order('category').order('name'),
 
@@ -283,6 +285,9 @@ const [services, zones, hours, settings, historyDesc, activeBookings, bizSetting
     .order('scheduled_at', { ascending: true }),
 
   supabase.from('business_settings').select('timezone, currency').maybeSingle(),
+
+  supabase.from('payment_methods').select('type, label, details')
+    .eq('company_id', COMPANY_ID).eq('is_active', true).order('sort_order'),
 ])
 
 const timezone = bizSettings?.timezone ?? 'Asia/Dubai'
@@ -299,6 +304,9 @@ referirse a ellas al gestionar cancelaciones/modificaciones.
 se formatean en la zona horaria de la empresa, y la instrucción de moneda del system
 prompt es dinámica (`Los precios se muestran en ${currency}`).
 
+`COMPANY_ID` es el secret de la Edge Function que debe coincidir con
+`business_settings.user_id` del tenant. Ver `docs/PAYMENT_METHODS.md`.
+
 ### Paso 3 — Construir system prompt
 El system prompt se construye dinámicamente concatenando:
 - **Datos del negocio** (de `company_settings`)
@@ -306,6 +314,7 @@ El system prompt se construye dinámicamente concatenando:
 - **Zonas de cobertura** (de `coverage_zones`)
 - **Horarios** (de `business_hours`)
 - **Reservas activas del cliente** (de `booking_requests`), formateadas en el `timezone` de la empresa
+- **Métodos de pago** (de `payment_methods`) — sección `MÉTODOS DE PAGO DISPONIBLES`, vacía si no hay métodos configurados
 - **Instrucciones de comportamiento**: incluyen la moneda (`currency`) y el timezone dinámicos
 
 Ver sección 8 para el detalle completo del system prompt.
@@ -375,6 +384,16 @@ Cuando el cliente confirma que quiere reservar:
 
 ### 4. CANCELAR / MODIFICAR
 Ver sección 9 (executeActions).
+
+### 5. MÉTODOS DE PAGO
+Cuando el cliente menciona `"pago"`, `"transferencia"`, `"efectivo"`, `"tarjeta"`,
+`"Nequi"`, `"banco"`, o pregunta cómo pagar:
+- Muestra **todos** los métodos de `MÉTODOS DE PAGO DISPONIBLES` del prompt
+- Comparte los datos completos (banco, cuenta, titular, o número de billetera)
+- Si hay un método `stripe`, menciona que pueden pagar online y que el link llega al confirmar
+- Si la sección está vacía, indica que el equipo les informará al confirmar
+- Al confirmar una reserva nueva, incluye los métodos de pago al final del mensaje
+- **Nunca inventa datos bancarios** — solo usa lo que aparece en el prompt
 
 ### Reglas de formato
 - **Sin emojis** en ningún mensaje
@@ -589,6 +608,7 @@ automáticamente — el staff debe reconectar cuando expire.
    supabase secrets set WHATSAPP_VERIFY_TOKEN=mi_token_secreto
    supabase secrets set OPENAI_API_KEY=sk-...
    supabase secrets set BOOKING_URL=https://saffi.app/booking
+   supabase secrets set COMPANY_ID=afe5c9b1-d3b4-4617-80c0-73743cf92b33
    ```
    Para verificar los secrets configurados: `supabase secrets list`
 
