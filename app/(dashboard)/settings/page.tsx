@@ -1221,6 +1221,7 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
 
 // ─── PaymentsSection ──────────────────────────────────────────────────────────
 function PaymentsSection({ tenantId }: { tenantId: string | null }) {
+  const { t } = useLanguage()
   const supabase = createClient()
 
   // ── Stripe state ────────────────────────────────────────────────────────────
@@ -1363,10 +1364,9 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
 
       {/* ── Modo de pago ──────────────────────────────────────────── */}
       <div className="glass" style={{ padding:20 }}>
-        <div style={{ fontSize:14, fontWeight:700, marginBottom:4 }}>Payment mode</div>
+        <div style={{ fontSize:14, fontWeight:700, marginBottom:4 }}>{t('paymentMode')}</div>
         <div style={{ fontSize:12, color:'var(--text2)', marginBottom:16 }}>
-          Informative: the bot shares payment details and staff confirms manually.
-          Transactional: Stripe auto-confirms the booking after payment.
+          {t('paymentModeDesc')}
         </div>
         <div style={{ display:'flex', gap:10, marginBottom:16 }}>
           {(['informative','transactional'] as const).map(mode => (
@@ -1376,7 +1376,7 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
               background: paymentMode === mode ? 'var(--accent)18' : 'transparent',
               color: paymentMode === mode ? 'var(--accent)' : 'var(--text2)',
             }}>
-              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+              {mode === 'informative' ? t('paymentModeInfo') : t('paymentModeTrans')}
             </button>
           ))}
         </div>
@@ -1384,7 +1384,7 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
           padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
           background:'var(--accent)', color:'#000', border:'none', opacity: modeSaving ? 0.6 : 1,
         }}>
-          {modeSaving ? 'Saving…' : 'Save mode'}
+          {modeSaving ? t('saving') : t('saveMode')}
         </button>
       </div>
 
@@ -1398,7 +1398,7 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
           </div>
           <div>
             <div style={{ fontSize:14, fontWeight:700 }}>Stripe</div>
-            <div style={{ fontSize:11, color:'var(--text2)' }}>Online card payments</div>
+            <div style={{ fontSize:11, color:'var(--text2)' }}>{t('stripeOnline')}</div>
           </div>
           <div style={{ marginLeft:'auto' }}>{badge(stripeActive)}</div>
         </div>
@@ -1407,25 +1407,25 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
           display:'flex', flexDirection:'column', gap:12 }}>
 
           <div>
-            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>Publishable key</div>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>{t('publishableKey')}</div>
             <input value={pubKey} onChange={e => setPubKey(e.target.value)}
               placeholder="pk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
           </div>
 
           <div>
-            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>Secret key</div>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>{t('secretKey')}</div>
             <input type="password" value={secKey} onChange={e => setSecKey(e.target.value)}
               placeholder="sk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
           </div>
 
           <div>
             <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>
-              Webhook secret <span style={{ color:'var(--text3)' }}>(opcional)</span>
+              {t('webhookSecret')} <span style={{ color:'var(--text3)' }}>({t('webhookSecretOpt')})</span>
             </div>
             <input type="password" value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)}
               placeholder="whsec_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
             <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>
-              Register your webhook at: <code style={{ fontSize:11 }}>
+              {t('webhookRegisterAt')}: <code style={{ fontSize:11 }}>
                 https://www.saffi.app/api/stripe/booking-webhook
               </code>
             </div>
@@ -1437,7 +1437,7 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
               background:'var(--accent)', color:'#000', border:'none',
               opacity: (stripeSaving || !pubKey || !secKey) ? 0.5 : 1,
             }}>
-              {stripeSaving ? 'Saving…' : 'Save Stripe'}
+              {stripeSaving ? t('saving') : t('saveStripe')}
             </button>
             {stripeMsg && (
               <span style={{ fontSize:12, color: stripeMsg.ok ? '#1A6B40' : '#D9533D' }}>
@@ -1452,15 +1452,15 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
       <div className="glass" style={{ padding:20 }}>
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
           <div>
-            <div style={{ fontSize:14, fontWeight:700 }}>Manual payment methods</div>
-            <div style={{ fontSize:12, color:'var(--text2)' }}>Bank accounts and wallets</div>
+            <div style={{ fontSize:14, fontWeight:700 }}>{t('manualMethods')}</div>
+            <div style={{ fontSize:12, color:'var(--text2)' }}>{t('manualMethodsDesc')}</div>
           </div>
           <button onClick={() => setShowAddMethod(p => !p)} style={{
             display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
             borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
             background:'transparent', border:'1px solid var(--border)', color:'var(--text)',
           }}>
-            <Plus size={14}/> Add
+            <Plus size={14}/> {t('addMethod')}
           </button>
         </div>
 
@@ -1470,32 +1470,32 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
             marginBottom:16, display:'flex', flexDirection:'column', gap:10 }}>
 
             <div style={{ display:'flex', gap:8 }}>
-              {(['bank','wallet'] as const).map(t => (
-                <button key={t} onClick={() => setNewMethod(p => ({ ...p, type:t, details:{} }))} style={{
+              {(['bank','wallet'] as const).map(methodType => (
+                <button key={methodType} onClick={() => setNewMethod(p => ({ ...p, type:methodType, details:{} }))} style={{
                   padding:'6px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-                  border: newMethod.type === t ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: newMethod.type === t ? 'var(--accent)18' : 'transparent',
-                  color: newMethod.type === t ? 'var(--accent)' : 'var(--text2)',
+                  border: newMethod.type === methodType ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  background: newMethod.type === methodType ? 'var(--accent)18' : 'transparent',
+                  color: newMethod.type === methodType ? 'var(--accent)' : 'var(--text2)',
                 }}>
-                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                  {methodType.charAt(0).toUpperCase() + methodType.slice(1)}
                 </button>
               ))}
             </div>
 
             <input value={newMethod.label}
               onChange={e => setNewMethod(p => ({ ...p, label: e.target.value }))}
-              placeholder="Label (e.g. Bancolombia Ahorros, Nequi)"
+              placeholder={t('methodLabelPlaceholder')}
               style={{ width:'100%', fontSize:13 }}/>
 
             {newMethod.type === 'bank' && (
               <>
-                <input placeholder="Bank name"
+                <input placeholder={t('bankName')}
                   onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, bank_name: e.target.value }}))}
                   style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder="Account number"
+                <input placeholder={t('accountNumber')}
                   onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_number: e.target.value }}))}
                   style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder="Account holder"
+                <input placeholder={t('accountHolder')}
                   onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_holder: e.target.value }}))}
                   style={{ width:'100%', fontSize:13 }}/>
               </>
@@ -1503,10 +1503,10 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
 
             {newMethod.type === 'wallet' && (
               <>
-                <input placeholder="Wallet name (e.g. Nequi, Daviplata)"
+                <input placeholder={t('walletName')}
                   onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, wallet_name: e.target.value }}))}
                   style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder="Phone number"
+                <input placeholder={t('phoneNumber')}
                   onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, phone_number: e.target.value }}))}
                   style={{ width:'100%', fontSize:13 }}/>
               </>
@@ -1518,13 +1518,13 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
                 background:'var(--accent)', color:'#000', border:'none',
                 opacity: (methodSaving || !newMethod.label) ? 0.5 : 1,
               }}>
-                {methodSaving ? 'Saving…' : 'Save method'}
+                {methodSaving ? t('saving') : t('saveMethod')}
               </button>
               <button onClick={() => setShowAddMethod(false)} style={{
                 padding:'7px 16px', borderRadius:8, fontSize:12, cursor:'pointer',
                 background:'transparent', border:'1px solid var(--border)', color:'var(--text2)',
               }}>
-                Cancel
+                {t('cancel')}
               </button>
             </div>
           </div>
@@ -1533,7 +1533,7 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
         {/* Lista de métodos existentes */}
         {methods.length === 0 ? (
           <div style={{ fontSize:12, color:'var(--text3)', textAlign:'center', padding:'20px 0' }}>
-            No payment methods configured yet.
+            {t('noMethodsYet')}
           </div>
         ) : (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -1906,6 +1906,7 @@ export default function SettingsPage() {
     team:             t('teamRoles'),
     integrations:     t('integrations'),
     plans:            t('plans'),
+    payments:         t('payments'),
     'print-templates': 'Plantillas',
   }
 
