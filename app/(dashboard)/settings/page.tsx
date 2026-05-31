@@ -1282,13 +1282,13 @@ function PlansSection({ tenantPlan, tenantStatus, tenantCustomerId, tenantId }: 
   tenantCustomerId: string | null; tenantId: string | null;
 }) {
   const PLANS = [
-    { key:'starter', name:'Starter', monthlyPrice:49, annualPrice:39,
+    { key:'starter', name:'Starter', monthlyPrice:49, annualPrice:39, badge:null,
       features:['2 usuarios','2 vehículos / técnicos','Reservas y CRM básico','Contabilidad y finanzas','WhatsApp Bot incluido'],
       notIncluded:['RRHH + Nómina','Reportes completos','Soporte prioritario'] },
-    { key:'pro', name:'Pro', monthlyPrice:99, annualPrice:79,
-      features:['5 usuarios','Vehículos ilimitados','CRM completo + tiers','WhatsApp Bot incluido','RRHH + Nómina completa','Contabilidad y finanzas','Reportes completos'],
+    { key:'pro', name:'Pro', monthlyPrice:99, annualPrice:79, badge:'El más popular',
+      features:['5 usuarios','Vehículos ilimitados','CRM completo + tiers VIP','WhatsApp Bot incluido','RRHH + Nómina completa','Contabilidad y finanzas','Reportes completos'],
       notIncluded:['Soporte prioritario'] },
-    { key:'enterprise', name:'Enterprise', monthlyPrice:199, annualPrice:159,
+    { key:'enterprise', name:'Enterprise', monthlyPrice:199, annualPrice:159, badge:null,
       features:['Usuarios ilimitados','Todo lo de Pro','Onboarding dedicado','Soporte prioritario 24/7','SLA garantizado','Backup diario de datos','Personalización de marca'],
       notIncluded:[] },
   ]
@@ -1343,16 +1343,25 @@ function PlansSection({ tenantPlan, tenantStatus, tenantCustomerId, tenantId }: 
       </div>
 
       {/* Toggle mensual/anual */}
-      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:28 }}>
         {(['monthly','annual'] as const).map(i => (
           <button key={i} onClick={() => setIntervalPlan(i)} style={{
-            padding:'6px 16px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-            border: interval === i ? '1px solid #0B2A4A' : '1px solid #F0EFEA',
+            padding:'6px 18px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+            border: interval === i ? '1px solid #0B2A4A' : '1px solid #ECEAE4',
             background: interval === i ? '#0B2A4A' : '#FFFFFF',
             color: interval === i ? '#FFFFFF' : '#5A5852',
+            display:'flex', alignItems:'center', gap:6,
           }}>
             {i === 'monthly' ? 'Mensual' : 'Anual'}
-            {i === 'annual' && <span style={{ marginLeft:6, fontSize:10, background:'#E6F4EE', color:'#1A6B40', borderRadius:10, padding:'1px 6px' }}>-20%</span>}
+            {i === 'annual' && (
+              <span style={{
+                fontSize:9, fontWeight:700, padding:'1px 6px', borderRadius:99,
+                background: interval === 'annual' ? 'rgba(255,255,255,0.18)' : '#E6F4EE',
+                color:      interval === 'annual' ? '#FFFFFF' : '#1A6B40',
+              }}>
+                AHORRA 20%
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -1361,39 +1370,134 @@ function PlansSection({ tenantPlan, tenantStatus, tenantCustomerId, tenantId }: 
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16 }}>
         {PLANS.map(plan => {
           const isCurrent = tenantPlan === plan.key
-          const price = interval === 'monthly' ? plan.monthlyPrice : plan.annualPrice
+          const price     = interval === 'monthly' ? plan.monthlyPrice : plan.annualPrice
+
+          // Visual tokens — dark when current, light otherwise
+          const cardBg       = isCurrent ? '#0B2A4A' : '#FFFFFF'
+          const nameColor    = isCurrent ? 'rgba(255,255,255,0.55)' : '#5A5852'
+          const priceColor   = isCurrent ? '#FFFFFF' : '#0B2A4A'
+          const unitColor    = isCurrent ? 'rgba(255,255,255,0.6)' : '#5A5852'
+          const annualColor  = isCurrent ? 'rgba(255,255,255,0.4)' : '#A8A6A0'
+          const featColor    = isCurrent ? '#FFFFFF' : '#0B2A4A'
+          const noFeatColor  = isCurrent ? 'rgba(255,255,255,0.3)' : '#A8A6A0'
+          const dividerColor = isCurrent ? 'rgba(255,255,255,0.1)' : '#F0EFEA'
+          const checkDot     = isCurrent ? 'rgba(255,255,255,0.14)' : '#E6F4EE'
+          const checkMark    = isCurrent ? '#FFFFFF' : '#1A6B40'
+          const crossDot     = isCurrent ? 'rgba(255,255,255,0.07)' : '#F5F4EF'
+          const crossMark    = isCurrent ? 'rgba(255,255,255,0.28)' : '#C0BDB7'
+
+          // Badge: current plan → "PLAN ACTUAL", pro (not current) → plan.badge
+          const badgeText = isCurrent ? 'PLAN ACTUAL' : plan.badge
+
           return (
-            <div key={plan.key} style={{ background:'#FFFFFF', border: isCurrent ? '2px solid #0B2A4A' : '1px solid #F0EFEA', borderRadius:12, padding:20, position:'relative' }}>
-              {isCurrent && (
-                <div style={{ position:'absolute', top:-10, left:'50%', transform:'translateX(-50%)', background:'#0B2A4A', color:'#FFFFFF', fontSize:10, fontWeight:700, padding:'2px 12px', borderRadius:20 }}>
-                  PLAN ACTUAL
+            <div
+              key={plan.key}
+              style={{
+                background: cardBg,
+                border: isCurrent ? 'none' : '1px solid #ECEAE4',
+                borderRadius: 14,
+                padding: '28px 22px 24px',
+                position: 'relative',
+                boxShadow: isCurrent
+                  ? '0 8px 32px rgba(11,42,74,0.22)'
+                  : '0 2px 8px rgba(11,42,74,0.04)',
+                display: 'flex', flexDirection: 'column',
+              }}
+            >
+              {/* Badge */}
+              {badgeText && (
+                <div style={{
+                  position:'absolute', top:-13, left:'50%', transform:'translateX(-50%)',
+                  background:'#F5B544', color:'#1A1A1A',
+                  fontSize:10, fontWeight:700, padding:'3px 14px', borderRadius:99,
+                  whiteSpace:'nowrap', letterSpacing:'0.3px',
+                }}>
+                  {badgeText}
                 </div>
               )}
-              <div style={{ fontSize:13, fontWeight:700, color:'#5A5852', marginBottom:8, textTransform:'uppercase', letterSpacing:'0.5px' }}>{plan.name}</div>
-              <div style={{ marginBottom:16 }}>
-                <span style={{ fontSize:28, fontWeight:800, color:'#0B2A4A' }}>${price}</span>
-                <span style={{ fontSize:12, color:'#5A5852' }}>/mes</span>
+
+              {/* Plan name */}
+              <div style={{ fontSize:12, fontWeight:700, color:nameColor, textTransform:'uppercase', letterSpacing:'0.9px', marginBottom:10 }}>
+                {plan.name}
               </div>
-              <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:20 }}>
+
+              {/* Price */}
+              <div style={{ display:'flex', alignItems:'baseline', gap:3, marginBottom:4 }}>
+                <span style={{ fontSize:38, fontWeight:800, color:priceColor, lineHeight:1 }}>${price}</span>
+                <span style={{ fontSize:13, color:unitColor, fontWeight:500 }}> / mes</span>
+              </div>
+
+              {/* Annual reference price */}
+              <div style={{ fontSize:11, color:annualColor, marginBottom:20, minHeight:15 }}>
+                {interval === 'monthly' && plan.key !== 'enterprise'
+                  ? `$${plan.annualPrice} / mes facturado anual`
+                  : interval === 'annual'
+                    ? `Facturado $${plan.annualPrice * 12} / año`
+                    : ' '}
+              </div>
+
+              {/* CTA */}
+              {plan.key === 'enterprise' ? (
+                <button
+                  onClick={() => window.open('mailto:ventas@saffi.app')}
+                  style={{
+                    width:'100%', padding:'11px 0', borderRadius:9, fontSize:13, fontWeight:700,
+                    cursor:'pointer', border: isCurrent ? 'none' : '1px solid #DDDBD5',
+                    background: isCurrent ? 'rgba(255,255,255,0.11)' : '#FFFFFF',
+                    color: isCurrent ? '#FFFFFF' : '#0B2A4A',
+                    marginBottom:20,
+                  }}
+                >
+                  Hablar con ventas
+                </button>
+              ) : (
+                <button
+                  onClick={() => isCurrent && tenantCustomerId
+                    ? handleManagePlan()
+                    : window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`}
+                  disabled={loadingPortal}
+                  style={{
+                    width:'100%', padding:'11px 0', borderRadius:9, fontSize:13, fontWeight:700,
+                    cursor: loadingPortal ? 'wait' : 'pointer', border:'none',
+                    background: isCurrent ? '#F5B544' : '#0B2A4A',
+                    color:      isCurrent ? '#1A1A1A' : '#FFFFFF',
+                    marginBottom:20,
+                  }}
+                >
+                  {isCurrent
+                    ? (loadingPortal ? 'Cargando...' : 'Gestionar plan')
+                    : 'Empieza gratis 10 días'}
+                </button>
+              )}
+
+              {/* Divider */}
+              <div style={{ height:1, background:dividerColor, marginBottom:16 }} />
+
+              {/* Features list */}
+              <div style={{ display:'flex', flexDirection:'column', gap:9, flex:1 }}>
                 {plan.features.map(f => (
-                  <div key={f} style={{ fontSize:12, color:'#0B2A4A', display:'flex', alignItems:'center', gap:6 }}>
-                    <span style={{ color:'#1A6B40' }}>✓</span> {f}
+                  <div key={f} style={{ display:'flex', alignItems:'center', gap:9 }}>
+                    <span style={{
+                      width:18, height:18, borderRadius:'50%', flexShrink:0,
+                      background:checkDot, color:checkMark,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:10, fontWeight:800,
+                    }}>✓</span>
+                    <span style={{ fontSize:12, color:featColor }}>{f}</span>
                   </div>
                 ))}
                 {plan.notIncluded.map(f => (
-                  <div key={f} style={{ fontSize:12, color:'#A8A6A0', display:'flex', alignItems:'center', gap:6 }}>
-                    <span>✗</span> {f}
+                  <div key={f} style={{ display:'flex', alignItems:'center', gap:9 }}>
+                    <span style={{
+                      width:18, height:18, borderRadius:'50%', flexShrink:0,
+                      background:crossDot, color:crossMark,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontSize:10, fontWeight:800,
+                    }}>✗</span>
+                    <span style={{ fontSize:12, color:noFeatColor }}>{f}</span>
                   </div>
                 ))}
               </div>
-              <button
-                onClick={() => isCurrent && tenantCustomerId ? handleManagePlan() : window.location.href = `/upgrade?tenant_id=${tenantId ?? ''}`}
-                style={{ width:'100%', padding:'10px 0', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
-                  border: isCurrent ? 'none' : '1px solid #F0EFEA',
-                  background: isCurrent ? '#0B2A4A' : '#FFFFFF',
-                  color: isCurrent ? '#FFFFFF' : '#5A5852' }}>
-                {isCurrent ? 'Gestionar plan' : `Cambiar a ${plan.name}`}
-              </button>
             </div>
           )
         })}
