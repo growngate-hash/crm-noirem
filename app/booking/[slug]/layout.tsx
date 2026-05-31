@@ -12,13 +12,14 @@ const DEFAULT = {
   description: 'Schedule your service online. Fast, easy booking in 2 minutes.',
 }
 
-interface Props {
-  params: { slug: string }
+type Props = {
+  params: Promise<{ slug: string }>
   children: React.ReactNode
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const tenant = TENANT_META[params.slug] ?? DEFAULT
+  const { slug } = await params
+  const tenant = TENANT_META[slug] ?? DEFAULT
 
   return {
     title:       `Book — ${tenant.name}`,
