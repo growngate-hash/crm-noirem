@@ -50,14 +50,7 @@ export default function LandingNavbar() {
         <div style={{ maxWidth: 1200, width: '100%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Logo */}
           <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 32, height: 32, borderRadius: 9,
-              background: `linear-gradient(135deg, ${S}, #1a4a7a)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 2px 8px rgba(11,42,74,0.25)`,
-            }}>
-              <span style={{ color: C, fontWeight: 900, fontSize: 16, letterSpacing: '-1px', fontFamily: 'Geist, sans-serif' }}>S</span>
-            </div>
+            <img src="/saffi-logo.svg" alt="SAFFI" style={{ width: 28, height: 34 }} />
             <span style={{ fontSize: 20, fontWeight: 800, color: S, letterSpacing: '-0.5px', fontFamily: 'Geist, sans-serif' }}>
               saffi
             </span>

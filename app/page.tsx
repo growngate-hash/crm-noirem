@@ -613,14 +613,7 @@ export default function HomePage() {
             {/* Brand column */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 9,
-                  background: `linear-gradient(135deg, ${S}, #1a4a7a)`,
-                  border: '1px solid rgba(61,217,214,0.3)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <span style={{ color: C, fontWeight: 900, fontSize: 16, letterSpacing: '-1px' }}>S</span>
-                </div>
+                <img src="/saffi-logo-light.svg" alt="SAFFI" style={{ width: 24, height: 29 }} />
                 <span style={{ fontSize: 20, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>saffi</span>
               </div>
               <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 280, margin: '0 0 20px' }}>

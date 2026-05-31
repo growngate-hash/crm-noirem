@@ -100,16 +100,10 @@ export default function LoginPage() {
 
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            width: 56, height: 56, borderRadius: 14, margin: '0 auto 14px',
-            background: brandLogo ? 'transparent' : `linear-gradient(135deg, ${S}, #1a4a7a)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: `0 4px 16px rgba(11,42,74,0.20)`,
-            overflow: 'hidden',
-          }}>
+          <div style={{ margin: '0 auto 14px', width: 48, height: 58 }}>
             {brandLogo
-              ? <img src={brandLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              : <span style={{ color: C, fontWeight: 900, fontSize: 22, letterSpacing: '-1px' }}>{brandName.charAt(0)}</span>
+              ? <img src={brandLogo} alt="Logo" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 12 }} />
+              : <img src="/saffi-logo.svg" alt="SAFFI" style={{ width: 48, height: 58 }} />
             }
           </div>
           <div style={{ fontSize: 20, fontWeight: 900, color: S, letterSpacing: '0.06em' }}>{brandName}</div>
