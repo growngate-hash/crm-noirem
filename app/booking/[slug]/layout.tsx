@@ -1,5 +1,16 @@
 import type { Metadata } from 'next'
-import { createClient } from '@supabase/supabase-js'
+
+const TENANT_META: Record<string, { name: string; description: string }> = {
+  noirem: {
+    name: 'Noirem Luxury Car Care',
+    description: 'Schedule your premium car wash & detailing service. Fast, easy booking in 2 minutes.',
+  },
+}
+
+const DEFAULT = {
+  name: 'Book a service',
+  description: 'Schedule your service online. Fast, easy booking in 2 minutes.',
+}
 
 interface Props {
   params: { slug: string }
@@ -7,37 +18,20 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-
-  const { data } = await supabase
-    .from('business_settings')
-    .select('business_name, logo_url')
-    .eq('slug', params.slug)
-    .single()
-
-  const businessName = data?.business_name ?? 'Book a service'
-  const description  = `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`
-  const imageUrl     = data?.logo_url && data.logo_url.startsWith('http')
-    ? data.logo_url
-    : 'https://www.saffi.app/og-default.png'
+  const tenant = TENANT_META[params.slug] ?? DEFAULT
 
   return {
-    title:       `Book — ${businessName}`,
-    description,
+    title:       `Book — ${tenant.name}`,
+    description: tenant.description,
     openGraph: {
-      title:       `Book — ${businessName}`,
-      description,
-      images: [{ url: imageUrl, width: 1200, height: 630, alt: businessName }],
-      type: 'website',
+      title:       `Book — ${tenant.name}`,
+      description: tenant.description,
+      type:        'website',
     },
     twitter: {
       card:        'summary_large_image',
-      title:       `Book — ${businessName}`,
-      description,
-      images:      [imageUrl],
+      title:       `Book — ${tenant.name}`,
+      description: tenant.description,
     },
   }
 }
