@@ -43,7 +43,9 @@ Usuario en /upgrade → selecciona plan → POST /api/stripe/checkout
 | `lib/stripe.ts` | Cliente Stripe, constante `PLANS`, función `getOrCreateStripeCustomer()` |
 | `app/api/stripe/checkout/route.ts` | `POST /api/stripe/checkout` — crea Checkout Session |
 | `app/api/stripe/webhook/route.ts` | `POST /api/stripe/webhook` — procesa eventos de Stripe |
-| `app/(auth)/upgrade/page.tsx` | Página pública de selección de plan |
+| `app/api/stripe/portal/route.ts` | `POST /api/stripe/portal` — crea sesión del Customer Portal |
+| `app/(auth)/upgrade/page.tsx` | Página pública de selección de plan con Suspense |
+| `app/(dashboard)/settings/page.tsx` | `PlansSection` con datos reales del tenant |
 | `supabase/migrations/20260529_stripe_subscriptions.sql` | Columnas Stripe en tabla `tenants` |
 
 ---
@@ -147,6 +149,7 @@ Actualiza el tenant con:
 - `stripe_price_id`, `plan`, `plan_interval` derivados del price ID de la suscripción
 - `subscription_status: 'active'`
 - `subscription_ends_at` desde `subscription.current_period_end`
+- **`status: 'active'`** — sincroniza el campo legado para que el middleware lo reconozca
 
 **Nota TS:** `current_period_end` no existe en el tipo estático de Stripe SDK v22. Se accede via cast:
 ```typescript
@@ -163,7 +166,7 @@ Busca por `.eq('stripe_subscription_id', sub.id)`.
 Lee `tenantId` desde `sub.metadata.tenantId` (metadata de la suscripción, no de la sesión).
 
 #### `customer.subscription.deleted`
-Actualiza `subscription_status: 'canceled'`, `plan: 'trial'`.
+Actualiza `subscription_status: 'canceled'`, `plan: 'trial'`, **`status: 'expired'`** (campo legado).
 
 #### `invoice.payment_failed`
 Accede a `invoice.subscription` via cast porque el tipo de `Stripe.Invoice` en v22 no expone este campo directamente:
@@ -236,6 +239,57 @@ Las rutas `/api/stripe/*` están **excluidas del matcher** del middleware de aut
 ```
 
 `api/stripe` excluye tanto `/api/stripe/webhook` como `/api/stripe/checkout`.
+
+---
+
+---
+
+## `POST /api/stripe/portal`
+
+**Ruta:** `app/api/stripe/portal/route.ts`
+
+Crea una sesión del Stripe Customer Portal para que el usuario pueda gestionar su suscripción (cambiar plan, actualizar tarjeta, cancelar, ver historial de facturas) sin salir de la aplicación.
+
+**Body:** `{ tenantId: string }`
+
+**Flujo:**
+1. Busca `stripe_customer_id` del tenant con service role.
+2. Si no existe → retorna 404.
+3. Llama a `stripe.billingPortal.sessions.create()` con `return_url: APP_URL/settings`.
+4. Retorna `{ url }` → el frontend redirige con `window.location.href = url`.
+
+**Usado por:** `PlansSection` en Settings (botón "Gestionar plan") y `IntegrationsSection` (si `stripeStatus === 'active'`).
+
+---
+
+## Sección Plans en Settings
+
+`app/(dashboard)/settings/page.tsx` → `PlansSection` muestra el plan real del tenant:
+
+- **Datos**: leídos de `tenants` vía `useEffect` en `SettingsPage`, pasados como props a `PlansSection`.
+- **Badge de estado**: dinámico según `subscription_status` (ACTIVO/TRIAL/VENCIDO/CANCELADO/SIN PAGO).
+- **Toggle mensual/anual**: precios de SAFFI ($49/$39, $99/$79, $199/$159).
+- **Botón "Gestionar plan"**: si hay `stripe_customer_id` → abre Customer Portal; si no → redirige a `/upgrade`.
+- **Estado compartido**: `SettingsPage` hace la query al tenant una vez y pasa `tenantPlan`, `tenantStatus`, `tenantCustomerId`, `tenantId` como props.
+
+---
+
+## Sincronización `status` legado ↔ `subscription_status` Stripe
+
+La tabla `tenants` tiene dos campos de estado:
+
+| Campo | Valores | Usa |
+|---|---|---|
+| `status` | `'trial'`, `'active'`, `'expired'`, `'suspended'` | Middleware para redirecciones |
+| `subscription_status` | `'trialing'`, `'active'`, `'past_due'`, `'canceled'`, `'unpaid'` | Stripe / UI |
+
+El webhook mantiene ambos sincronizados:
+
+| Evento Stripe | `subscription_status` | `status` legado |
+|---|---|---|
+| `checkout.session.completed` | `active` | `active` |
+| `customer.subscription.deleted` | `canceled` | `expired` |
+| `invoice.payment_failed` | `past_due` | `suspended` |
 
 ---
 

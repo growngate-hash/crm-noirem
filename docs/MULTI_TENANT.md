@@ -202,13 +202,29 @@ CREATE TABLE tenants (
 
 **Estados y redirecciones del middleware:**
 
-| Status | Condición | Redirección |
+El middleware verifica **dos campos** para decidir si bloquear:
+
+| Condición | `subscription_status` = active | Resultado |
 |---|---|---|
-| `trial` | `trial_ends_at < now()` | `/upgrade` |
-| `expired` | Siempre | `/upgrade` |
-| `suspended` | Siempre | `/suspended` |
-| `active` | — | Sin redirección |
-| Sin fila en `tenants` | Legacy Noirem | Sin redirección (deja pasar) |
+| `status='trial'` + `trial_ends_at < now()` | ✅ Sí | ✅ Acceso permitido (Stripe cubre) |
+| `status='trial'` + `trial_ends_at < now()` | ❌ No | 🔒 → `/upgrade?tenant_id=XXX` |
+| `status='expired'` | ✅ Sí | ✅ Acceso permitido |
+| `status='expired'` | ❌ No | 🔒 → `/upgrade?tenant_id=XXX` |
+| `status='suspended'` | ✅ Sí | ✅ Acceso permitido |
+| `status='suspended'` | ❌ No | 🔒 → `/suspended` |
+| `status='active'` | Cualquiera | ✅ Acceso permitido |
+| Sin fila en `tenants` | — | ✅ Sin redirección (legacy Noirem) |
+
+**Lógica clave:**
+```typescript
+const stripeActive = tenant?.subscription_status === 'active'
+const isExpired    = (status === 'expired' || trialExpired) && !stripeActive
+const isSuspended  = status === 'suspended' && !stripeActive
+```
+
+`stripeActive` actúa como bypass: si Stripe confirma pago activo, el usuario entra aunque el campo `status` legado esté en `expired` o `suspended`.
+
+El redirect a `/upgrade` incluye `?tenant_id=UUID` para pre-rellenar el tenant en el checkout de Stripe.
 
 > Para el flujo completo de suscripciones Stripe, ver [docs/STRIPE_INTEGRATION.md](STRIPE_INTEGRATION.md).
 
@@ -522,3 +538,21 @@ Esta tabla ya tiene RLS configurada correctamente y filtra por `auth.uid()` sin 
 | `20260527_fix_vehicles_rls.sql` | Policy `auth_see_unowned_vehicles` — permite ver vehículos de clientes con `user_id = NULL` |
 | `20260527_admin_panel.sql` | Columna `is_superadmin` en `tenants` + tabla `admin_audit_log` con RLS para superadmins |
 | `20260529_stripe_subscriptions.sql` | Columnas Stripe en `tenants`: `stripe_customer_id`, `stripe_subscription_id`, `stripe_price_id`, `plan`, `plan_interval`, `subscription_status`, `subscription_ends_at` |
+
+### Sincronización de campos de estado
+
+`tenants` tiene dos campos de estado con propósitos distintos que deben mantenerse sincronizados:
+
+```
+status (legado)          subscription_status (Stripe)
+─────────────────        ──────────────────────────────
+'trial'                  'trialing'
+'active'         ←→      'active'
+'expired'                'canceled'
+'suspended'              'past_due' / 'unpaid'
+```
+
+El webhook de Stripe actualiza **ambos** en cada evento:
+- `checkout.session.completed` → `status='active'`, `subscription_status='active'`
+- `subscription.deleted` → `status='expired'`, `subscription_status='canceled'`
+- `invoice.payment_failed` → `status='suspended'`, `subscription_status='past_due'`

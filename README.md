@@ -104,7 +104,8 @@ Ver [`docs/STRIPE_INTEGRATION.md`](docs/STRIPE_INTEGRATION.md) para la integraci
 | Archivo | Contenido |
 |---|---|
 | [`docs/MULTI_TENANT.md`](docs/MULTI_TENANT.md) | Arquitectura multi-tenant, RLS, middleware, admin panel |
-| [`docs/STRIPE_INTEGRATION.md`](docs/STRIPE_INTEGRATION.md) | Integración Stripe: checkout, webhook, planes, troubleshooting |
+| [`docs/STRIPE_INTEGRATION.md`](docs/STRIPE_INTEGRATION.md) | Integración Stripe: checkout, webhook, portal, planes, sincronización de estados |
+| [`docs/DASHBOARD_DATA.md`](docs/DASHBOARD_DATA.md) | Arquitectura de datos del dashboard: queries paralelas, gráficas, KPIs, timezone |
 | [`docs/WHATSAPP_INTEGRATION.md`](docs/WHATSAPP_INTEGRATION.md) | Bot de WhatsApp Business (Embedded Signup, horarios, zonas) |
 | [`docs/INVOICES_LOGIC.md`](docs/INVOICES_LOGIC.md) | Lógica de facturación y generación de PDF |
 | [`docs/BOOKING_CONTACTS_LOGIC.md`](docs/BOOKING_CONTACTS_LOGIC.md) | Reservas públicas y sincronización de contactos |
