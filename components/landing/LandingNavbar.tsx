@@ -149,7 +149,7 @@ export default function LandingNavbar() {
                 fontSize: 15, textDecoration: 'none',
                 fontFamily: 'Geist, sans-serif',
               }}>
-                Empieza gratis — 14 días
+                Empieza gratis — 10 días
               </Link>
             </div>
           </div>

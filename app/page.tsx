@@ -74,7 +74,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Crea tu cuenta',
-    desc: 'Regístrate en menos de 2 minutos. Sin tarjeta de crédito. 14 días de prueba completa con todas las funciones.',
+    desc: 'Regístrate en menos de 2 minutos. Sin tarjeta de crédito. 10 días de prueba completa con todas las funciones.',
   },
   {
     n: '02',
@@ -92,55 +92,62 @@ const STEPS = [
 const PLANS = [
   {
     name: 'Starter',
-    price: 'Gratis',
-    period: '14 días',
-    sub: 'Sin tarjeta de crédito',
+    price: '$49',
+    period: '/ mes',
+    sub: '$39 / mes facturado anual',
     highlight: false,
     features: [
-      '1 usuario',
-      'Hasta 30 reservas / mes',
-      'CRM básico de clientes',
-      'Facturación simple',
-      'Inventario (hasta 50 items)',
-      'Soporte por email',
+      '2 usuarios',
+      '2 vehículos / técnicos',
+      'Reservas y CRM básico',
+      'Contabilidad y finanzas',
+      'WhatsApp Bot incluido',
     ],
-    cta: 'Empieza gratis',
-    ctaHref: '/register',
+    notIncluded: [
+      'RRHH + Nómina',
+      'Reportes completos',
+      'Soporte prioritario',
+    ],
+    cta: 'Empieza gratis 10 días',
+    ctaHref: '/register?plan=starter',
   },
   {
     name: 'Pro',
-    price: '$49',
+    price: '$99',
     period: '/ mes',
-    sub: 'El más popular',
+    sub: '$79 / mes facturado anual',
     highlight: true,
     features: [
-      'Hasta 5 usuarios',
-      'Reservas ilimitadas',
-      'CRM completo con VIP',
-      'Facturación + VAT avanzado',
-      'Inventario ilimitado',
-      'Reportes y analytics',
-      'Integración WhatsApp',
+      '5 usuarios',
+      'Vehículos ilimitados',
+      'CRM completo + tiers VIP',
+      'WhatsApp Bot incluido',
+      'RRHH + Nómina completa',
+      'Contabilidad y finanzas',
+      'Reportes completos',
+    ],
+    notIncluded: [
       'Soporte prioritario',
     ],
-    cta: 'Empieza con Pro',
+    cta: 'Empieza gratis 10 días',
     ctaHref: '/register?plan=pro',
   },
   {
     name: 'Enterprise',
-    price: 'Desde $149',
+    price: '$199',
     period: '/ mes',
-    sub: 'Para equipos grandes',
+    sub: '$159 / mes facturado anual',
     highlight: false,
     features: [
       'Usuarios ilimitados',
-      'Multi-sede / sucursales',
-      'API y webhooks',
-      'Integraciones a medida',
-      'Onboarding personalizado',
-      'Gerente de cuenta dedicado',
+      'Todo lo de Pro',
+      'Onboarding dedicado',
+      'Soporte prioritario 24/7',
       'SLA garantizado',
+      'Backup diario de datos',
+      'Personalización de marca',
     ],
+    notIncluded: [],
     cta: 'Hablar con ventas',
     ctaHref: '/register?plan=enterprise',
   },
@@ -233,7 +240,7 @@ export default function HomePage() {
               transition: 'transform 0.15s, box-shadow 0.15s',
               letterSpacing: '-0.2px',
             }}>
-              Empieza gratis — 14 días
+              Empieza gratis — 10 días
               <ArrowRight size={16} />
             </Link>
             <a href="#how" style={{
@@ -538,11 +545,19 @@ export default function HomePage() {
 
                 <div style={{ height: 1, background: plan.highlight ? 'rgba(255,255,255,0.1)' : '#F0EFEA', marginBottom: 20 }} />
 
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {plan.features.map(f => (
                     <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <CheckCircle2 size={16} color={plan.highlight ? C : '#22c55e'} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 14, color: plan.highlight ? 'rgba(255,255,255,0.80)' : '#5A5852', lineHeight: 1.4 }}>
+                      <CheckCircle2 size={15} color={plan.highlight ? C : '#22c55e'} strokeWidth={2} style={{ flexShrink: 0, marginTop: 2 }} />
+                      <span style={{ fontSize: 13, color: plan.highlight ? 'rgba(255,255,255,0.82)' : '#5A5852', lineHeight: 1.45 }}>
+                        {f}
+                      </span>
+                    </li>
+                  ))}
+                  {plan.notIncluded.map(f => (
+                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <span style={{ fontSize: 15, color: plan.highlight ? 'rgba(255,255,255,0.2)' : '#D0CEC9', flexShrink: 0, lineHeight: 1 }}>✗</span>
+                      <span style={{ fontSize: 13, color: plan.highlight ? 'rgba(255,255,255,0.3)' : '#B0AEA8', lineHeight: 1.45 }}>
                         {f}
                       </span>
                     </li>
