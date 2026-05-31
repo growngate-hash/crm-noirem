@@ -8,11 +8,11 @@ import {
 } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'SAFFI — El ERP inteligente para negocios automotrices',
-  description: 'SAFFI centraliza reservas, clientes, finanzas e inventario en una sola plataforma. Software ERP diseñado para centros de servicio automotriz.',
+  title: 'SAFFI — El ERP para Car Wash & Detailing a Domicilio',
+  description: 'SAFFI centraliza reservas, clientes, finanzas e inventario en una sola plataforma. Software ERP especializado en car wash & detailing a domicilio.',
   openGraph: {
-    title: 'SAFFI ERP — Gestión inteligente para tu negocio automotriz',
-    description: 'Reservas, CRM, facturación e inventario. Todo integrado, todo en tiempo real.',
+    title: 'SAFFI ERP — Software para Car Wash & Detailing a Domicilio',
+    description: 'Reservas, CRM, facturación e inventario. Todo integrado para tu negocio de car wash & detailing.',
     type: 'website',
   },
 }
@@ -195,7 +195,7 @@ export default function HomePage() {
               fontSize: 13, fontWeight: 600, color: C, letterSpacing: '0.02em',
             }}>
               <Zap size={13} style={{ flexShrink: 0 }} />
-              Nuevo · Reportes en tiempo real disponibles
+              Especializado en Car Wash & Detailing a Domicilio
             </span>
           </div>
 
@@ -207,15 +207,15 @@ export default function HomePage() {
             letterSpacing: '-1.5px', margin: '0 auto 20px',
             maxWidth: 860,
           }}>
-            Gestiona tu negocio{' '}
+            El ERP para{' '}
             <span style={{
               background: `linear-gradient(90deg, ${C}, #5FE8E5)`,
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
             }}>
-              automotriz
+              car wash & detailing
             </span>{' '}
-            con inteligencia
+            a domicilio
           </h1>
 
           {/* Subheadline */}
@@ -224,8 +224,8 @@ export default function HomePage() {
             color: 'rgba(255,255,255,0.72)', textAlign: 'center',
             maxWidth: 640, margin: '0 auto 40px',
           }}>
-            SAFFI centraliza reservas, clientes, finanzas e inventario en una sola plataforma.
-            Diseñado para centros de servicio que quieren operar como los mejores.
+            El software vertical que tu operación de car wash & detailing a domicilio necesita.
+            Reservas, clientes, pagos e inventario — todo en un solo lugar, desde cualquier dispositivo.
           </p>
 
           {/* CTAs */}
@@ -386,7 +386,7 @@ export default function HomePage() {
               <span style={{ color: C }}>en un solo lugar</span>
             </h2>
             <p style={{ fontSize: 18, color: '#5A5852', maxWidth: 560, margin: '0 auto', lineHeight: 1.6 }}>
-              Olvídate de spreadsheets y herramientas dispersas. SAFFI unifica todo tu negocio en una plataforma coherente.
+              Construido específicamente para operaciones de car wash & detailing a domicilio. Sin herramientas genéricas, sin adaptaciones — SAFFI entiende tu negocio.
             </p>
           </div>
 
@@ -425,7 +425,7 @@ export default function HomePage() {
               Opera en menos de 10 minutos
             </h2>
             <p style={{ fontSize: 18, color: '#5A5852', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>
-              Sin implementaciones complejas. Sin consultores. Solo tú y tu negocio.
+              Sin implementaciones complejas. Hecho para detailers que quieren operar como una empresa profesional.
             </p>
           </div>
 
@@ -591,10 +591,10 @@ export default function HomePage() {
         }} />
         <div style={{ maxWidth: 680, margin: '0 auto', position: 'relative' }}>
           <h2 style={{ fontSize: 'clamp(28px, 4vw, 44px)', fontWeight: 900, color: 'white', letterSpacing: '-1px', margin: '0 0 16px' }}>
-            ¿Listo para transformar tu negocio?
+            ¿Listo para profesionalizar tu car wash & detailing?
           </h2>
           <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.65)', marginBottom: 36, lineHeight: 1.6 }}>
-            Únete a más de 500 negocios que ya operan con SAFFI. Empieza gratis hoy, sin tarjeta de crédito.
+            Únete a los negocios de detailing a domicilio que ya operan con SAFFI. Empieza gratis hoy, sin tarjeta de crédito.
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
             <Link href="/register" style={{
@@ -632,7 +632,7 @@ export default function HomePage() {
                 <span style={{ fontSize: 20, fontWeight: 800, color: 'white', letterSpacing: '-0.5px' }}>saffi</span>
               </div>
               <p style={{ fontSize: 14, lineHeight: 1.7, maxWidth: 280, margin: '0 0 20px' }}>
-                El ERP inteligente para negocios automotrices. Reservas, clientes, finanzas e inventario en una sola plataforma.
+                El ERP vertical para car wash & detailing a domicilio. Reservas, clientes, pagos e inventario en una sola plataforma.
               </p>
               <div style={{ display: 'flex', gap: 12 }}>
                 {['hola@saffi.app'].map(mail => (
