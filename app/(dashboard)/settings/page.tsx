@@ -10,6 +10,7 @@ import StatusBadge from '@/components/ui/StatusBadge'
 import {
   User, Users, Plug, CreditCard, BarChart2,
   Save, Plus, Trash2, Check, X, Upload, Trash, Printer,
+  Info, Zap, Landmark, Smartphone, ExternalLink, CheckCircle2, AlertCircle,
 } from 'lucide-react'
 import { PrintTemplatesSection } from '@/components/settings/PrintTemplatesSection'
 import { COUNTRIES } from '@/lib/countries'
@@ -1360,87 +1361,129 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
   )
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:28 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
 
       {/* ── Modo de pago ──────────────────────────────────────────── */}
-      <div className="glass" style={{ padding:20 }}>
-        <div style={{ fontSize:14, fontWeight:700, marginBottom:4 }}>{t('paymentMode')}</div>
-        <div style={{ fontSize:12, color:'var(--text2)', marginBottom:16 }}>
-          {t('paymentModeDesc')}
+      <div className="glass" style={{ overflow:'hidden' }}>
+        {/* Header */}
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)',
+          display:'flex', alignItems:'center', gap:10 }}>
+          <div style={{ width:32, height:32, borderRadius:8, background:'var(--gold-dim)',
+            border:'1px solid var(--gold-b)', display:'flex', alignItems:'center',
+            justifyContent:'center', flexShrink:0 }}>
+            <CreditCard size={14} color="var(--gold)"/>
+          </div>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:'var(--text)' }}>{t('paymentMode')}</div>
+            <div style={{ fontSize:11, color:'var(--text3)', marginTop:1 }}>{t('paymentModeDesc')}</div>
+          </div>
         </div>
-        <div style={{ display:'flex', gap:10, marginBottom:16 }}>
-          {(['informative','transactional'] as const).map(mode => (
-            <button key={mode} onClick={() => setPaymentMode(mode)} style={{
-              padding:'8px 18px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
-              border: paymentMode === mode ? '2px solid var(--accent)' : '1px solid var(--border)',
-              background: paymentMode === mode ? 'var(--accent)18' : 'transparent',
-              color: paymentMode === mode ? 'var(--accent)' : 'var(--text2)',
-            }}>
-              {mode === 'informative' ? t('paymentModeInfo') : t('paymentModeTrans')}
-            </button>
-          ))}
+
+        {/* Mode cards */}
+        <div style={{ padding:'16px 20px', display:'grid',
+          gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:10 }}>
+          {([
+            { id: 'informative'   as const, icon: <Info size={16}/>,  label: t('paymentModeInfo'),  desc: 'El bot comparte los datos; el equipo confirma manualmente.' },
+            { id: 'transactional' as const, icon: <Zap  size={16}/>,  label: t('paymentModeTrans'), desc: 'Stripe auto-confirma la reserva tras el pago.' },
+          ]).map(({ id, icon, label, desc }) => {
+            const sel = paymentMode === id
+            return (
+              <button key={id} onClick={() => setPaymentMode(id)} style={{
+                textAlign:'left', padding:'14px 16px', borderRadius:10, cursor:'pointer',
+                border: sel ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+                background: sel ? 'var(--gold-dim)' : 'var(--bg3)',
+                transition:'all 0.15s', display:'flex', flexDirection:'column', gap:8,
+              }}>
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                  <div style={{ color: sel ? 'var(--gold)' : 'var(--text3)' }}>{icon}</div>
+                  {sel && (
+                    <div style={{ width:18, height:18, borderRadius:'50%', background:'var(--gold)',
+                      display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <Check size={11} color="#000" strokeWidth={3}/>
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize:12, fontWeight:700, color: sel ? 'var(--text)' : 'var(--text2)' }}>{label}</div>
+                <div style={{ fontSize:11, color:'var(--text3)', lineHeight:1.5 }}>{desc}</div>
+              </button>
+            )
+          })}
         </div>
-        <button onClick={saveMode} disabled={modeSaving} style={{
-          padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
-          background:'var(--accent)', color:'#000', border:'none', opacity: modeSaving ? 0.6 : 1,
-        }}>
-          {modeSaving ? t('saving') : t('saveMode')}
-        </button>
+
+        <div style={{ padding:'0 20px 16px' }}>
+          <button onClick={saveMode} disabled={modeSaving} className="btn btn-gold"
+            style={{ opacity: modeSaving ? 0.6 : 1 }}>
+            <Save size={13}/> {modeSaving ? t('saving') : t('saveMode')}
+          </button>
+        </div>
       </div>
 
       {/* ── Stripe ────────────────────────────────────────────────── */}
-      <div className="glass" style={{ padding:20 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
-          <div style={{ width:36, height:36, borderRadius:8, background:'#635BFF18',
-            border:'1px solid #635BFF30', display:'flex', alignItems:'center',
-            justifyContent:'center', fontSize:11, fontWeight:700, color:'#635BFF', flexShrink:0 }}>
+      <div className="glass" style={{ overflow:'hidden' }}>
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)',
+          display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ width:36, height:36, borderRadius:10, flexShrink:0,
+            background:'linear-gradient(135deg,rgba(99,91,255,0.15),rgba(99,91,255,0.28))',
+            border:'1px solid rgba(99,91,255,0.25)', display:'flex', alignItems:'center',
+            justifyContent:'center', fontSize:17, fontWeight:800, color:'#635BFF',
+            fontFamily:'var(--font-display)', letterSpacing:'-1px' }}>
             S
           </div>
-          <div>
-            <div style={{ fontSize:14, fontWeight:700 }}>Stripe</div>
-            <div style={{ fontSize:11, color:'var(--text2)' }}>{t('stripeOnline')}</div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:13, fontWeight:700 }}>Stripe</div>
+            <div style={{ fontSize:11, color:'var(--text3)', marginTop:1 }}>{t('stripeOnline')}</div>
           </div>
-          <div style={{ marginLeft:'auto' }}>{badge(stripeActive)}</div>
+          {badge(stripeActive)}
         </div>
 
-        <div style={{ borderTop:'1px solid var(--border)', marginTop:14, paddingTop:14,
-          display:'flex', flexDirection:'column', gap:12 }}>
-
+        <div style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:14 }}>
           <div>
-            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>{t('publishableKey')}</div>
-            <input value={pubKey} onChange={e => setPubKey(e.target.value)}
-              placeholder="pk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
+            <label className="label">{t('publishableKey')}</label>
+            <input className="inp" value={pubKey} onChange={e => setPubKey(e.target.value)}
+              placeholder="pk_live_..." style={{ fontFamily:'var(--font-mono)', fontSize:12 }}/>
           </div>
 
           <div>
-            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>{t('secretKey')}</div>
-            <input type="password" value={secKey} onChange={e => setSecKey(e.target.value)}
-              placeholder="sk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
+            <label className="label">{t('secretKey')}</label>
+            <input className="inp" type="password" value={secKey} onChange={e => setSecKey(e.target.value)}
+              placeholder="sk_live_..." style={{ fontFamily:'var(--font-mono)', fontSize:12 }}/>
           </div>
 
           <div>
-            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>
-              {t('webhookSecret')} <span style={{ color:'var(--text3)' }}>({t('webhookSecretOpt')})</span>
+            <label className="label">
+              {t('webhookSecret')}&nbsp;
+              <span style={{ textTransform:'none', fontWeight:400, letterSpacing:0, color:'var(--text3)' }}>
+                ({t('webhookSecretOpt')})
+              </span>
+            </label>
+            <input className="inp" type="password" value={webhookSecret}
+              onChange={e => setWebhookSecret(e.target.value)}
+              placeholder="whsec_..." style={{ fontFamily:'var(--font-mono)', fontSize:12 }}/>
+            <div style={{ marginTop:8, padding:'8px 12px', borderRadius:8,
+              background:'var(--bg3)', border:'1px solid var(--border)',
+              display:'flex', alignItems:'center', gap:8 }}>
+              <ExternalLink size={11} color="var(--text3)" style={{ flexShrink:0 }}/>
+              <span style={{ fontSize:11, color:'var(--text3)' }}>
+                {t('webhookRegisterAt')}:&nbsp;
+                <code style={{ fontFamily:'var(--font-mono)', fontSize:11, color:'var(--text2)' }}>
+                  https://www.saffi.app/api/stripe/booking-webhook
+                </code>
+              </span>
             </div>
-            <input type="password" value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)}
-              placeholder="whsec_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
-            <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>
-              {t('webhookRegisterAt')}: <code style={{ fontSize:11 }}>
-                https://www.saffi.app/api/stripe/booking-webhook
-              </code>
-            </div>
           </div>
 
-          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <button onClick={saveStripe} disabled={stripeSaving || !pubKey || !secKey} style={{
-              padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
-              background:'var(--accent)', color:'#000', border:'none',
-              opacity: (stripeSaving || !pubKey || !secKey) ? 0.5 : 1,
-            }}>
-              {stripeSaving ? t('saving') : t('saveStripe')}
+          <div style={{ display:'flex', alignItems:'center', gap:12, paddingTop:2 }}>
+            <button onClick={saveStripe} disabled={stripeSaving || !pubKey || !secKey}
+              className="btn btn-gold"
+              style={{ opacity:(stripeSaving || !pubKey || !secKey) ? 0.5 : 1 }}>
+              <Save size={13}/> {stripeSaving ? t('saving') : t('saveStripe')}
             </button>
             {stripeMsg && (
-              <span style={{ fontSize:12, color: stripeMsg.ok ? '#1A6B40' : '#D9533D' }}>
+              <span style={{ fontSize:12, display:'flex', alignItems:'center', gap:5,
+                color: stripeMsg.ok ? '#1A6B40' : 'var(--red)' }}>
+                {stripeMsg.ok
+                  ? <CheckCircle2 size={13}/>
+                  : <AlertCircle  size={13}/>}
                 {stripeMsg.text}
               </span>
             )}
@@ -1449,117 +1492,158 @@ function PaymentsSection({ tenantId }: { tenantId: string | null }) {
       </div>
 
       {/* ── Métodos manuales ──────────────────────────────────────── */}
-      <div className="glass" style={{ padding:20 }}>
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
-          <div>
-            <div style={{ fontSize:14, fontWeight:700 }}>{t('manualMethods')}</div>
-            <div style={{ fontSize:12, color:'var(--text2)' }}>{t('manualMethodsDesc')}</div>
+      <div className="glass" style={{ overflow:'hidden' }}>
+        <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)',
+          display:'flex', alignItems:'center', justifyContent:'space-between', gap:12 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+            <div style={{ width:32, height:32, borderRadius:8, background:'var(--cyan-dim)',
+              border:'1px solid var(--cyan-b)', display:'flex', alignItems:'center',
+              justifyContent:'center', flexShrink:0 }}>
+              <Landmark size={14} color="var(--cyan)"/>
+            </div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700 }}>{t('manualMethods')}</div>
+              <div style={{ fontSize:11, color:'var(--text3)', marginTop:1 }}>{t('manualMethodsDesc')}</div>
+            </div>
           </div>
-          <button onClick={() => setShowAddMethod(p => !p)} style={{
-            display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
-            borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-            background:'transparent', border:'1px solid var(--border)', color:'var(--text)',
-          }}>
-            <Plus size={14}/> {t('addMethod')}
+          <button onClick={() => setShowAddMethod(p => !p)} className="btn btn-ghost">
+            <Plus size={13}/> {t('addMethod')}
           </button>
         </div>
 
         {/* Formulario nuevo método */}
         {showAddMethod && (
-          <div style={{ background:'var(--bg2)', borderRadius:10, padding:16,
-            marginBottom:16, display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ margin:'16px 20px', padding:16, borderRadius:10,
+            background:'var(--bg3)', border:'1px solid var(--border)',
+            display:'flex', flexDirection:'column', gap:12 }}>
 
-            <div style={{ display:'flex', gap:8 }}>
-              {(['bank','wallet'] as const).map(methodType => (
-                <button key={methodType} onClick={() => setNewMethod(p => ({ ...p, type:methodType, details:{} }))} style={{
-                  padding:'6px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-                  border: newMethod.type === methodType ? '2px solid var(--accent)' : '1px solid var(--border)',
-                  background: newMethod.type === methodType ? 'var(--accent)18' : 'transparent',
-                  color: newMethod.type === methodType ? 'var(--accent)' : 'var(--text2)',
-                }}>
-                  {methodType.charAt(0).toUpperCase() + methodType.slice(1)}
-                </button>
-              ))}
+            <div style={{ fontSize:12, fontWeight:700, color:'var(--text)' }}>
+              {t('addMethod')}
             </div>
 
-            <input value={newMethod.label}
-              onChange={e => setNewMethod(p => ({ ...p, label: e.target.value }))}
-              placeholder={t('methodLabelPlaceholder')}
-              style={{ width:'100%', fontSize:13 }}/>
+            <div>
+              <label className="label">Tipo</label>
+              <div style={{ display:'flex', gap:8 }}>
+                {([
+                  { id:'bank'   as const, icon:<Landmark   size={13}/>, label:'Transferencia' },
+                  { id:'wallet' as const, icon:<Smartphone size={13}/>, label:'Billetera'     },
+                ]).map(({ id, icon, label }) => {
+                  const sel = newMethod.type === id
+                  return (
+                    <button key={id}
+                      onClick={() => setNewMethod(p => ({ ...p, type:id, details:{} }))}
+                      style={{
+                        display:'flex', alignItems:'center', gap:6,
+                        padding:'7px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                        border: sel ? '2px solid var(--gold)' : '1.5px solid var(--border)',
+                        background: sel ? 'var(--gold-dim)' : 'transparent',
+                        color: sel ? 'var(--gold)' : 'var(--text2)',
+                        transition:'all 0.12s',
+                      }}>
+                      {icon} {label}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="label">{t('methodLabelPlaceholder')}</label>
+              <input className="inp" value={newMethod.label}
+                onChange={e => setNewMethod(p => ({ ...p, label: e.target.value }))}
+                placeholder={t('methodLabelPlaceholder')}/>
+            </div>
 
             {newMethod.type === 'bank' && (
-              <>
-                <input placeholder={t('bankName')}
-                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, bank_name: e.target.value }}))}
-                  style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder={t('accountNumber')}
-                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_number: e.target.value }}))}
-                  style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder={t('accountHolder')}
-                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_holder: e.target.value }}))}
-                  style={{ width:'100%', fontSize:13 }}/>
-              </>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <div>
+                  <label className="label">{t('bankName')}</label>
+                  <input className="inp" placeholder={t('bankName')}
+                    onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, bank_name: e.target.value }}))}/>
+                </div>
+                <div>
+                  <label className="label">{t('accountNumber')}</label>
+                  <input className="inp" placeholder={t('accountNumber')}
+                    onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_number: e.target.value }}))}/>
+                </div>
+                <div style={{ gridColumn:'1/-1' }}>
+                  <label className="label">{t('accountHolder')}</label>
+                  <input className="inp" placeholder={t('accountHolder')}
+                    onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_holder: e.target.value }}))}/>
+                </div>
+              </div>
             )}
 
             {newMethod.type === 'wallet' && (
-              <>
-                <input placeholder={t('walletName')}
-                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, wallet_name: e.target.value }}))}
-                  style={{ width:'100%', fontSize:13 }}/>
-                <input placeholder={t('phoneNumber')}
-                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, phone_number: e.target.value }}))}
-                  style={{ width:'100%', fontSize:13 }}/>
-              </>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+                <div>
+                  <label className="label">{t('walletName')}</label>
+                  <input className="inp" placeholder={t('walletName')}
+                    onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, wallet_name: e.target.value }}))}/>
+                </div>
+                <div>
+                  <label className="label">{t('phoneNumber')}</label>
+                  <input className="inp" placeholder={t('phoneNumber')}
+                    onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, phone_number: e.target.value }}))}/>
+                </div>
+              </div>
             )}
 
-            <div style={{ display:'flex', gap:8 }}>
-              <button onClick={addMethod} disabled={methodSaving || !newMethod.label} style={{
-                padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
-                background:'var(--accent)', color:'#000', border:'none',
-                opacity: (methodSaving || !newMethod.label) ? 0.5 : 1,
-              }}>
-                {methodSaving ? t('saving') : t('saveMethod')}
+            <div style={{ display:'flex', gap:8, paddingTop:4 }}>
+              <button onClick={addMethod} disabled={methodSaving || !newMethod.label}
+                className="btn btn-gold"
+                style={{ opacity:(methodSaving || !newMethod.label) ? 0.5 : 1 }}>
+                <Plus size={13}/> {methodSaving ? t('saving') : t('saveMethod')}
               </button>
-              <button onClick={() => setShowAddMethod(false)} style={{
-                padding:'7px 16px', borderRadius:8, fontSize:12, cursor:'pointer',
-                background:'transparent', border:'1px solid var(--border)', color:'var(--text2)',
-              }}>
-                {t('cancel')}
+              <button onClick={() => setShowAddMethod(false)} className="btn btn-ghost">
+                <X size={13}/> {t('cancel')}
               </button>
             </div>
           </div>
         )}
 
-        {/* Lista de métodos existentes */}
-        {methods.length === 0 ? (
-          <div style={{ fontSize:12, color:'var(--text3)', textAlign:'center', padding:'20px 0' }}>
-            {t('noMethodsYet')}
-          </div>
-        ) : (
-          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-            {methods.map(m => (
-              <div key={m.id} style={{ display:'flex', alignItems:'center', gap:12,
-                padding:'10px 14px', borderRadius:8, border:'1px solid var(--border)',
-                background:'var(--bg2)' }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:600 }}>{m.label}</div>
-                  <div style={{ fontSize:11, color:'var(--text2)', textTransform:'capitalize' as const }}>
-                    {m.type}
-                    {m.details?.bank_name    && ` · ${m.details.bank_name}`}
-                    {m.details?.wallet_name  && ` · ${m.details.wallet_name}`}
-                    {m.details?.phone_number && ` · ${m.details.phone_number}`}
-                  </div>
-                </div>
-                <button onClick={() => deleteMethod(m.id)} style={{
-                  background:'none', border:'none', cursor:'pointer', color:'var(--text3)',
-                  display:'flex', alignItems:'center', padding:4,
-                }}>
-                  <Trash2 size={14}/>
-                </button>
+        {/* Lista de métodos */}
+        <div style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:8 }}>
+          {methods.length === 0 ? (
+            <div style={{ textAlign:'center', padding:'28px 0',
+              display:'flex', flexDirection:'column', alignItems:'center', gap:10 }}>
+              <div style={{ width:44, height:44, borderRadius:12, background:'var(--bg3)',
+                border:'1px solid var(--border)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <CreditCard size={20} color="var(--text3)"/>
               </div>
-            ))}
-          </div>
-        )}
+              <div style={{ fontSize:13, fontWeight:600, color:'var(--text2)' }}>{t('noMethodsYet')}</div>
+              <div style={{ fontSize:11, color:'var(--text3)' }}>
+                Añade transferencias bancarias o billeteras digitales
+              </div>
+            </div>
+          ) : methods.map(m => (
+            <div key={m.id} style={{ display:'flex', alignItems:'center', gap:12,
+              padding:'11px 14px', borderRadius:9,
+              border:'1px solid var(--border)', background:'var(--bg2)' }}>
+              <div style={{ width:34, height:34, borderRadius:8, flexShrink:0,
+                background: m.type === 'bank' ? 'var(--gold-dim)' : 'var(--cyan-dim)',
+                border: `1px solid ${m.type === 'bank' ? 'var(--gold-b)' : 'var(--cyan-b)'}`,
+                display:'flex', alignItems:'center', justifyContent:'center' }}>
+                {m.type === 'bank'
+                  ? <Landmark   size={15} color="var(--gold)"/>
+                  : <Smartphone size={15} color="var(--cyan)"/>}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{m.label}</div>
+                <div style={{ fontSize:11, color:'var(--text3)', marginTop:2 }}>
+                  {m.type === 'bank' ? 'Transferencia' : 'Billetera'}
+                  {m.details?.bank_name    && ` · ${m.details.bank_name}`}
+                  {m.details?.wallet_name  && ` · ${m.details.wallet_name}`}
+                  {m.details?.phone_number && ` · ${m.details.phone_number}`}
+                </div>
+              </div>
+              <button onClick={() => deleteMethod(m.id)} className="btn btn-danger btn-sm"
+                style={{ flexShrink:0 }}>
+                <Trash2 size={12}/>
+              </button>
+            </div>
+          ))}
+        </div>
       </div>
 
     </div>
