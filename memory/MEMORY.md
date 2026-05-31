@@ -1,3 +1,4 @@
 # Memory Index
 
 - [Plan Feature Gates](project-plan-gates.md) — Sistema de feature gates por plan (starter/pro/enterprise): archivos clave, matriz de features y cómo extenderlo
+- [Domain Migration](project-domain-migration.md) — Migración de crm-noirem.vercel.app a saffi.app: cambios aplicados, variables de entorno y pendientes en Vercel

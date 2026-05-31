@@ -588,7 +588,7 @@ automáticamente — el staff debe reconectar cuando expire.
    supabase secrets set WHATSAPP_PHONE_NUMBER_ID=12345678
    supabase secrets set WHATSAPP_VERIFY_TOKEN=mi_token_secreto
    supabase secrets set OPENAI_API_KEY=sk-...
-   supabase secrets set BOOKING_URL=https://crm-noirem.vercel.app/booking
+   supabase secrets set BOOKING_URL=https://saffi.app/booking
    ```
    Para verificar los secrets configurados: `supabase secrets list`
 
