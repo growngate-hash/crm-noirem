@@ -1,6 +1,23 @@
-<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-  <!-- 4-pointed star — Sapphire -->
-  <path d="M50,2 Q54,42 98,60 Q54,78 50,118 Q46,78 2,60 Q46,42 50,2Z" fill="#0B2A4A"/>
-  <!-- Inner diamond — Cyan -->
-  <polygon points="50,37 68,60 50,83 32,60" fill="#3DD9D6"/>
+<svg viewBox="0 0 32 60" xmlns="http://www.w3.org/2000/svg">
+  <!--
+    SAFFI Symbol — El Destello
+    Grid base: 32 × 60 px  |  Ratio H:V = 1:1.875
+    Edges: cubic Bézier concave (control points pulled toward center)
+    Cusps: tangents anti-parallel at each tip → sharp points
+    Inner highlight: 36% of size, Cyan 500
+  -->
+
+  <!-- Outer star — Sapphire 700 #0B2A4A -->
+  <!-- Top(16,0) → Right(32,30): CP1=(16,14) CP2=(28,30) — concave, sharp vertical top cusp  -->
+  <!-- Right(32,30) → Bottom(16,60): CP1=(28,30) CP2=(16,46) — concave, sharp horizontal right cusp -->
+  <!-- Bottom(16,60) → Left(0,30): CP1=(16,46) CP2=(4,30) — concave, sharp vertical bottom cusp  -->
+  <!-- Left(0,30) → Top(16,0): CP1=(4,30) CP2=(16,14) — concave, sharp horizontal left cusp -->
+  <path
+    d="M16,0 C16,14 28,30 32,30 C28,30 16,46 16,60 C16,46 4,30 0,30 C4,30 16,14 16,0Z"
+    fill="#0B2A4A"
+  />
+
+  <!-- Inner highlight — Cyan 500 #3DD9D6 -->
+  <!-- 36% of 32×60: width=11.52(±5.76 from x=16), height=21.6(±10.8 from y=30) -->
+  <polygon points="16,19.2 21.76,30 16,40.8 10.24,30" fill="#3DD9D6"/>
 </svg>

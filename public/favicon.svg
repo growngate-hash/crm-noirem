@@ -1,4 +1,16 @@
 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-  <path d="M50,2 Q54,40 98,50 Q54,60 50,98 Q46,60 2,50 Q46,40 50,2Z" fill="#0B2A4A"/>
-  <polygon points="50,34 66,50 50,66 34,50" fill="#3DD9D6"/>
+  <!-- Rounded square background — Sapphire 700 -->
+  <rect width="100" height="100" rx="22" fill="#0B2A4A"/>
+  <!--
+    Star scaled to fit 100×100 with 15px vertical padding:
+    height=70 → width=70*(32/60)=37.33 → centered at x=50
+    Tips: top=(50,15) right=(68.67,50) bottom=(50,85) left=(31.33,50)
+    Control points scaled proportionally from 32×60 grid
+  -->
+  <path
+    d="M50,15 C50,31 64,50 69,50 C64,50 50,69 50,85 C50,69 36,50 31,50 C36,50 50,31 50,15Z"
+    fill="white"
+  />
+  <!-- Inner highlight 36%: ±6.7 on x, ±12.6 on y from center (50,50) -->
+  <polygon points="50,37 57,50 50,63 43,50" fill="#3DD9D6"/>
 </svg>

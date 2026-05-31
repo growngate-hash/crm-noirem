@@ -1,6 +1,8 @@
-<svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
-  <!-- 4-pointed star — white for dark backgrounds -->
-  <path d="M50,2 Q54,42 98,60 Q54,78 50,118 Q46,78 2,60 Q46,42 50,2Z" fill="white"/>
-  <!-- Inner diamond — Cyan -->
-  <polygon points="50,37 68,60 50,83 32,60" fill="#3DD9D6"/>
+<svg viewBox="0 0 32 60" xmlns="http://www.w3.org/2000/svg">
+  <!-- SAFFI Symbol — white version for dark backgrounds -->
+  <path
+    d="M16,0 C16,14 28,30 32,30 C28,30 16,46 16,60 C16,46 4,30 0,30 C4,30 16,14 16,0Z"
+    fill="white"
+  />
+  <polygon points="16,19.2 21.76,30 16,40.8 10.24,30" fill="#3DD9D6"/>
 </svg>
