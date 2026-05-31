@@ -14,7 +14,7 @@ import {
 import { PrintTemplatesSection } from '@/components/settings/PrintTemplatesSection'
 import { COUNTRIES } from '@/lib/countries'
 
-type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'print-templates'
+type Section = 'profile' | 'team' | 'integrations' | 'plans' | 'print-templates' | 'payments'
 
 // ─── permission types ──────────────────────────────────────────────────────────
 type PermOps = { view: boolean; create?: boolean; edit?: boolean; delete?: boolean }
@@ -302,6 +302,7 @@ const NAV: { key: Section; label: string; icon: any }[] = [
   { key: 'team',            label: 'Team & Roles',         icon: Users },
   { key: 'integrations',   label: 'Integrations',         icon: Plug },
   { key: 'plans',           label: 'Plans',                icon: BarChart2 },
+  { key: 'payments',        label: 'Payments',             icon: CreditCard },
   { key: 'print-templates', label: 'Plantillas Impresión', icon: Printer },
 ]
 
@@ -1218,6 +1219,353 @@ function WhatsAppConfigPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── PaymentsSection ──────────────────────────────────────────────────────────
+function PaymentsSection({ tenantId }: { tenantId: string | null }) {
+  const supabase = createClient()
+
+  // ── Stripe state ────────────────────────────────────────────────────────────
+  const [stripeId,       setStripeId]       = useState<string | null>(null)
+  const [pubKey,         setPubKey]         = useState('')
+  const [secKey,         setSecKey]         = useState('')
+  const [webhookSecret,  setWebhookSecret]  = useState('')
+  const [stripeActive,   setStripeActive]   = useState(false)
+  const [stripeSaving,   setStripeSaving]   = useState(false)
+  const [stripeMsg,      setStripeMsg]      = useState<{ok:boolean;text:string}|null>(null)
+
+  // ── Payment mode state ──────────────────────────────────────────────────────
+  const [paymentMode,    setPaymentMode]    = useState<'informative'|'transactional'>('informative')
+  const [modeSaving,     setModeSaving]     = useState(false)
+
+  // ── Manual methods state ────────────────────────────────────────────────────
+  const [methods,        setMethods]        = useState<any[]>([])
+  const [showAddMethod,  setShowAddMethod]  = useState(false)
+  const [newMethod,      setNewMethod]      = useState<{
+    type: 'bank'|'wallet'
+    label: string
+    details: Record<string,string>
+  }>({ type: 'bank', label: '', details: {} })
+  const [methodSaving,   setMethodSaving]   = useState(false)
+
+  // ── Load on mount ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!tenantId) return
+
+    // Cargar stripe_configs
+    supabase.from('stripe_configs')
+      .select('*')
+      .eq('company_id', tenantId)
+      .eq('is_active', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setStripeId(data.id)
+          setPubKey(data.publishable_key ?? '')
+          setSecKey(data.secret_key_enc ?? '')
+          setWebhookSecret(data.webhook_secret_enc ?? '')
+          setStripeActive(data.is_active ?? false)
+        }
+      })
+
+    // Cargar payment_mode de company_settings
+    supabase.from('company_settings')
+      .select('payment_mode')
+      .eq('company_id', tenantId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.payment_mode) setPaymentMode(data.payment_mode)
+      })
+
+    // Cargar métodos manuales
+    supabase.from('payment_methods')
+      .select('*')
+      .eq('company_id', tenantId)
+      .eq('is_active', true)
+      .order('sort_order')
+      .then(({ data }) => setMethods(data ?? []))
+
+  }, [tenantId])
+
+  // ── Save Stripe config ───────────────────────────────────────────────────────
+  async function saveStripe() {
+    if (!tenantId || !pubKey || !secKey) return
+    setStripeSaving(true)
+    setStripeMsg(null)
+
+    const payload = {
+      company_id:         tenantId,
+      publishable_key:    pubKey,
+      secret_key_enc:     secKey,
+      webhook_secret_enc: webhookSecret || null,
+      is_active:          true,
+    }
+
+    let error
+    if (stripeId) {
+      ({ error } = await supabase.from('stripe_configs').update(payload).eq('id', stripeId))
+    } else {
+      const { data, error: e } = await supabase.from('stripe_configs').insert(payload).select('id').single()
+      if (data) setStripeId(data.id)
+      error = e
+    }
+
+    setStripeSaving(false)
+    setStripeMsg(error
+      ? { ok: false, text: error.message }
+      : { ok: true,  text: 'Stripe configuration saved.' }
+    )
+  }
+
+  // ── Save payment mode ────────────────────────────────────────────────────────
+  async function saveMode() {
+    if (!tenantId) return
+    setModeSaving(true)
+    await supabase.from('company_settings')
+      .upsert({ company_id: tenantId, payment_mode: paymentMode }, { onConflict: 'company_id' })
+    setModeSaving(false)
+  }
+
+  // ── Add manual method ────────────────────────────────────────────────────────
+  async function addMethod() {
+    if (!tenantId || !newMethod.label) return
+    setMethodSaving(true)
+    const { data } = await supabase.from('payment_methods').insert({
+      company_id: tenantId,
+      type:       newMethod.type,
+      label:      newMethod.label,
+      details:    newMethod.details,
+      is_active:  true,
+      sort_order: methods.length,
+    }).select('*').single()
+    if (data) setMethods(p => [...p, data])
+    setNewMethod({ type: 'bank', label: '', details: {} })
+    setShowAddMethod(false)
+    setMethodSaving(false)
+  }
+
+  // ── Delete manual method ─────────────────────────────────────────────────────
+  async function deleteMethod(id: string) {
+    await supabase.from('payment_methods').update({ is_active: false }).eq('id', id)
+    setMethods(p => p.filter(m => m.id !== id))
+  }
+
+  const badge = (active: boolean) => (
+    <span style={{
+      fontSize:10, fontWeight:700, letterSpacing:'0.5px', textTransform:'uppercase' as const,
+      borderRadius:20, padding:'3px 10px', whiteSpace:'nowrap' as const,
+      color:    active ? '#1A6B40' : '#D9533D',
+      background: active ? '#E6F4EE' : '#FBE7E2',
+      border:   `1px solid ${active ? '#A3D4B5' : '#F5B8AE'}`,
+    }}>{active ? 'ACTIVO' : 'INACTIVO'}</span>
+  )
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:28 }}>
+
+      {/* ── Modo de pago ──────────────────────────────────────────── */}
+      <div className="glass" style={{ padding:20 }}>
+        <div style={{ fontSize:14, fontWeight:700, marginBottom:4 }}>Payment mode</div>
+        <div style={{ fontSize:12, color:'var(--text2)', marginBottom:16 }}>
+          Informative: the bot shares payment details and staff confirms manually.
+          Transactional: Stripe auto-confirms the booking after payment.
+        </div>
+        <div style={{ display:'flex', gap:10, marginBottom:16 }}>
+          {(['informative','transactional'] as const).map(mode => (
+            <button key={mode} onClick={() => setPaymentMode(mode)} style={{
+              padding:'8px 18px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
+              border: paymentMode === mode ? '2px solid var(--accent)' : '1px solid var(--border)',
+              background: paymentMode === mode ? 'var(--accent)18' : 'transparent',
+              color: paymentMode === mode ? 'var(--accent)' : 'var(--text2)',
+            }}>
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
+        </div>
+        <button onClick={saveMode} disabled={modeSaving} style={{
+          padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
+          background:'var(--accent)', color:'#000', border:'none', opacity: modeSaving ? 0.6 : 1,
+        }}>
+          {modeSaving ? 'Saving…' : 'Save mode'}
+        </button>
+      </div>
+
+      {/* ── Stripe ────────────────────────────────────────────────── */}
+      <div className="glass" style={{ padding:20 }}>
+        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+          <div style={{ width:36, height:36, borderRadius:8, background:'#635BFF18',
+            border:'1px solid #635BFF30', display:'flex', alignItems:'center',
+            justifyContent:'center', fontSize:11, fontWeight:700, color:'#635BFF', flexShrink:0 }}>
+            S
+          </div>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700 }}>Stripe</div>
+            <div style={{ fontSize:11, color:'var(--text2)' }}>Online card payments</div>
+          </div>
+          <div style={{ marginLeft:'auto' }}>{badge(stripeActive)}</div>
+        </div>
+
+        <div style={{ borderTop:'1px solid var(--border)', marginTop:14, paddingTop:14,
+          display:'flex', flexDirection:'column', gap:12 }}>
+
+          <div>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>Publishable key</div>
+            <input value={pubKey} onChange={e => setPubKey(e.target.value)}
+              placeholder="pk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
+          </div>
+
+          <div>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>Secret key</div>
+            <input type="password" value={secKey} onChange={e => setSecKey(e.target.value)}
+              placeholder="sk_live_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
+          </div>
+
+          <div>
+            <div style={{ fontSize:12, color:'var(--text2)', marginBottom:4 }}>
+              Webhook secret <span style={{ color:'var(--text3)' }}>(opcional)</span>
+            </div>
+            <input type="password" value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)}
+              placeholder="whsec_..." style={{ width:'100%', fontFamily:'monospace', fontSize:12 }}/>
+            <div style={{ fontSize:11, color:'var(--text3)', marginTop:4 }}>
+              Register your webhook at: <code style={{ fontSize:11 }}>
+                https://www.saffi.app/api/stripe/booking-webhook
+              </code>
+            </div>
+          </div>
+
+          <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+            <button onClick={saveStripe} disabled={stripeSaving || !pubKey || !secKey} style={{
+              padding:'8px 20px', borderRadius:8, fontSize:13, fontWeight:600, cursor:'pointer',
+              background:'var(--accent)', color:'#000', border:'none',
+              opacity: (stripeSaving || !pubKey || !secKey) ? 0.5 : 1,
+            }}>
+              {stripeSaving ? 'Saving…' : 'Save Stripe'}
+            </button>
+            {stripeMsg && (
+              <span style={{ fontSize:12, color: stripeMsg.ok ? '#1A6B40' : '#D9533D' }}>
+                {stripeMsg.text}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Métodos manuales ──────────────────────────────────────── */}
+      <div className="glass" style={{ padding:20 }}>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+          <div>
+            <div style={{ fontSize:14, fontWeight:700 }}>Manual payment methods</div>
+            <div style={{ fontSize:12, color:'var(--text2)' }}>Bank accounts and wallets</div>
+          </div>
+          <button onClick={() => setShowAddMethod(p => !p)} style={{
+            display:'flex', alignItems:'center', gap:6, padding:'7px 14px',
+            borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+            background:'transparent', border:'1px solid var(--border)', color:'var(--text)',
+          }}>
+            <Plus size={14}/> Add
+          </button>
+        </div>
+
+        {/* Formulario nuevo método */}
+        {showAddMethod && (
+          <div style={{ background:'var(--bg2)', borderRadius:10, padding:16,
+            marginBottom:16, display:'flex', flexDirection:'column', gap:10 }}>
+
+            <div style={{ display:'flex', gap:8 }}>
+              {(['bank','wallet'] as const).map(t => (
+                <button key={t} onClick={() => setNewMethod(p => ({ ...p, type:t, details:{} }))} style={{
+                  padding:'6px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                  border: newMethod.type === t ? '2px solid var(--accent)' : '1px solid var(--border)',
+                  background: newMethod.type === t ? 'var(--accent)18' : 'transparent',
+                  color: newMethod.type === t ? 'var(--accent)' : 'var(--text2)',
+                }}>
+                  {t.charAt(0).toUpperCase() + t.slice(1)}
+                </button>
+              ))}
+            </div>
+
+            <input value={newMethod.label}
+              onChange={e => setNewMethod(p => ({ ...p, label: e.target.value }))}
+              placeholder="Label (e.g. Bancolombia Ahorros, Nequi)"
+              style={{ width:'100%', fontSize:13 }}/>
+
+            {newMethod.type === 'bank' && (
+              <>
+                <input placeholder="Bank name"
+                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, bank_name: e.target.value }}))}
+                  style={{ width:'100%', fontSize:13 }}/>
+                <input placeholder="Account number"
+                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_number: e.target.value }}))}
+                  style={{ width:'100%', fontSize:13 }}/>
+                <input placeholder="Account holder"
+                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, account_holder: e.target.value }}))}
+                  style={{ width:'100%', fontSize:13 }}/>
+              </>
+            )}
+
+            {newMethod.type === 'wallet' && (
+              <>
+                <input placeholder="Wallet name (e.g. Nequi, Daviplata)"
+                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, wallet_name: e.target.value }}))}
+                  style={{ width:'100%', fontSize:13 }}/>
+                <input placeholder="Phone number"
+                  onChange={e => setNewMethod(p => ({ ...p, details:{ ...p.details, phone_number: e.target.value }}))}
+                  style={{ width:'100%', fontSize:13 }}/>
+              </>
+            )}
+
+            <div style={{ display:'flex', gap:8 }}>
+              <button onClick={addMethod} disabled={methodSaving || !newMethod.label} style={{
+                padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer',
+                background:'var(--accent)', color:'#000', border:'none',
+                opacity: (methodSaving || !newMethod.label) ? 0.5 : 1,
+              }}>
+                {methodSaving ? 'Saving…' : 'Save method'}
+              </button>
+              <button onClick={() => setShowAddMethod(false)} style={{
+                padding:'7px 16px', borderRadius:8, fontSize:12, cursor:'pointer',
+                background:'transparent', border:'1px solid var(--border)', color:'var(--text2)',
+              }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Lista de métodos existentes */}
+        {methods.length === 0 ? (
+          <div style={{ fontSize:12, color:'var(--text3)', textAlign:'center', padding:'20px 0' }}>
+            No payment methods configured yet.
+          </div>
+        ) : (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {methods.map(m => (
+              <div key={m.id} style={{ display:'flex', alignItems:'center', gap:12,
+                padding:'10px 14px', borderRadius:8, border:'1px solid var(--border)',
+                background:'var(--bg2)' }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:600 }}>{m.label}</div>
+                  <div style={{ fontSize:11, color:'var(--text2)', textTransform:'capitalize' as const }}>
+                    {m.type}
+                    {m.details?.bank_name    && ` · ${m.details.bank_name}`}
+                    {m.details?.wallet_name  && ` · ${m.details.wallet_name}`}
+                    {m.details?.phone_number && ` · ${m.details.phone_number}`}
+                  </div>
+                </div>
+                <button onClick={() => deleteMethod(m.id)} style={{
+                  background:'none', border:'none', cursor:'pointer', color:'var(--text3)',
+                  display:'flex', alignItems:'center', padding:4,
+                }}>
+                  <Trash2 size={14}/>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+    </div>
+  )
+}
+
 // ─── Integrations section ─────────────────────────────────────────────────────
 function IntegrationsSection() {
   const { t } = useLanguage()
@@ -1548,7 +1896,8 @@ export default function SettingsPage() {
       case 'team':         return <TeamSection isAdmin={isAdmin} currentUserEmail={currentUserEmail}/>
       case 'integrations': return <IntegrationsSection/>
       case 'plans':        return <PlansSection tenantPlan={tenantPlan} tenantStatus={tenantStatus} tenantCustomerId={tenantCustomerId} tenantId={tenantId}/>
-      case 'print-templates': return <PrintTemplatesSection/>
+      case 'payments':        return <PaymentsSection tenantId={tenantId}/>
+    case 'print-templates': return <PrintTemplatesSection/>
     }
   }
 
