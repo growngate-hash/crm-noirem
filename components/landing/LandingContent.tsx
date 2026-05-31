@@ -312,14 +312,18 @@ export default function LandingContent() {
               <a href={`mailto:${t.footerEmail}`} style={{ fontSize:13, color:C, textDecoration:'none', fontWeight:600 }}>{t.footerEmail}</a>
             </div>
             {[
-              { title: t.footerProduct, links: t.footerProdLinks },
-              { title: t.footerCompany, links: t.footerCompanyLinks },
-              { title: t.footerLegal,   links: t.footerLegalLinks },
+              { title: t.footerProduct, links: t.footerProdLinks,    hrefs: ['#features','#pricing','#','#'] },
+              { title: t.footerCompany, links: t.footerCompanyLinks,  hrefs: ['#','#','#','#'] },
+              { title: t.footerLegal,   links: t.footerLegalLinks,    hrefs: ['/privacidad','/terminos','/cookies','/seguridad'] },
             ].map(col => (
               <div key={col.title}>
                 <h4 style={{ fontSize:12, fontWeight:700, color:'rgba(255,255,255,0.4)', textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:16, marginTop:0 }}>{col.title}</h4>
                 <ul style={{ listStyle:'none', margin:0, padding:0, display:'flex', flexDirection:'column', gap:10 }}>
-                  {col.links.map(l => <li key={l}><a href="#" style={{ fontSize:14, color:'rgba(255,255,255,0.55)', textDecoration:'none' }}>{l}</a></li>)}
+                  {col.links.map((l, i) => (
+                    <li key={l}>
+                      <Link href={col.hrefs[i] ?? '#'} style={{ fontSize:14, color:'rgba(255,255,255,0.55)', textDecoration:'none' }}>{l}</Link>
+                    </li>
+                  ))}
                 </ul>
               </div>
             ))}
