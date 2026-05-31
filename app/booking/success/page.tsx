@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
-export default function BookingSuccessPage() {
-  const params   = useSearchParams()
-  const token    = params.get('token')
+function BookingSuccessContent() {
+  const params  = useSearchParams()
+  const token   = params.get('token')
   const [status, setStatus] = useState<'loading' | 'confirmed' | 'invalid'>('loading')
 
   useEffect(() => {
@@ -21,7 +21,6 @@ export default function BookingSuccessPage() {
         .eq('payment_token', token)
         .maybeSingle()
 
-      // Token válido si existe el registro (ya confirmado o aún pending_payment)
       setStatus(data ? 'confirmed' : 'invalid')
     }
 
@@ -64,7 +63,6 @@ export default function BookingSuccessPage() {
         <p style={{ color: '#888', fontSize: 15, lineHeight: 1.6, marginBottom: 32 }}>
           Your booking is confirmed. We will contact you on WhatsApp with the details.
         </p>
-
         <a
           href="/booking/noirem"
           style={{ color: '#ca9a3c', fontSize: 14, textDecoration: 'none' }}
@@ -73,5 +71,18 @@ export default function BookingSuccessPage() {
         </a>
       </div>
     </main>
+  )
+}
+
+export default function BookingSuccessPage() {
+  return (
+    <Suspense fallback={
+      <main style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center',
+                     justifyContent: 'center', background: '#0a0a0a' }}>
+        <p style={{ color: '#888', fontSize: 16 }}>Loading…</p>
+      </main>
+    }>
+      <BookingSuccessContent />
+    </Suspense>
   )
 }
