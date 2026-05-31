@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 
 interface Props {
   params: { slug: string }
@@ -7,7 +7,10 @@ interface Props {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const supabase = await createClient()
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   const { data } = await supabase
     .from('business_settings')
@@ -16,29 +19,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single()
 
   const businessName = data?.business_name ?? 'Book a service'
-  const logoUrl      = data?.logo_url ?? 'https://www.saffi.app/og-default.png'
+  const description  = `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`
+  const imageUrl     = data?.logo_url && data.logo_url.startsWith('http')
+    ? data.logo_url
+    : 'https://www.saffi.app/og-default.png'
 
   return {
     title:       `Book — ${businessName}`,
-    description: `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`,
+    description,
     openGraph: {
       title:       `Book — ${businessName}`,
-      description: `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`,
-      images: [
-        {
-          url:   logoUrl,
-          width: 1200,
-          height: 630,
-          alt:   businessName,
-        },
-      ],
+      description,
+      images: [{ url: imageUrl, width: 1200, height: 630, alt: businessName }],
       type: 'website',
     },
     twitter: {
       card:        'summary_large_image',
       title:       `Book — ${businessName}`,
-      description: `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`,
-      images:      [logoUrl],
+      description,
+      images:      [imageUrl],
     },
   }
 }
