@@ -1032,7 +1032,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       )}
                     </div>
                     <span style={{ color:isSel?GOLD:TEXT, fontSize:14, fontWeight:isSel?700:500 }}>
-                      {method==='online'?'Online':'Cash'}
+                      {method==='online'?'Card payment':'Cash / Bank / Wallet'}
                     </span>
                     {isSel&&(
                       <div style={{ marginLeft:'auto', color:GOLD, fontSize:14, fontWeight:900 }}>✓</div>
