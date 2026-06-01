@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
   const isSuspendedPage = path.startsWith('/suspended')
   const isHomePage      = path === '/'
   const isLegalPage     = path.startsWith('/privacidad') || path.startsWith('/terminos') || path.startsWith('/cookies') || path.startsWith('/seguridad')
-  const isPublicPage    = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage || isHomePage || isLegalPage
+  const isPublicPage    = isLoginPage || isRegisterPage || isUpgradePage || isSuspendedPage || isHomePage || isLegalPage || path.startsWith('/nosotros')
 
   // No autenticado → solo puede ver páginas públicas
   if (!user && !isPublicPage) {
