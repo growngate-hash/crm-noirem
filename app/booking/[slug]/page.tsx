@@ -103,21 +103,28 @@ const INP:React.CSSProperties = {
 
 // ── Small components ───────────────────────────────────────────────────────────
 
-function PageHeader() {
+function PageHeader({ name, logoUrl }: { name?: string; logoUrl?: string | null }) {
+  const displayName = name || 'SAFFI'
   return (
     <div style={{ textAlign:'center', paddingBottom:32, borderBottom:`1px solid ${BORDER}`, marginBottom:32 }}>
       <div style={{ display:'inline-flex', alignItems:'center', gap:12, marginBottom:6 }}>
         <div style={{
-          width:36, height:36, background:GOLD, borderRadius:6,
+          width:48, height:48, borderRadius:10, flexShrink:0,
+          background: logoUrl ? 'transparent' : GOLD,
           display:'flex', alignItems:'center', justifyContent:'center',
-          fontSize:18, fontWeight:900, color:'#000', letterSpacing:'-0.5px',
-        }}>S</div>
+          overflow:'hidden',
+        }}>
+          {logoUrl
+            ? <img src={logoUrl} alt={displayName} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+            : <span style={{ fontSize:18, fontWeight:900, color:'#000' }}>{displayName.charAt(0)}</span>
+          }
+        </div>
         <span style={{ color:GOLD, fontSize:22, fontWeight:900, letterSpacing:'3px', textTransform:'uppercase' }}>
-          SAFFI
+          {displayName}
         </span>
       </div>
       <div style={{ color:MUTED, fontSize:10, letterSpacing:'4px', textTransform:'uppercase' }}>
-        LUXURY DETAILING
+        BOOKING SYSTEM
       </div>
     </div>
   )
@@ -405,6 +412,8 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
 
   const [ownerId,setOwnerId]           = useState<string | null>(null)
   const [tenantNotFound,setTenantNotFound] = useState(false)
+  const [tenantName,setTenantName]     = useState('')
+  const [tenantLogo,setTenantLogo]     = useState<string|null>(null)
 
   const [categories,setCategories]   = useState<Category[]>([])
   const [services,setServices]       = useState<Service[]>([])
@@ -449,6 +458,16 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       }
       setOwnerId(data.user_id)
       if (data.timezone) setTimezone(data.timezone)
+      if (data.business_name) setTenantName(data.business_name)
+
+      // Cargar logo desde company_settings (key-value)
+      const { data: logoRow } = await publicClient
+        .from('company_settings')
+        .select('value')
+        .eq('user_id', data.user_id)
+        .eq('key', 'logo_url')
+        .maybeSingle()
+      if (logoRow?.value) setTenantLogo(logoRow.value)
     }
     loadTenant()
   }, [slug])
@@ -618,7 +637,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         ::-webkit-scrollbar-thumb{background:${GOLD}40;border-radius:2px;}
       `}</style>
       <main style={{ maxWidth:480, margin:'0 auto', padding:'40px 16px 72px' }}>
-        <PageHeader/>
+        <PageHeader name={tenantName} logoUrl={tenantLogo}/>
         {children}
       </main>
     </div>
