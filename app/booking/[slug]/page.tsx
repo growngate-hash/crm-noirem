@@ -1094,7 +1094,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                         background: isSel ? `${GOLD}10` : CARD,
                         border:`1px solid ${isSel?GOLD:BORDER}`,
                         borderRadius:8, cursor:'pointer', transition:'all 0.2s',
-                        ...(method==='deferred' && { gridColumn:'span 2' }),
+                        ...(method==='deferred' && { gridColumn:'span 2', justifyContent:'center' }),
                       }}>
                         <div style={{
                           width:34, height:34, borderRadius:'50%', flexShrink:0,
