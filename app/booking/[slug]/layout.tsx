@@ -1,18 +1,5 @@
 import type { Metadata } from 'next'
-
-const TENANT_META: Record<string, { name: string; description: string; image?: string }> = {
-  noirem: {
-    name: 'Noirem Luxury Car Care',
-    description: 'Schedule your premium car wash & detailing service. Fast, easy booking in 2 minutes.',
-    image: 'https://vjzflmgfiihjrtvhlfih.supabase.co/storage/v1/object/public/company-assets/company-logo-1779036593657.jpg',
-  },
-}
-
-const DEFAULT = {
-  name: 'Book a service',
-  description: 'Schedule your service online. Fast, easy booking in 2 minutes.',
-  image: 'https://www.saffi.app/og-default.png',
-}
+import { createClient } from '@supabase/supabase-js'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -21,23 +8,51 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const tenant = TENANT_META[slug] ?? DEFAULT
-  const image  = tenant.image ?? DEFAULT.image
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  // Leer business_name y user_id por slug
+  const { data: biz } = await supabase
+    .from('business_settings')
+    .select('user_id, business_name')
+    .eq('slug', slug)
+    .single()
+
+  const businessName = biz?.business_name ?? 'Book a service'
+  const description  = `Schedule your ${businessName} service online. Fast, easy booking in 2 minutes.`
+
+  // Leer logo_url de company_settings usando user_id
+  let imageUrl = 'https://www.saffi.app/og-default.png'
+  if (biz?.user_id) {
+    const { data: logoSetting } = await supabase
+      .from('company_settings')
+      .select('value')
+      .eq('user_id', biz.user_id)
+      .eq('key', 'logo_url')
+      .single()
+
+    if (logoSetting?.value?.startsWith('http')) {
+      imageUrl = logoSetting.value
+    }
+  }
 
   return {
-    title:       `Book — ${tenant.name}`,
-    description: tenant.description,
+    title:       `Book — ${businessName}`,
+    description,
     openGraph: {
-      title:       `Book — ${tenant.name}`,
-      description: tenant.description,
-      images:      [{ url: image, width: 1200, height: 630, alt: tenant.name }],
+      title:       `Book — ${businessName}`,
+      description,
+      images:      [{ url: imageUrl, width: 1200, height: 630, alt: businessName }],
       type:        'website',
     },
     twitter: {
       card:        'summary_large_image',
-      title:       `Book — ${tenant.name}`,
-      description: tenant.description,
-      images:      [image],
+      title:       `Book — ${businessName}`,
+      description,
+      images:      [imageUrl],
     },
   }
 }
