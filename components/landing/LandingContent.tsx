@@ -1,8 +1,10 @@
 'use client'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import {
   CalendarCheck, Users, DollarSign, BarChart2,
   Package, Shield, CheckCircle2, ArrowRight, Globe,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
 import { useLandingLang } from './LandingLangContext'
 
@@ -54,6 +56,18 @@ export default function LandingContent() {
       features: t.planEntFeatures, notIncluded: t.planEntNot,
       cta: t.planEntCta, ctaHref: '/register?plan=enterprise',
     },
+  ]
+
+  const [activeTestim, setActiveTestim] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setActiveTestim(i => (i + 1) % 4), 5000)
+    return () => clearInterval(timer)
+  }, [])
+  const TESTIMS = [
+    { q: t.testimQuote1, n: t.testimName1, b: t.testimBiz1, c: t.testimCity1, initials: 'CM', grad: `linear-gradient(135deg,${S},#1a4a7a)` },
+    { q: t.testimQuote2, n: t.testimName2, b: t.testimBiz2, c: t.testimCity2, initials: 'MR', grad: `linear-gradient(135deg,${C},#2BB8B5)` },
+    { q: t.testimQuote3, n: t.testimName3, b: t.testimBiz3, c: t.testimCity3, initials: 'AP', grad: `linear-gradient(135deg,${A},#D4952A)` },
+    { q: t.testimQuote4, n: t.testimName4, b: t.testimBiz4, c: t.testimCity4, initials: 'DA', grad: 'linear-gradient(135deg,#818cf8,#6366f1)' },
   ]
 
   return (
@@ -222,53 +236,48 @@ export default function LandingContent() {
 
       {/* ═══ TESTIMONIALS ══════════════════════════════════════════════════ */}
       <section id="testimonials" style={{ background: CR, padding: '96px 24px' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+        <div style={{ maxWidth: 860, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <span style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, color: C, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>{t.testimLabel}</span>
             <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: 900, color: S, letterSpacing: '-1px', margin: '0 0 16px' }}>{t.testimTitle}</h2>
             <p style={{ fontSize: 18, color: '#5A5852', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>{t.testimSub}</p>
           </div>
 
-          {/* 3 cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 20, marginBottom: 20 }} className="testim-grid">
-            {[
-              { q: t.testimQuote1, n: t.testimName1, b: t.testimBiz1, c: t.testimCity1, initials: 'CM', grad: `linear-gradient(135deg,${S},#1a4a7a)` },
-              { q: t.testimQuote2, n: t.testimName2, b: t.testimBiz2, c: t.testimCity2, initials: 'MR', grad: `linear-gradient(135deg,${C},#2BB8B5)` },
-              { q: t.testimQuote3, n: t.testimName3, b: t.testimBiz3, c: t.testimCity3, initials: 'AP', grad: `linear-gradient(135deg,${A},#D4952A)` },
-            ].map(tm => (
-              <div key={tm.n} style={{ background: 'white', borderRadius: 16, border: '1px solid #F0EFEA', padding: '28px 28px 24px', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 8px rgba(11,42,74,0.04)' }}>
-                <div style={{ fontSize: 52, lineHeight: 1, color: C, fontFamily: 'Georgia,serif', marginBottom: 12, opacity: 0.65 }}>❝</div>
-                <p style={{ fontSize: 15, color: '#3A3830', lineHeight: 1.65, margin: '0 0 20px', flex: 1 }}>{tm.q}</p>
-                <div style={{ fontSize: 14, color: A, marginBottom: 16, letterSpacing: 2 }}>★★★★★</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: tm.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: 'white', letterSpacing: '0.03em' }}>{tm.initials}</span>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: S }}>{tm.n}</div>
-                    <div style={{ fontSize: 12, color: '#5A5852' }}>{tm.b} · {tm.c}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button type="button" className="testim-nav-btn" onClick={() => setActiveTestim(i => (i - 1 + TESTIMS.length) % TESTIMS.length)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: '50%', background: 'white', border: '1px solid #F0EFEA', boxShadow: '0 2px 12px rgba(11,42,74,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <ChevronLeft size={20} color={S} strokeWidth={2} />
+            </button>
 
-          {/* 4th card — full-width horizontal */}
-          <div style={{ background: 'white', borderRadius: 16, border: '1px solid #F0EFEA', padding: '28px 36px', display: 'flex', alignItems: 'flex-start', gap: 24, boxShadow: '0 2px 8px rgba(11,42,74,0.04)' }} className="testim-wide">
-            <div style={{ fontSize: 52, lineHeight: 1, color: C, fontFamily: 'Georgia,serif', opacity: 0.65, flexShrink: 0, marginTop: -4 }}>❝</div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 16, color: '#3A3830', lineHeight: 1.65, margin: '0 0 16px' }}>{t.testimQuote4}</p>
-              <div style={{ fontSize: 14, color: A, marginBottom: 14, letterSpacing: 2 }}>★★★★★</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#818cf8,#6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'white', letterSpacing: '0.03em' }}>DA</span>
-                </div>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: S }}>{t.testimName4}</div>
-                  <div style={{ fontSize: 12, color: '#5A5852' }}>{t.testimBiz4} · {t.testimCity4}</div>
-                </div>
+            <div style={{ flex: 1, overflow: 'hidden', borderRadius: 20, border: '1px solid #F0EFEA', boxShadow: '0 4px 24px rgba(11,42,74,0.06)' }}>
+              <div style={{ display: 'flex', transform: `translateX(-${activeTestim * 100}%)`, transition: 'transform 0.5s cubic-bezier(0.4,0,0.2,1)', willChange: 'transform' }}>
+                {TESTIMS.map(tm => (
+                  <div key={tm.n} className="testim-card" style={{ minWidth: '100%', background: 'white', padding: '52px 56px', boxSizing: 'border-box' }}>
+                    <div style={{ fontSize: 64, lineHeight: 0.8, color: C, fontFamily: 'Georgia,serif', marginBottom: 24, opacity: 0.6 }}>❝</div>
+                    <p style={{ fontSize: 19, color: '#3A3830', lineHeight: 1.7, margin: '0 0 28px', fontStyle: 'italic' }}>{tm.q}</p>
+                    <div style={{ fontSize: 16, color: A, marginBottom: 20, letterSpacing: 3 }}>★★★★★</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: tm.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: 'white', letterSpacing: '0.03em' }}>{tm.initials}</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: S }}>{tm.n}</div>
+                        <div style={{ fontSize: 13, color: '#5A5852' }}>{tm.b} · {tm.c}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+
+            <button type="button" className="testim-nav-btn" onClick={() => setActiveTestim(i => (i + 1) % TESTIMS.length)} style={{ flexShrink: 0, width: 44, height: 44, borderRadius: '50%', background: 'white', border: '1px solid #F0EFEA', boxShadow: '0 2px 12px rgba(11,42,74,0.10)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+              <ChevronRight size={20} color={S} strokeWidth={2} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 28 }}>
+            {TESTIMS.map((_, i) => (
+              <button key={i} type="button" onClick={() => setActiveTestim(i)} style={{ width: i === activeTestim ? 24 : 8, height: 8, borderRadius: 4, background: i === activeTestim ? C : '#D0CEC9', border: 'none', cursor: 'pointer', padding: 0, transition: 'all 0.3s ease' }} />
+            ))}
           </div>
         </div>
       </section>
@@ -397,13 +406,13 @@ export default function LandingContent() {
           .feature-grid { grid-template-columns: repeat(2,1fr) !important; }
           .pricing-grid { grid-template-columns: 1fr !important; max-width: 460px; margin-left: auto; margin-right: auto; }
           .footer-grid  { grid-template-columns: 1fr 1fr !important; }
-          .testim-grid  { grid-template-columns: 1fr !important; }
         }
         @media (max-width: 640px) {
-          .feature-grid { grid-template-columns: 1fr !important; }
-          .steps-grid   { grid-template-columns: 1fr !important; }
-          .footer-grid  { grid-template-columns: 1fr !important; }
-          .testim-wide  { flex-direction: column !important; gap: 12px !important; }
+          .feature-grid    { grid-template-columns: 1fr !important; }
+          .steps-grid      { grid-template-columns: 1fr !important; }
+          .footer-grid     { grid-template-columns: 1fr !important; }
+          .testim-nav-btn  { display: none !important; }
+          .testim-card     { padding: 36px 28px !important; }
         }
         a:hover { opacity: 0.85; }
       `}</style>
