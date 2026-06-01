@@ -374,7 +374,7 @@ export default function LandingContent() {
             </div>
             {[
               { title: t.footerProduct, links: t.footerProdLinks,    hrefs: ['#features','#pricing','#','#'] },
-              { title: t.footerCompany, links: t.footerCompanyLinks,  hrefs: ['#','#','#','#'] },
+              { title: t.footerCompany, links: t.footerCompanyLinks,  hrefs: ['/nosotros','#','#','#'] },
               { title: t.footerLegal,   links: t.footerLegalLinks,    hrefs: ['/privacidad','/terminos','/cookies','/seguridad'] },
             ].map(col => (
               <div key={col.title}>
