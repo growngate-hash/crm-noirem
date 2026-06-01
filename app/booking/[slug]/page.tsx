@@ -417,7 +417,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   const [selService, setSelService]  = useState<Service|null>(null)
   const [selDate,    setSelDate]     = useState<Date|null>(null)
   const [selTime,    setSelTime]     = useState<number|null>(null)
-  const [paymentMethod,setPaymentMethod] = useState<'online'|'cash'>('cash')
+  const [paymentMethod,setPaymentMethod] = useState<'online'|'cash'|'deferred'>('cash')
   const [paymentMethods,setPaymentMethods] = useState<Array<{
     type: string
     label: string
@@ -552,7 +552,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
     }
 
     // Flujo cash — igual que antes
-    if (paymentMethod === 'cash') {
+    if (paymentMethod === 'cash' || paymentMethod === 'deferred') {
       setSaving(false)
       setDone(true)
       return
@@ -1057,45 +1057,63 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           <div style={{ marginBottom:24 }}>
             <div style={{ fontSize:13, fontWeight:700, color:MUTED, letterSpacing:'0.08em',
               textTransform:'uppercase', marginBottom:12 }}>Payment Method</div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-              {(['online','cash'] as const).map(method=>{
-                const isSel=paymentMethod===method
-                return (
-                  <div key={method} onClick={()=>setPaymentMethod(method)} style={{
-                    display:'flex', alignItems:'center', gap:10, padding:'14px 16px',
-                    background: isSel ? `${GOLD}10` : CARD,
-                    border:`1px solid ${isSel?GOLD:BORDER}`,
-                    borderRadius:8, cursor:'pointer', transition:'all 0.2s',
-                  }}>
-                    <div style={{
-                      width:34, height:34, borderRadius:'50%', flexShrink:0,
-                      background: isSel ? `${GOLD}20` : CARD2,
-                      border:`1px solid ${isSel?GOLD:BORDER2}`,
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      {method==='online'?(
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                          stroke={isSel?GOLD:DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
-                      ):(
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                          stroke={isSel?GOLD:DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="12" y1="1" x2="12" y2="23"/>
-                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                        </svg>
-                      )}
-                    </div>
-                    <span style={{ color:isSel?GOLD:TEXT, fontSize:14, fontWeight:isSel?700:500 }}>
-                      {method==='online'?'Card payment':'Other methods'}
-                    </span>
-                    {isSel&&(
-                      <div style={{ marginLeft:'auto', color:GOLD, fontSize:14, fontWeight:900 }}>✓</div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+            {(() => {
+              const PAYMENT_LABELS: Record<string, string> = {
+                online:   'Card payment',
+                cash:     'Other methods',
+                deferred: 'Pay after service',
+              }
+              return (
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+                  {(['online','cash','deferred'] as const).map(method=>{
+                    const isSel=paymentMethod===method
+                    return (
+                      <div key={method} onClick={()=>setPaymentMethod(method)} style={{
+                        display:'flex', alignItems:'center', gap:10, padding:'14px 16px',
+                        background: isSel ? `${GOLD}10` : CARD,
+                        border:`1px solid ${isSel?GOLD:BORDER}`,
+                        borderRadius:8, cursor:'pointer', transition:'all 0.2s',
+                      }}>
+                        <div style={{
+                          width:34, height:34, borderRadius:'50%', flexShrink:0,
+                          background: isSel ? `${GOLD}20` : CARD2,
+                          border:`1px solid ${isSel?GOLD:BORDER2}`,
+                          display:'flex', alignItems:'center', justifyContent:'center',
+                        }}>
+                          {method==='online'&&(
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                              stroke={isSel?GOLD:DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                          )}
+                          {method==='cash'&&(
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                              stroke={isSel?GOLD:DIM} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <line x1="12" y1="1" x2="12" y2="23"/>
+                              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                          )}
+                          {method==='deferred'&&(
+                            <svg width="15" height="15" viewBox="0 0 24 24"
+                              fill="none" stroke={isSel?GOLD:DIM}
+                              strokeWidth="1.5" strokeLinecap="round">
+                              <circle cx="12" cy="12" r="10"/>
+                              <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                          )}
+                        </div>
+                        <span style={{ color:isSel?GOLD:TEXT, fontSize:14, fontWeight:isSel?700:500 }}>
+                          {PAYMENT_LABELS[method]}
+                        </span>
+                        {isSel&&(
+                          <div style={{ marginLeft:'auto', color:GOLD, fontSize:14, fontWeight:900 }}>✓</div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })()}
           </div>
 
           <p style={{ fontSize:11, color:DIM, marginBottom:12, lineHeight:1.7, letterSpacing:'0.02em' }}>
