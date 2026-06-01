@@ -58,11 +58,17 @@ No es la reserva definitiva — el trigger la procesa y crea la reserva real en 
 | `price` | numeric | Precio base del servicio |
 | `vat` | numeric | IVA (5%) |
 | `total_amount` | numeric | Precio + IVA |
-| `payment_method` | text | `'cash'` o `'online'` |
-| `owner_id` | uuid | `user_id` del tenant — **pendiente de migración** (ver nota abajo) |
+| `payment_method` | text | `'cash'`, `'online'` o `'deferred'` — check constraint activo |
+| `owner_id` | uuid | `user_id` del tenant |
 | `status` | text | `'pending'`, `'confirmed'`, `'cancelled'` |
 
-> **Pendiente:** La columna `owner_id` aún no existe en la tabla en producción. Falta crear y aplicar `supabase/migrations/20260527_booking_requests_owner_id.sql` con `ALTER TABLE booking_requests ADD COLUMN IF NOT EXISTS owner_id uuid REFERENCES auth.users(id)`. Sin esta columna el INSERT desde `/booking/[slug]` falla y el trigger no se dispara.
+### Check constraint `payment_method`
+```sql
+alter table booking_requests
+  add constraint booking_requests_payment_method_check
+  check (payment_method in ('online', 'cash', 'deferred'));
+```
+Aplicado vía migración `20260531_bookings_payment_method.sql`.
 
 ### Política RLS
 ```sql
@@ -91,7 +97,7 @@ CREATE POLICY "auth_manage_booking_requests"
 - **Trigger:** `trg_booking_request_to_bookings`
 - **Evento:** `AFTER INSERT ON booking_requests FOR EACH ROW`
 - **Seguridad:** `SECURITY DEFINER` — corre como el dueño de la función (postgres), ignorando RLS
-- **Archivo activo:** `20260524_trigger_add_end_at.sql` (reescribió la función completa para añadir cálculo de `end_at`)
+- **Archivo activo:** `20260531_bookings_payment_method.sql` (reescribió la función para añadir `payment_method` y `booking_request_id`)
 
 ### Paso a paso
 
@@ -148,19 +154,28 @@ LIMIT 1;
 
 **Paso 4 — Insertar booking**
 ```sql
-INSERT INTO bookings (contact_id, vehicle_id, service_id, scheduled_at, end_at, address, notes, price, status)
-VALUES (
+INSERT INTO bookings (
+  user_id, contact_id, vehicle_id, service_id,
+  scheduled_at, end_at, address, notes, price, status,
+  payment_method, booking_request_id
+) VALUES (
+  v_owner_id,
   v_contact_id,
   v_company_vehicle_id,
-  ...,
+  NEW.service_id,
   NEW.scheduled_at,
   NEW.scheduled_at + (COALESCE(v_duration_minutes, 60) * interval '1 minute'),
-  ...
+  NEW.address, NEW.address_notes, NEW.price,
+  'confirmed',
+  COALESCE(NEW.payment_method, 'cash'),
+  NEW.id
 );
 ```
 - `vehicle_id` apunta al **vehículo de empresa**, no al del cliente.
 - `contact_id` apunta al contacto del cliente.
-- `end_at` se calcula automáticamente desde `duration_minutes` del servicio (fallback: 60 min). La API de disponibilidad depende de este valor para calcular bloques ocupados — si es NULL, usa el fallback de 60 min.
+- `end_at` se calcula automáticamente desde `duration_minutes` del servicio (fallback: 60 min).
+- `payment_method` se copia desde `booking_requests.payment_method` (fallback `'cash'`).
+- `booking_request_id` establece el vínculo explícito entre las dos tablas.
 
 ### Manejo de errores
 ```sql
@@ -273,7 +288,10 @@ const resolvedAddress = c.address
 
 ---
 
-## 6. PÁGINA `/booking`
+## 6. PÁGINA `/booking/[slug]`
+
+**Archivo:** `app/booking/[slug]/page.tsx` (Client Component — `'use client'`)
+**Layout:** `app/booking/[slug]/layout.tsx` (Server Component) — genera OG metadata dinámica desde Supabase (`business_settings.business_name` + `company_settings` donde `key = 'logo_url'`).
 
 ### Campos del formulario
 
@@ -291,22 +309,64 @@ const resolvedAddress = c.address
 
 > **Nota:** `plate_number` se envía duplicado como `plate` y `plate_number` por compatibilidad con versiones anteriores del trigger.
 
+### Selector de método de pago (Step 5)
+
+Grid de 3 opciones en layout responsivo (2 columnas; `deferred` ocupa fila completa):
+
+| Valor interno | Label visible | Comportamiento al confirmar |
+|---|---|---|
+| `'online'` | Card payment | Redirige a Stripe Checkout (`status: 'pending_payment'`) |
+| `'cash'` | Other methods | Pantalla de éxito + muestra datos de `payment_methods` |
+| `'deferred'` | Pay after service | Pantalla de éxito + mensaje "el técnico cobra al finalizar" |
+
+```typescript
+const [paymentMethod, setPaymentMethod] = useState<'online'|'cash'|'deferred'>('cash')
+```
+
 ### Submit
 ```typescript
-// insert directo con anon key — no pasa por API route
-const { error } = await createClient().from('booking_requests').insert({ ... })
+// Flujo online → redirige a Stripe
+status: paymentMethod === 'online' ? 'pending_payment' : 'pending'
+
+// Flujo cash o deferred → pantalla de éxito local
+if (paymentMethod === 'cash' || paymentMethod === 'deferred') {
+  setDone(true)
+  return
+}
 ```
-- Usa la `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Insert directo con anon key — no pasa por API route.
 - La política RLS `anon_insert_booking_requests` permite el insert.
-- No requiere `SUPABASE_SERVICE_ROLE_KEY`.
-- `app/api/booking/route.ts` existe pero es un stub vacío — no se usa.
+
+### Pantalla de éxito (`done = true`)
+
+- **`cash`:** muestra card "Payment details" con los métodos de pago del negocio (`payment_methods` table, filtrada por `company_id = ownerId`).
+- **`deferred`:** muestra card "Payment after service" — el técnico cobra al finalizar el servicio.
+- **`online`:** nunca llega a esta pantalla (redirige a Stripe).
+
+Los `payment_methods` se cargan al montar (anon key, RLS pública via policy `"public read active methods"`):
+```typescript
+createClient()
+  .from('payment_methods')
+  .select('type, label, details')
+  .eq('company_id', ownerId)   // ownerId = business_settings.user_id
+  .eq('is_active', true)
+  .order('sort_order')
+```
 
 ### Disponibilidad de slots
 ```typescript
 fetch(`/api/availability?date=${toYMD(selDate)}&service_id=${selService.id}`, { cache: 'no-store' })
 ```
-Consulta `app/api/availability/route.ts` para obtener los slots bloqueados del día.
-`cache: 'no-store'` es obligatorio: browsers de WhatsApp y algunos móviles cachean agresivamente las respuestas fetch, lo que causaría que el cliente vea slots obsoletos. La API también devuelve cabeceras `Cache-Control: no-store` por el mismo motivo.
+Consulta `app/api/availability/route.ts`. `cache: 'no-store'` es obligatorio — browsers de WhatsApp cachean respuestas fetch agresivamente.
+
+### OG metadata (layout)
+`app/booking/[slug]/layout.tsx` es un Server Component que genera metadata para cada slug:
+```typescript
+// 1. Lee business_name desde business_settings por slug
+// 2. Lee logo_url desde company_settings donde key = 'logo_url' y user_id = biz.user_id
+// 3. Inyecta og:title, og:description, og:image, twitter:card
+```
+Necesita `SUPABASE_SERVICE_ROLE_KEY` en el servidor (no anon key) para leer `company_settings` sin restricciones de RLS.
 
 ---
 

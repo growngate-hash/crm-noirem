@@ -225,7 +225,29 @@ npx supabase functions deploy whatsapp-bot --project-ref <project-ref> --no-veri
 
 ---
 
-## 6. MODO DE PAGO (`payment_mode`)
+## 6. COLUMNA `payment_method` EN `bookings`
+
+Añadida en `supabase/migrations/20260531_bookings_payment_method.sql`. El trigger
+`sync_booking_request_to_bookings` la copia automáticamente desde `booking_requests`:
+
+```sql
+alter table bookings
+  add column if not exists payment_method      text default 'cash',
+  add column if not exists booking_request_id  uuid;
+```
+
+| Valor | Origen | Significado |
+|---|---|---|
+| `'cash'` | booking_requests | "Other methods" — cliente paga por transferencia, wallet, etc. |
+| `'online'` | booking_requests | Stripe — se confirma automáticamente tras el pago |
+| `'deferred'` | booking_requests | "Pay after service" — el técnico cobra al finalizar |
+
+`booking_request_id` vincula el booking con su `booking_request` de origen.
+Bookings creados manualmente desde el CRM no tienen este vínculo (`NULL`).
+
+---
+
+## 7. MODO DE PAGO (`payment_mode`)
 
 Independiente de `payment_methods`, el campo `payment_mode` en `company_settings`
 controla el comportamiento de confirmación de reservas:
