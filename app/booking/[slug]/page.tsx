@@ -1064,7 +1064,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                 deferred: 'Pay after service',
               }
               return (
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10 }}>
                   {(['online','cash','deferred'] as const).map(method=>{
                     const isSel=paymentMethod===method
                     return (
@@ -1073,6 +1073,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                         background: isSel ? `${GOLD}10` : CARD,
                         border:`1px solid ${isSel?GOLD:BORDER}`,
                         borderRadius:8, cursor:'pointer', transition:'all 0.2s',
+                        ...(method==='deferred' && { gridColumn:'span 2' }),
                       }}>
                         <div style={{
                           width:34, height:34, borderRadius:'50%', flexShrink:0,
