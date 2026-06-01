@@ -238,7 +238,6 @@ export default function LandingContent() {
       <section id="testimonials" style={{ background: CR, padding: '96px 24px' }}>
         <div style={{ maxWidth: 860, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <span style={{ display: 'inline-block', fontSize: 12, fontWeight: 700, color: C, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 12 }}>{t.testimLabel}</span>
             <h2 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: 900, color: S, letterSpacing: '-1px', margin: '0 0 16px' }}>{t.testimTitle}</h2>
             <p style={{ fontSize: 18, color: '#5A5852', maxWidth: 520, margin: '0 auto', lineHeight: 1.6 }}>{t.testimSub}</p>
           </div>
