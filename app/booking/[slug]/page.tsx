@@ -658,7 +658,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
         We will contact you on <strong style={{ color:TEXT }}>{cf.whatsapp}</strong> to confirm.
       </p>
 
-      {paymentMethods.length > 0 && (
+      {paymentMethods.length > 0 && paymentMethod !== 'deferred' && (
         <div style={{
           textAlign:'left', margin:'0 auto 36px',
           maxWidth:340, borderRadius:10,
@@ -697,6 +697,27 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
           ))}
           <p style={{ color:DIM, fontSize:11, marginTop:14, marginBottom:0, lineHeight:1.5 }}>
             Once payment is made, send us the receipt on WhatsApp and we will confirm your booking.
+          </p>
+        </div>
+      )}
+
+      {paymentMethod === 'deferred' && (
+        <div style={{
+          margin: '0 auto 36px',
+          maxWidth: 340, borderRadius: 10,
+          border: `1px solid ${GOLD}30`,
+          background: `${GOLD}08`,
+          padding: '16px 20px',
+          textAlign: 'left',
+        }}>
+          <p style={{ color: GOLD, fontSize: 12, fontWeight: 700,
+            letterSpacing: '0.8px', textTransform: 'uppercase' as const,
+            marginBottom: 8 }}>
+            Payment after service
+          </p>
+          <p style={{ color: MUTED, fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+            Our technician will collect payment once the service is completed.
+            You can pay by card, bank transfer, wallet or cash.
           </p>
         </div>
       )}
