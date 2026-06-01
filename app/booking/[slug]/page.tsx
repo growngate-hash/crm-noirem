@@ -4,30 +4,30 @@ import { use, useState, useEffect, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { localToUTCWithTz } from '@/utils/timezone'
 
-// ── Design tokens — dark luxury ────────────────────────────────────────────────
-const GOLD   = '#D4AF37'
-const BG     = '#0a0a0a'
-const CARD   = '#111111'
-const CARD2  = '#181818'
-const BORDER = '#2a2a2a'
-const BORDER2= '#3a3a3a'
-const TEXT   = '#f0f0f0'
-const MUTED  = '#888888'
-const DIM    = '#555555'
-const RED    = '#ef4444'
+// ── Design tokens — Noirem Premium Light ──────────────────────────────────────
+const GOLD    = '#F5B544'
+const BG      = '#F4F6F8'
+const CARD    = '#FFFFFF'
+const CARD2   = '#F4F6F8'
+const BORDER  = '#F0EFEA'
+const BORDER2 = '#E8E6E0'
+const TEXT    = '#0B2A4A'
+const MUTED   = '#5A5852'
+const DIM     = '#A8A6A0'
+const RED     = '#D9533D'
 
 // ── Category visual map ────────────────────────────────────────────────────────
 const CAT_META: Record<string, { emoji: string; gradient: string }> = {
-  'Car Wash':        { emoji:'🚿', gradient:'linear-gradient(135deg,#0a2a3a 0%,#0d1a2a 60%,#0a0a0a 100%)' },
-  'Detailing':       { emoji:'✨', gradient:'linear-gradient(135deg,#1a1500 0%,#2a1e00 50%,#0a0a0a 100%)' },
-  'Glass Polishing': { emoji:'🔍', gradient:'linear-gradient(135deg,#001a2a 0%,#002233 50%,#0a0a0a 100%)' },
-  'Ceramic Coating': { emoji:'🛡️', gradient:'linear-gradient(135deg,#1a0a2a 0%,#1e0a30 50%,#0a0a0a 100%)' },
-  'Paint Protection':{ emoji:'🎨', gradient:'linear-gradient(135deg,#2a0a0a 0%,#1a0808 50%,#0a0a0a 100%)' },
-  'Interior':        { emoji:'🪑', gradient:'linear-gradient(135deg,#0a1a0a 0%,#0d2010 50%,#0a0a0a 100%)' },
-  'Engine Cleaning': { emoji:'⚙️', gradient:'linear-gradient(135deg,#1a1a1a 0%,#222 50%,#0a0a0a 100%)' },
+  'Car Wash':        { emoji:'🚿', gradient:'linear-gradient(135deg,#EBF5FB 0%,#F8FCFF 100%)' },
+  'Detailing':       { emoji:'✨', gradient:'linear-gradient(135deg,rgba(245,181,68,0.10) 0%,#FFFEF8 100%)' },
+  'Glass Polishing': { emoji:'🔍', gradient:'linear-gradient(135deg,#F0F7FF 0%,#F8FBFF 100%)' },
+  'Ceramic Coating': { emoji:'🛡️', gradient:'linear-gradient(135deg,#F3EFF9 0%,#FAF8FE 100%)' },
+  'Paint Protection':{ emoji:'🎨', gradient:'linear-gradient(135deg,#FDF3F3 0%,#FFF5F5 100%)' },
+  'Interior':        { emoji:'🪑', gradient:'linear-gradient(135deg,#F0F7F0 0%,#F5FBF5 100%)' },
+  'Engine Cleaning': { emoji:'⚙️', gradient:'linear-gradient(135deg,#F4F5F6 0%,#FAFAFA 100%)' },
 }
 function catMeta(name: string) {
-  return CAT_META[name] ?? { emoji:'🚗', gradient:'linear-gradient(135deg,#181818 0%,#0a0a0a 100%)' }
+  return CAT_META[name] ?? { emoji:'🚗', gradient:'linear-gradient(135deg,#F4F6F8 0%,#FFFFFF 100%)' }
 }
 
 // ── Dubai areas fallback ───────────────────────────────────────────────────────
@@ -94,9 +94,9 @@ function buildAddress(f:CustomerForm):string {
   return [f.address,f.villa_flat,f.area,f.community,f.address_notes].filter(Boolean).join(', ')
 }
 
-// ── Shared dark input style ────────────────────────────────────────────────────
+// ── Shared input style ────────────────────────────────────────────────────────
 const INP:React.CSSProperties = {
-  width:'100%', padding:'14px 16px', background:'#1a1a1a',
+  width:'100%', padding:'13px 16px', background:'#FAFAF7',
   border:`1px solid ${BORDER2}`, borderRadius:8, color:TEXT,
   fontSize:14, outline:'none', boxSizing:'border-box', fontFamily:'Outfit,sans-serif',
 }
@@ -163,11 +163,11 @@ function PrimaryBtn({ children, onClick, disabled=false, loading=false }:{
   const off=disabled||loading
   return (
     <button onClick={onClick} disabled={off} style={{
-      width:'100%', padding:'16px', background: off ? '#3a3000' : GOLD,
-      color: off ? '#888' : '#000', border:'none', borderRadius:6,
+      width:'100%', padding:'16px', background: off ? '#F0EFEA' : GOLD,
+      color: off ? '#A8A6A0' : '#0B2A4A', border:'none', borderRadius:8,
       fontSize:15, fontWeight:800, cursor: off ? 'not-allowed':'pointer',
       fontFamily:'Outfit,sans-serif', letterSpacing:'0.5px', marginTop:8,
-      transition:'background 0.15s',
+      transition:'background 0.15s', boxShadow: off ? 'none' : '0 4px 12px rgba(245,181,68,0.25)',
     }}>
       {loading ? 'Please wait…' : children}
     </button>
@@ -178,7 +178,7 @@ function Skeleton({ h=160 }:{ h?:number }) {
   return (
     <div style={{
       height:h, borderRadius:10,
-      background:'linear-gradient(90deg,#161616 25%,#1e1e1e 50%,#161616 75%)',
+      background:'linear-gradient(90deg,#F0EFEA 25%,#FAFAF7 50%,#F0EFEA 75%)',
       backgroundSize:'600px 100%', animation:'shimmer 1.4s infinite',
     }}/>
   )
@@ -303,7 +303,7 @@ function AddressSearch({ value, onChange, onAreaChange, onCommunityChange }:{
               borderBottom:i<suggestions.length-1?`1px solid ${BORDER}`:'none',
               display:'flex', alignItems:'center', gap:10,
             }}
-            onMouseEnter={e=>(e.currentTarget.style.background='#222')}
+            onMouseEnter={e=>(e.currentTarget.style.background='#F4F6F8')}
             onMouseLeave={e=>(e.currentTarget.style.background='transparent')}>
               <span>📍</span>{s}
             </div>
@@ -632,7 +632,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
       <style>{`
         @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
         *{box-sizing:border-box;}
-        input::placeholder,textarea::placeholder{color:#444;}
+        input::placeholder,textarea::placeholder{color:#A8A6A0;}
         ::-webkit-scrollbar{width:4px;height:4px;}
         ::-webkit-scrollbar-thumb{background:${GOLD}40;border-radius:2px;}
       `}</style>
@@ -646,7 +646,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
   // ── Tenant not found ───────────────────────────────────────────────────────
   if (tenantNotFound) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center',
-      minHeight:'100vh', background:'#0a0a0b', color:'#f0ede8',
+      minHeight:'100vh', background:'#F4F6F8', color:TEXT,
       fontFamily:'Outfit,sans-serif', flexDirection:'column', gap:16 }}>
       <h2 style={{ fontSize:24, fontWeight:700 }}>Empresa no encontrada</h2>
       <p style={{ color:'#888580' }}>
@@ -855,7 +855,7 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       alignItems:'center', justifyContent:'center',
                       padding:'10px 2px', borderRadius:8,
                       cursor: isDisabled?'not-allowed':'pointer',
-                      background: isSel ? GOLD : isSunday ? '#111' : 'transparent',
+                      background: isSel ? GOLD : isSunday ? '#F0EFEA' : 'transparent',
                       border: isSel ? `1px solid ${GOLD}` : isSunday ? `1px solid ${BORDER}` : '1px solid transparent',
                       opacity: isPast?0.25:1,
                       transition:'all 0.15s', userSelect:'none',
@@ -901,8 +901,8 @@ export default function BookingPage({ params }: { params: Promise<{ slug: string
                       style={{
                         padding:'13px 10px', borderRadius:6, textAlign:'center',
                         border: isSel ? `1px solid ${GOLD}` : isBlocked ? `1px solid ${BORDER}` : `1px solid ${GOLD}40`,
-                        background: isSel ? GOLD : isBlocked ? '#0f0f0f' : 'transparent',
-                        color: isSel ? '#000' : isBlocked ? DIM : GOLD,
+                        background: isSel ? GOLD : isBlocked ? '#F4F2EE' : '#FFFEF8',
+                        color: isSel ? '#0B2A4A' : isBlocked ? DIM : GOLD,
                         fontSize:13, fontWeight: isSel?700:500, lineHeight:1.4,
                         cursor: isBlocked||loadingSlots?'not-allowed':'pointer',
                         fontFamily:'Outfit,sans-serif', transition:'all 0.15s',
